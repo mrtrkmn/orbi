@@ -2,8 +2,9 @@
 # The Crawler 
 
 This is a simple crawler that crawls data from two websites currently:
-    - https://www.ipo.gov.uk
-    - https://www.sec.gov
+
+- https://www.ipo.gov.uk
+- https://www.sec.gov
 
 for company and patent related data.
 
