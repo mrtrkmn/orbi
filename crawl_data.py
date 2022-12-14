@@ -87,6 +87,7 @@ class Crawler:
             json_data = response.json()
         else:
             raise Exception(f"Failed to get JSON data: {response.text}")
+        json_data['cik_number'] = url.split(".json")[0].split("CIK")[1]
         results.append(json_data)
         # return json_data
     
@@ -154,7 +155,7 @@ if __name__ == "__main__":
     print(df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]])
 
     # create file on data folder
-    columns = ["name", "city", "country"] 
+    columns = ["name", "city", "country","identifier"] 
     # Set the maximum number of requests per second
 
     max_requests_per_second = 10     # defined by SEC.gov
@@ -185,10 +186,11 @@ if __name__ == "__main__":
                 name = result['name']
                 city = result['addresses']['business']['city']
                 country = result['addresses']['business']['stateOrCountryDescription']
+                identifier = result['cik_number']
                 if crawler.is_usa(country):
                     country = "United States of America"
                 # cik_number = result["cikNumber"]
-                w.writerow([name, city, country])
+                w.writerow([name, city, country,identifier])
             except KeyError as e:
                 print(f"Failed to find the key: {e}")
                 continue
