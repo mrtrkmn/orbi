@@ -4,6 +4,7 @@ from threading import Thread
 import time 
 import pandas as pd 
 import csv 
+import re 
 
 class Crawler:
 
@@ -51,7 +52,13 @@ class Crawler:
         self.sec_cik_numbers = {}
 
 
-
+    def check_cik_number_format(self, cik_number):
+        cik_number = str(cik_number)
+        if re.match(r"^\d{10}$", cik_number):
+            return True
+        return False
+    
+    
     def get_publication(self):
         return self.ipo_data
 
@@ -74,20 +81,30 @@ class Crawler:
 
         return json_data
 
-    def get_data_from_sec_gov_in_parallel(self, url, results):
-        print (f"requesting data from {url}")
+    def get_data_from_sec_gov_in_parallel(self, url, company_name, results):
+        
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
 
         }
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            json_data = response.json()
+        json_data = {}
+        
+        if url == "":
+                json_data['name'] = company_name
+                json_data['cik_number'] = ""
+                print(f"No CIK number to look up for : {company_name}")
         else:
-            raise Exception(f"Failed to get JSON data: {response.text}")
-        json_data['cik_number'] = url.split(".json")[0].split("CIK")[1]
+            cik_number = url.split(".json")[0].split("CIK")[1]
+            print (f"requesting data from {url}")
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                json_data = response.json()
+            else:
+                raise Exception(f"Failed to get JSON data: {response.text}")
+            json_data['cik_number'] = cik_number
+        
         results.append(json_data)
         # return json_data
     
@@ -152,22 +169,29 @@ if __name__ == "__main__":
     df = crawler.read_xlxs_file("data/sample_data.xlsx")
     print(df.columns)
     # get two columns
-    print(df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]])
-
+    df=df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]]
+    df =df.replace(r'\n',' ', regex=True) 
     # create file on data folder
     columns = ["name", "city", "country","identifier"] 
     # Set the maximum number of requests per second
-
+    
     max_requests_per_second = 10     # defined by SEC.gov
-
-    cik_numbers = list(df["Licensee CIK 1_cleaned"])
-    urls = []
-    for cik_number in cik_numbers:
-        if pd.isna(cik_number):
-            continue
-        urls.append(f"https://data.sec.gov/submissions/CIK{cik_number}.json")
-
-    threads = [Thread(target=crawler.get_data_from_sec_gov_in_parallel, args=(url, results)) for url in urls]
+    company_info = {}
+    
+    for index, row in df.iterrows():
+        try: 
+            company_name = row[0]
+            if company_name == "":
+                continue
+            cik_number = row[1]
+        except IndexError as e:
+            raise Exception(f"Index error: {e}")
+        if(crawler.check_cik_number_format(cik_number)):
+            company_info[company_name] =f" https://data.sec.gov/submissions/CIK{cik_number}.json"
+        else: 
+            company_info[company_name] = ""
+      
+    threads = [Thread(target=crawler.get_data_from_sec_gov_in_parallel, args=(url,company_name, results)) for company_name, url in company_info.items()]
 
     for thread in threads:
         thread.start()
@@ -192,6 +216,10 @@ if __name__ == "__main__":
                 # cik_number = result["cikNumber"]
                 w.writerow([name, city, country,identifier])
             except KeyError as e:
-                print(f"Failed to find the key: {e}")
-                continue
-       
+                print(f"Failed to find the key: {e} for {result['name']}")
+                if result['cik_number'] == "":
+                    w.writerow([result['name'], "", "",""])
+                if result['name'] != "" and result['cik_number'] != "":
+                    w.writerow([result['name'], "", "",result['cik_number']])
+        
+      
