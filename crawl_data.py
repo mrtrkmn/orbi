@@ -172,7 +172,7 @@ if __name__ == "__main__":
     df=df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]]
     df =df.replace(r'\n',' ', regex=True) 
     # create file on data folder
-    columns = ["name", "city", "country","identifier"] 
+    columns = ["company name", "city", "country","identifier"] 
     # Set the maximum number of requests per second
     
     max_requests_per_second = 10     # defined by SEC.gov
