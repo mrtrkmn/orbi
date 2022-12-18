@@ -126,6 +126,19 @@ class Orbis:
         # WebDriverWait(self.driver, 30*60).until(EC.presence_of_element_located((By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/div')))
         # element = self.driver.find_element(By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/div')
         # self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
+        
+        # identification number column 
+        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]')))
+        self.driver.find_element(By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]').click()
+        
+        # add BVD ID number column
+        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="IDENTIFIERS*IDENTIFIERS.BVD_ID_NUMBER:UNIVERSAL"]')))
+        self.driver.find_element(By.XPATH, '//*[@id="IDENTIFIERS*IDENTIFIERS.BVD_ID_NUMBER:UNIVERSAL"]').click()
+        
+        # add ORBIS ID number column
+        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="IDENTIFIERS*IDENTIFIERS.ORBISID:UNIVERSAL"]')))
+        self.driver.find_element(By.XPATH, '//*[@id="IDENTIFIERS*IDENTIFIERS.ORBISID:UNIVERSAL"]').click()
+
         time.sleep(2)
         self.driver.execute_script("document.getElementsByClassName('hierarchy-container')[0].scrollTo(0, document.getElementsByClassName('hierarchy-container')[0].scrollHeight)")
         time.sleep(1)
