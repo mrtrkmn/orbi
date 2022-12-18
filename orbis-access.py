@@ -118,6 +118,57 @@ class Orbis:
         view_result_sub_url = self.driver.find_element(By.XPATH, '/html/body/section[2]/div[1]/div[2]/ul/li[1]/a')
         view_result_sub_url.send_keys(Keys.RETURN)
        
+        # add/remove columns //*[@id="main-content"]/div/div[2]/div[1]/a
+        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/a')))
+        self.driver.find_element(By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/a').click()
+        
+        
+        # WebDriverWait(self.driver, 30*60).until(EC.presence_of_element_located((By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/div')))
+        # element = self.driver.find_element(By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/div')
+        # self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
+        time.sleep(2)
+        self.driver.execute_script("document.getElementsByClassName('hierarchy-container')[0].scrollTo(0, document.getElementsByClassName('hierarchy-container')[0].scrollHeight)")
+        time.sleep(1)
+        
+        # Ownership Data > //*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/div
+        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/div')))
+        self.driver.find_element(By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/div').click()
+        
+        # Shareholders //*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/ul/li[1]/div
+        
+        self.driver.execute_script("document.getElementsByClassName('hierarchy-container')[0].scrollTo(0, document.getElementsByClassName('hierarchy-container')[0].scrollHeight)")
+        time.sleep(1)
+        
+        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/ul/li[1]/div')))
+        self.driver.find_element(By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/ul/li[1]/div').click()
+       
+        self.driver.execute_script("document.getElementsByClassName('hierarchy-container')[0].scrollTo(0, document.getElementsByClassName('hierarchy-container')[0].scrollHeight)")
+        time.sleep(1)
+        # Global Ultimate Owner Information 
+        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/ul/li[1]/ul/li[4]/div')))
+        self.driver.find_element(By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/ul/li[1]/ul/li[4]/div').click()
+       
+        self.driver.execute_script("document.getElementsByClassName('hierarchy-container')[0].scrollTo(0, document.getElementsByClassName('hierarchy-container')[0].scrollHeight)")
+        time.sleep(1)
+        # Global Ultimate Owner Name //*[@id="GUO*GUO.GUO_NAME:UNIVERSAL"]/div[2]/span
+        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="GUO*GUO.GUO_NAME:UNIVERSAL"]/div[2]/span')))
+        self.driver.find_element(By.XPATH, '//*[@id="GUO*GUO.GUO_NAME:UNIVERSAL"]/div[2]/span').click()
+        
+        self.driver.execute_script("document.getElementsByClassName('hierarchy-container')[0].scrollTo(0, document.getElementsByClassName('hierarchy-container')[0].scrollHeight)")
+        time.sleep(1)
+        # Immediate parent company name //*[@id="GUO*GUO.PARENT_NAME:UNIVERSAL"]/div[2]/span
+        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/ul/li[1]/ul/li[3]/div')))
+        self.driver.find_element(By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/ul/li[1]/ul/li[3]/div').click()
+        
+        
+        # 
+        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="ISH*ISH.ISH_NAME:UNIVERSAL"]')))
+        self.driver.find_element(By.XPATH, '//*[@id="ISH*ISH.ISH_NAME:UNIVERSAL"]').click()
+        
+        # apply changes button 
+        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="main-content"]/div/div[3]/form/div/input[2]')))
+        self.driver.find_element(By.XPATH, '//*[@id="main-content"]/div/div[3]/form/div/input[2]').click()
+        
         
         WebDriverWait(self.driver, 30*60).until(EC.text_to_be_present_in_element((By.XPATH, '/html/body/section[2]/div[1]/div[2]/div[2]/div[2]/ul/li[3]/a'), 'Excel'))
         self.driver.find_element(By.XPATH, "/html/body/section[2]/div[1]/div[2]/div[2]/div[2]/ul/li[3]/a").click()
@@ -148,7 +199,7 @@ class Orbis:
 
 if __name__ == "__main__":
     config_path = "./config/config.yaml"
-    file_path = "./data/data.csv"
+    file_path = "/Users/mrturkmen/Desktop/idp-works/data/d.csv"
     with Orbis(config_path) as orbis:
         orbis.login()
         orbis.batch_search(file_path)
