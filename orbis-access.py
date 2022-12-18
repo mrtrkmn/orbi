@@ -3,7 +3,7 @@
 # Python Libraries: selenium, pandas, yaml
 
 import time 
-import requests
+from os import path
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -25,6 +25,7 @@ class Orbis:
         self.email_address = config["orbis"]["email"]
         self.password = config["orbis"]["password"]
         self.driver_options = config["selenium"]["driver_options"]
+        self.data_path = path.join(config["data"]["path"], config["data"]["file"])
         self.chrome_options = webdriver.ChromeOptions()
         # for options in self.driver_options:
         #     self.chrome_options.add_argument(options)
@@ -73,7 +74,7 @@ class Orbis:
         df = pd.read_excel(file_path)
         return df
     
-    def batch_search(self, file_path):
+    def batch_search(self):
         
         self.driver.get(self.orbis_batch_search_url)
         # time.sleep(2)
@@ -82,7 +83,7 @@ class Orbis:
         self.driver.find_element(By.XPATH, "/html/body/section[3]/div[3]/div/div[2]/form/div/div/label/a").click()
         # time.sleep(2)
         file_input=self.driver.find_element(By.XPATH, "/html/body/section[3]/div[3]/div/div[2]/div/div/form/div[1]/div[1]/input[1]")
-        file_input.send_keys(file_path)
+        file_input.send_keys(self.data_path)
         WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, "/html/body/section[3]/div[3]/div/div[2]/div/div/form/div[2]/p/a[2]")))
 
         self.driver.find_element(By.XPATH, "/html/body/section[3]/div[3]/div/div[2]/div/div/form/div[2]/p/a[2]").click()
@@ -214,9 +215,8 @@ class Orbis:
 
 if __name__ == "__main__":
     config_path = "./config/config.yaml"
-    file_path = "/Users/mrturkmen/Desktop/idp-works/data/d.csv"
     with Orbis(config_path) as orbis:
         orbis.login()
-        orbis.batch_search(file_path)
+        orbis.batch_search()
         orbis.logout()
 
