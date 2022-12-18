@@ -186,7 +186,7 @@ if __name__ == "__main__":
     df = crawler.read_xlxs_file("data/sample_data.xlsx")
     print(df.columns)
     # get two columns
-    df=df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned","Agreement Date"]]
+    df=df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]]
     df =df.replace(r'\n',' ', regex=True) 
     # create file on data folder
     columns = ["company name", "city", "country","identifier"] 
