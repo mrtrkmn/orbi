@@ -1,3 +1,8 @@
+# Description: This script crawls the IPO website for the patent-related data and SEC.gov for the company-related data
+#             and stores them in a csv file.    
+# Python Version: 3.9.5
+# Python Libraries: requests, bs4, threading, time, pandas, csv, re
+
 import requests
 from bs4 import BeautifulSoup
 from threading import Thread
@@ -6,15 +11,18 @@ import pandas as pd
 import csv 
 import re 
 
+# class to crawl the IPO website for the patent-related data
 class Crawler:
 
     def __init__(self):
+        
         self.ipo_data = {}
         self.ipo_url = "https://www.ipo.gov.uk/p-ipsum/Case/PublicationNumber/"
         self.sec_cik_numbers = {} # set of companies and cik_numbers such as {"company_name": "cik_number"}
 
     # crawl the IPO website for the patent-related data
     def find_publication(self, publication_number):
+        # get the html content of the page
         url = f"{self.ipo_url}{publication_number}"
         
         response = requests.get(url)
@@ -22,10 +30,10 @@ class Crawler:
             html = response.text
         else:
             raise Exception(f"Failed to get HTML content: {response.text}")
-
+        
+        # parse the html content
         soup = BeautifulSoup(html, "html.parser")
         # find the table with the publication details
-
         try:
             table = soup.find("table", {"class": "BibliographyTable"})
         except AttributeError as e:
@@ -48,11 +56,13 @@ class Crawler:
         # publication_no = all_data.find(class_="CaseHeader").text
         
     def __exit__(self, exc_type, exc_value, traceback):
+        # empty the dictionaries 
         self.ipo_data = {}
         self.sec_cik_numbers = {}
 
 
     def check_cik_number_format(self, cik_number):
+        # check if the cik number is 10 digits
         cik_number = str(cik_number)
         if re.match(r"^\d{10}$", cik_number):
             return True
@@ -60,11 +70,12 @@ class Crawler:
     
     
     def get_publication(self):
+        # return the publication details
         return self.ipo_data
 
 
-    # https://data.sec.gov/submissions/CIK##########.json
     def get_data_from_sec_gov(self, cik_number):
+        # get the json data from the SEC.gov website https://data.sec.gov/submissions/CIK##########.json
         url = f"https://data.sec.gov/submissions/CIK{cik_number}.json"
         print (f"requesting data from {url}")
         headers = {
@@ -82,7 +93,7 @@ class Crawler:
         return json_data
 
     def get_data_from_sec_gov_in_parallel(self, url, company_name, results):
-        
+        # get the json data from the SEC.gov website https://data.sec.gov/submissions/CIK##########.json
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
@@ -106,19 +117,23 @@ class Crawler:
             json_data['cik_number'] = cik_number
         
         results.append(json_data)
-        # return json_data
+
     
-    # https://www.sec.gov/edgar/searchedgar/cik
+    
     def lookup_cik(self, company_name):
+        # get the html content of the page https://www.sec.gov/edgar/searchedgar/cik
         url = f"https://www.sec.gov/cgi-bin/cik_lookup"
         params = {"company": company_name,"MIME Type": "application/x-www-form-urlencode"}
         response = requests.post(url, data=params)
+        
         if response.status_code == 200:
             html = response.text
         else:
             raise Exception(f"Failed to get HTML content: {response.text}")
         soup = BeautifulSoup(html, "html.parser")
+        
         try:
+            # find the table with the publication details
             table = soup.find("table")
         except AttributeError as e:
             raise Exception(f"Failed to find the table: {e}")
@@ -138,7 +153,8 @@ class Crawler:
             except IndexError as e:
                 print(f"Failed to find the cik number: {e}")
                 continue
-
+    
+    # get all cik numbers
     def get_existing_cik_numbers(self):
         print("Make sure you run the lookup_cik method first for the company name")
         return self.sec_cik_numbers
@@ -149,6 +165,7 @@ class Crawler:
         df = pd.read_excel(file_path)
         return df
 
+    # check if the state code belongs to the US
     def is_usa(self,state_code):
         states = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
         if state_code in states:
@@ -169,7 +186,7 @@ if __name__ == "__main__":
     df = crawler.read_xlxs_file("data/sample_data.xlsx")
     print(df.columns)
     # get two columns
-    df=df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]]
+    df=df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned","Agreement Date"]]
     df =df.replace(r'\n',' ', regex=True) 
     # create file on data folder
     columns = ["company name", "city", "country","identifier"] 

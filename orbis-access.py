@@ -1,4 +1,6 @@
-# access to web site using selenium 
+# Description: This script applies batch search on the Orbis website
+# Python Version: 3.9.5
+# Python Libraries: selenium, pandas, yaml
 
 import time 
 import requests
