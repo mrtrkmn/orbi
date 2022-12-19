@@ -99,6 +99,10 @@ class Orbis:
         self.driver.execute_script("document.getElementsByClassName('hierarchy-container')[0].scrollTo(0, document.getElementsByClassName('hierarchy-container')[0].scrollHeight)")
         
         
+    def wait_until_clickable(self, xpath):
+        # wait until the element is clickable
+        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+        
     def read_xlxs_file(self, file_path):
         df = pd.read_excel(file_path)
         return df
@@ -106,20 +110,20 @@ class Orbis:
     def batch_search(self):
         
         self.driver.get(self.orbis_batch_search_url)
-        # time.sleep(2)
         
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, DRAG_DROP_BUTTON)))
+        self.wait_until_clickable(DRAG_DROP_BUTTON)
         self.driver.find_element(By.XPATH, DRAG_DROP_BUTTON).click()
-        # time.sleep(2)
+
         
         file_input=self.driver.find_element(By.XPATH, SELECT_FILE_BUTTON)
         file_input.send_keys(self.data_path)
         
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, UPLOAD_BUTTON )))
+        self.wait_until_clickable(UPLOAD_BUTTON)
 
         self.driver.find_element(By.XPATH, UPLOAD_BUTTON).click()
     
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, FIELD_SEPERATOR)))
+        self.wait_until_clickable(FIELD_SEPERATOR)
+
         self.driver.find_element(By.XPATH, FIELD_SEPERATOR  ).clear()
         time.sleep(2)
 
@@ -129,7 +133,7 @@ class Orbis:
         
         print("field seperator is cleared")
         time.sleep(2)
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, APPLY_BUTTON)))
+        self.wait_until_clickable(APPLY_BUTTON)
 
         self.driver.find_element(By.XPATH, APPLY_BUTTON).click()
         
@@ -144,13 +148,13 @@ class Orbis:
                 print(warning_message.text)
         
         
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, VIEW_RESULTS_BUTTON)))
+        self.wait_until_clickable(VIEW_RESULTS_BUTTON)
         
         view_result_sub_url = self.driver.find_element(By.XPATH, VIEW_RESULTS_BUTTON)
         view_result_sub_url.send_keys(Keys.RETURN)
        
         # add/remove columns //*[@id="main-content"]/div/div[2]/div[1]/a
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, ADD_REMOVE_COLUMNS_VIEW)))
+        self.wait_until_clickable(ADD_REMOVE_COLUMNS_VIEW)
         self.driver.find_element(By.XPATH, ADD_REMOVE_COLUMNS_VIEW).click()
         
         
@@ -159,17 +163,17 @@ class Orbis:
         # self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
         
         # identification number column 
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, IDENTIFICATION_NUMBER_VIEW)))
+        self.wait_until_clickable(IDENTIFICATION_NUMBER_VIEW)
         self.driver.find_element(By.XPATH, IDENTIFICATION_NUMBER_VIEW).click()
         
         # add BVD ID number column
        
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, BVD_ID_NUMBER_ADD)))
+        self.wait_until_clickable(BVD_ID_NUMBER_ADD)
         self.driver.find_element(By.XPATH, BVD_ID_NUMBER_ADD).click()
         
         # add ORBIS ID number column
        
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, ORBIS_ID_NUMBER_ADD)))
+        self.wait_until_clickable(ORBIS_ID_NUMBER_ADD)
         self.driver.find_element(By.XPATH, ORBIS_ID_NUMBER_ADD).click()
 
         time.sleep(2)
@@ -179,7 +183,7 @@ class Orbis:
         
         # Ownership Data > //*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/div
        
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, OWNERSHIP_COLUMN)))
+        self.wait_until_clickable(OWNERSHIP_COLUMN)
         self.driver.find_element(By.XPATH, OWNERSHIP_COLUMN).click()
         
         
@@ -189,39 +193,39 @@ class Orbis:
         
         # Shareholders //*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/ul/li[1]/div
         
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH,SHAREHOLDERS_COLUMN )))
+        self.wait_until_clickable(SHAREHOLDERS_COLUMN)
         self.driver.find_element(By.XPATH, SHAREHOLDERS_COLUMN).click()
        
         self.scroll_to_bottom()
         time.sleep(1)
         # Global Ultimate Owner Information 
         
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, GUO_COLUMN)))
+        self.wait_until_clickable(GUO_COLUMN)
         self.driver.find_element(By.XPATH, GUO_COLUMN).click()
        
         self.scroll_to_bottom()
         time.sleep(1)
         # Global Ultimate Owner Name //*[@id="GUO*GUO.GUO_NAME:UNIVERSAL"]/div[2]/span
         
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, GUO_NAME_INFO)))
+        self.wait_until_clickable(GUO_NAME_INFO)
         self.driver.find_element(By.XPATH, GUO_NAME_INFO).click()
         
         self.scroll_to_bottom()
         time.sleep(1)
         # Immediate parent company name //*[@id="GUO*GUO.PARENT_NAME:UNIVERSAL"]/div[2]/span
         
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, IMMEDIATE_PARENT_COMPANY_NAME)))
+        self.wait_until_clickable(IMMEDIATE_PARENT_COMPANY_NAME)
         self.driver.find_element(By.XPATH, IMMEDIATE_PARENT_COMPANY_NAME).click()
         
         
         # ISH > //*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[16]/div
         
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, ISH_NAME)))
+        self.wait_until_clickable(ISH_NAME)
         self.driver.find_element(By.XPATH, ISH_NAME).click()
         
         # apply changes button 
         
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, APPLY_CHANGES_BUTTON)))
+        self.wait_until_clickable(APPLY_CHANGES_BUTTON)
         self.driver.find_element(By.XPATH, APPLY_CHANGES_BUTTON).click()
         
         
@@ -239,7 +243,7 @@ class Orbis:
         # # //*[@id="exportDialogForm"]/div[2]/a[2] >> download button from popup window
         # self.driver.find_element(By.XPATH, '//*[@id="exportDialogForm"]/div[2]/a[2]').click()
         
-        WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, POPUP_DOWNLOAD_BUTTON)))
+        self.wait_until_clickable(POPUP_DOWNLOAD_BUTTON)
 
         # /html/body/section[2]/div[6]/div[3]/a >> download button from popup window
         
