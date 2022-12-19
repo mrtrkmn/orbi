@@ -158,10 +158,6 @@ class Orbis:
         self.driver.find_element(By.XPATH, ADD_REMOVE_COLUMNS_VIEW).click()
         
         
-        # WebDriverWait(self.driver, 30*60).until(EC.presence_of_element_located((By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/div')))
-        # element = self.driver.find_element(By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/div')
-        # self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
-        
         # identification number column 
         self.wait_until_clickable(IDENTIFICATION_NUMBER_VIEW)
         self.driver.find_element(By.XPATH, IDENTIFICATION_NUMBER_VIEW).click()
@@ -212,19 +208,15 @@ class Orbis:
         
         self.scroll_to_bottom()
         time.sleep(1)
-        # Immediate parent company name //*[@id="GUO*GUO.PARENT_NAME:UNIVERSAL"]/div[2]/span
         
         self.wait_until_clickable(IMMEDIATE_PARENT_COMPANY_NAME)
         self.driver.find_element(By.XPATH, IMMEDIATE_PARENT_COMPANY_NAME).click()
         
-        
-        # ISH > //*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[16]/div
-        
+            
         self.wait_until_clickable(ISH_NAME)
         self.driver.find_element(By.XPATH, ISH_NAME).click()
         
         # apply changes button 
-        
         self.wait_until_clickable(APPLY_CHANGES_BUTTON)
         self.driver.find_element(By.XPATH, APPLY_CHANGES_BUTTON).click()
         
@@ -234,18 +226,13 @@ class Orbis:
         
 
         
-        # '/html/body/section[2]/div[1]/div[2]/div[2]/div[2]/ul/li[3]/a' >> export button
         
         WebDriverWait(self.driver, 30*60).until(EC.text_to_be_present_in_element((By.XPATH, EXPORT_BUTTON), 'Export'))
         self.driver.find_element(By.XPATH, EXPORT_BUTTON).click()
         
-        
-        # # //*[@id="exportDialogForm"]/div[2]/a[2] >> download button from popup window
-        # self.driver.find_element(By.XPATH, '//*[@id="exportDialogForm"]/div[2]/a[2]').click()
-        
+                
         self.wait_until_clickable(POPUP_DOWNLOAD_BUTTON)
 
-        # /html/body/section[2]/div[6]/div[3]/a >> download button from popup window
         
         while True:
             download_button= self.driver.find_element(By.XPATH, POPUP_DOWNLOAD_BUTTON)
