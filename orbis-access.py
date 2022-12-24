@@ -121,6 +121,58 @@ class Orbis:
         df = pd.read_excel(file_path)
         return df
     
+    
+    # get_op_revenue_data function is used to get the operating revenue data in millions for all available years
+    def get_op_revenue_data(self):
+        # click to finanacial data column
+        self.wait_until_clickable(FINANCIAL_DATA_BUTTON)
+        self.driver.find_element(By.XPATH, FINANCIAL_DATA_BUTTON).click()
+        
+        self.wait_until_clickable(KEY_FINANCIAL_DATA)
+        self.driver.find_element(By.XPATH, KEY_FINANCIAL_DATA).click()
+
+        self.wait_until_clickable(OP_REVENUE_SETTINGS)
+        self.driver.find_element(By.XPATH, OP_REVENUE_SETTINGS).click()
+        
+        self.wait_until_clickable(ABSOLUTE_IN_COLUMN_OP)
+        self.driver.find_element(By.XPATH, ABSOLUTE_IN_COLUMN_OP).click()
+        
+        self.wait_until_clickable(ANNUAL_DATA_LIST)
+        
+        try: 
+        
+            scrollable = self.driver.find_element(By.XPATH, SCROLLABLE_XPATH)
+            scroll_position = self.driver.execute_script("return arguments[0].scrollTop", scrollable)
+            # print(f"scroll position is {scroll_position}")
+            height_of_scrollable = self.driver.execute_script("return arguments[0].scrollHeight", scrollable)
+            # print(f"height of scrollable is {height_of_scrollable}")
+            
+            scroll_amount = 100
+            while scroll_position < height_of_scrollable:
+                scrollable = self.driver.find_element(By.XPATH, SCROLLABLE_XPATH)
+                checkboxes = scrollable.find_elements(By.CSS_SELECTOR, "input[type='checkbox']")
+                for checkbox in checkboxes:
+                    try: 
+                        if checkbox.get_attribute("checked") == "true":
+                            continue
+                        checkbox.click()
+                    except:
+                        continue
+                                
+                self.driver.execute_script(f"arguments[0].scrollTo(0,{scroll_position})", scrollable)
+                scroll_position += scroll_amount
+                print (f"operating revenue scroll position is {scroll_position}")
+                # time.sleep(0.5)
+        except Exception as e:
+            print(e)
+             
+        self.wait_until_clickable(MILLION_UNITS)
+        self.driver.find_element(By.XPATH, MILLION_UNITS).click()
+        
+        self.wait_until_clickable(OP_REVENUE_OK_BUTTON)
+        self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()        
+    
+
     def batch_search(self):
         
         self.driver.get(self.orbis_batch_search_url)
@@ -185,61 +237,10 @@ class Orbis:
        
         self.wait_until_clickable(ORBIS_ID_NUMBER_ADD)
         self.driver.find_element(By.XPATH, ORBIS_ID_NUMBER_ADD).click()
+        
+         # add operating revenue column in millions USD for all available years
+        self.get_op_revenue_data()
 
-        
-        # click to finanacial data column
-        self.wait_until_clickable(FINANCIAL_DATA_BUTTON)
-        self.driver.find_element(By.XPATH, FINANCIAL_DATA_BUTTON).click()
-        
-        self.wait_until_clickable(KEY_FINANCIAL_DATA)
-        self.driver.find_element(By.XPATH, KEY_FINANCIAL_DATA).click()
-        
-        self.wait_until_clickable(OP_REVENUE_SETTINGS)
-        self.driver.find_element(By.XPATH, OP_REVENUE_SETTINGS).click()
-        
-        self.wait_until_clickable(ABSOLUTE_IN_COLUMN_OP)
-        self.driver.find_element(By.XPATH, ABSOLUTE_IN_COLUMN_OP).click()
-        
-        self.wait_until_clickable(ANNUAL_DATA_LIST)
-        try: 
-            
-            
-            scrollable = self.driver.find_element(By.XPATH, SCROLLABLE_XPATH)
-            scroll_position = self.driver.execute_script("return arguments[0].scrollTop", scrollable)
-            # print(f"scroll position is {scroll_position}")
-            height_of_scrollable = self.driver.execute_script("return arguments[0].scrollHeight", scrollable)
-            # print(f"height of scrollable is {height_of_scrollable}")
-            
-            scroll_amount = 100
-            while scroll_position < height_of_scrollable:
-                scrollable = self.driver.find_element(By.XPATH, SCROLLABLE_XPATH)
-                checkboxes = scrollable.find_elements(By.CSS_SELECTOR, "input[type='checkbox']")
-                for checkbox in checkboxes:
-                    try: 
-                        if checkbox.get_attribute("checked") == "true":
-                            continue
-                        checkbox.click()
-                    except:
-                        continue
-                                
-                self.driver.execute_script(f"arguments[0].scrollTo(0,{scroll_position})", scrollable)
-                scroll_position += scroll_amount
-                print(f"scroll position is {scroll_position}")
-                # time.sleep(0.5)
-            
-            
-        except Exception as e:
-            print(e)
-             
-        self.wait_until_clickable(MILLION_UNITS)
-        self.driver.find_element(By.XPATH, MILLION_UNITS).click()
-        
-        self.wait_until_clickable(OP_REVENUE_OK_BUTTON)
-        self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()
-        
-        
-        
-        
         time.sleep(2)
         # scroll down within in panel 
         self.scroll_to_bottom()
