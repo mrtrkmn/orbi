@@ -10,7 +10,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import pandas as pd
+import numpy as np 
 import yaml 
+import re
 
 
 # ORBIS ELEMENT VARIABLES 
@@ -71,7 +73,10 @@ class Orbis:
         #     self.chrome_options.add_argument(options)
         self.chrome_options.add_experimental_option("detach", True)
         self.driver = webdriver.Chrome(executable_path=self.executable_path, chrome_options=self.chrome_options)
-    
+        self.license_data = config["data"]["path"] + config["data"]["license"]
+        self.orbis_data = config["data"]["path"] + config["data"]["orbis"]
+        
+        
     def __exit__(self, exc_type, exc_value, traceback):
         return self.driver.close()
         
@@ -117,8 +122,11 @@ class Orbis:
         # wait until the element is clickable
         WebDriverWait(self.driver, 30*60).until(EC.element_to_be_clickable((By.XPATH, xpath)))
         
-    def read_xlxs_file(self, file_path):
-        df = pd.read_excel(file_path)
+    def read_xlxs_file(self, file_path, sheet_name=''):
+        if sheet_name == '': 
+            df = pd.read_excel(file_path)
+        else: 
+            df = pd.read_excel(file_path, sheet_name=sheet_name)
         return df
     
     
@@ -310,8 +318,54 @@ class Orbis:
                 break
             else: 
                 time.sleep(2)
-       
-        # time.sleep(180*10)
+                
+    
+    def strip_new_lines(self, df, colunm_name='Licensee'):
+        df[colunm_name] = df[colunm_name].apply(lambda x: x.strip('\n'))
+        return df 
+    
+    def prepare_data(self, df, df_orbis):
+        related_data = df[['Licensee','Licensor','Agreement Date']]
+        related_data['Agreement Date'] = pd.to_datetime(related_data['Agreement Date'])
+        related_data['Financial Period'] = related_data['Agreement Date'].dt.year - 1
+        # merging 
+        related_data['Licensee'] = related_data['Licensee'].astype(str).str.upper()
+        df_orbis['Company name Latin alphabet'] = df_orbis['Company name Latin alphabet'].astype(str).str.upper()
+        df_orbis = df_orbis.rename(columns={'Company name Latin alphabet': 'Licensee'})
+        df_merged = df_orbis.merge(related_data, on='Licensee')
+        pattern = r'\D'
+        # Use the `filter()` function to select the columns that contain "Operating revenue" in the column names
+        # df_merged_filtered = df_merged.filter(like='Operating revenue')
+        # Use the `rename()` function and the `re.sub()` function to apply the regex pattern to the column names
+        df_merged_filtered = df_merged.rename(columns=lambda x:  re.sub(pattern, '', x) if x.startswith('Operating revenue') else x)
+
+        df_merged_filtered.insert(len(df_merged_filtered.columns), "Operating revenue (Turnover)m USD", np.nan)
+        for index, r in df_merged_filtered.iterrows():
+            year = r['Financial Period']
+            try: 
+                revenue = r[str(year)]
+                df_merged_filtered.at[index, 'Operating revenue (Turnover)m USD'] = revenue
+            except KeyError as ke: 
+                print(ke)
+        
+        df_merged_filtered=df_merged_filtered.drop(['Unnamed: 0'],axis=1)
+        
+        non_digit_cols = []
+        for i in df_merged_filtered.columns:
+            if i.isdigit():
+                continue
+            else:
+                non_digit_cols.append(i)
+                
+        
+        return df_merged_filtered[non_digit_cols]
+    
+    def to_xlsx(self, df, file_name):
+        df.to_excel(file_name)
+        
+    
+
+        
 
 
 if __name__ == "__main__":
@@ -320,4 +374,11 @@ if __name__ == "__main__":
         orbis.login()
         orbis.batch_search()
         orbis.logout()
+        
+        # adds financial data operation revenue of the licensee agreement date
+        # df_licensee_data = orbis.read_xlxs_file(orbis.license_data)
+        # df_orbis_data = orbis.read_xlxs_file(orbis.orbis_data, sheet_name='Results')
+        # df_licensee = orbis.strip_new_lines(df_licensee_data)
+        # df_result =orbis.prepare_data(df_licensee, df_orbis_data)
+        # orbis.to_xlsx(df_result, 'processed_data.xlsx')
 
