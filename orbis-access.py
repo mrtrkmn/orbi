@@ -23,6 +23,21 @@ APPLY_BUTTON = "/html/body/section[2]/div[3]/div/form/div[3]/div[2]/input"
 SEARCH_PROGRESS_BAR = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[1]"
 VIEW_RESULTS_BUTTON = "/html/body/section[2]/div[1]/div[2]/ul/li[1]/a"
 ADD_REMOVE_COLUMNS_VIEW = '//*[@id="main-content"]/div/div[2]/div[1]/a'
+
+FINANCIAL_DATA_BUTTON = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[7]/div'
+KEY_FINANCIAL_DATA = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[7]/ul/li[2]'
+OP_REVENUE_SETTINGS = '//*[@id="KEY_FINANCIALS*KEY_FINANCIALS.OPRE:UNIVERSAL"]/div[1]/span[2]'
+ABSOLUTE_IN_COLUMN_OP = '//*[@id="ClassicOption"]/div/div[1]/div/div[1]/div[1]/div/table/tbody/tr/td[2]/a'
+
+SCROLLABLE_XPATH =  '//*[@id="ClassicOption"]/div/div[1]/div/div[1]/div[4]/div[1]/div'
+
+ANNUAL_DATA_LIST = '//*[@id="ClassicOption"]/div/div[1]/div/div[1]/div[4]/div[1]/div/ul'
+MILLION_UNITS = '//*[@id="ClassicOption"]/div/div[3]/div[1]/ul/li[3]/label'
+OP_REVENUE_OK_BUTTON = '/html/body/section[2]/div[6]/div[3]/a[2]'
+
+
+
+
 IDENTIFICATION_NUMBER_VIEW = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]'
 BVD_ID_NUMBER_ADD = '//*[@id="IDENTIFIERS*IDENTIFIERS.BVD_ID_NUMBER:UNIVERSAL"]'    
 ORBIS_ID_NUMBER_ADD = '//*[@id="IDENTIFIERS*IDENTIFIERS.ORBISID:UNIVERSAL"]'
@@ -37,11 +52,10 @@ EXCEL_BUTTON = '/html/body/section[2]/div[1]/div[2]/div[2]/div[2]/ul/li[3]/a'
 EXPORT_BUTTON = '/html/body/section[2]/div[5]/form/div[2]/a[2]'
 POPUP_DOWNLOAD_BUTTON = '/html/body/section[2]/div[6]/div[3]/a'
 
+
 class Orbis:
     
 
-    
-    
     def __init__(self, config_path):
         config = self.read_config(config_path)
         self.executable_path = config["selenium"]["executable_path"]
@@ -172,6 +186,60 @@ class Orbis:
         self.wait_until_clickable(ORBIS_ID_NUMBER_ADD)
         self.driver.find_element(By.XPATH, ORBIS_ID_NUMBER_ADD).click()
 
+        
+        # click to finanacial data column
+        self.wait_until_clickable(FINANCIAL_DATA_BUTTON)
+        self.driver.find_element(By.XPATH, FINANCIAL_DATA_BUTTON).click()
+        
+        self.wait_until_clickable(KEY_FINANCIAL_DATA)
+        self.driver.find_element(By.XPATH, KEY_FINANCIAL_DATA).click()
+        
+        self.wait_until_clickable(OP_REVENUE_SETTINGS)
+        self.driver.find_element(By.XPATH, OP_REVENUE_SETTINGS).click()
+        
+        self.wait_until_clickable(ABSOLUTE_IN_COLUMN_OP)
+        self.driver.find_element(By.XPATH, ABSOLUTE_IN_COLUMN_OP).click()
+        
+        self.wait_until_clickable(ANNUAL_DATA_LIST)
+        try: 
+            
+            
+            scrollable = self.driver.find_element(By.XPATH, SCROLLABLE_XPATH)
+            scroll_position = self.driver.execute_script("return arguments[0].scrollTop", scrollable)
+            # print(f"scroll position is {scroll_position}")
+            height_of_scrollable = self.driver.execute_script("return arguments[0].scrollHeight", scrollable)
+            # print(f"height of scrollable is {height_of_scrollable}")
+            
+            scroll_amount = 100
+            while scroll_position < height_of_scrollable:
+                scrollable = self.driver.find_element(By.XPATH, SCROLLABLE_XPATH)
+                checkboxes = scrollable.find_elements(By.CSS_SELECTOR, "input[type='checkbox']")
+                for checkbox in checkboxes:
+                    try: 
+                        if checkbox.get_attribute("checked") == "true":
+                            continue
+                        checkbox.click()
+                    except:
+                        continue
+                                
+                self.driver.execute_script(f"arguments[0].scrollTo(0,{scroll_position})", scrollable)
+                scroll_position += scroll_amount
+                print(f"scroll position is {scroll_position}")
+                # time.sleep(0.5)
+            
+            
+        except Exception as e:
+            print(e)
+             
+        self.wait_until_clickable(MILLION_UNITS)
+        self.driver.find_element(By.XPATH, MILLION_UNITS).click()
+        
+        self.wait_until_clickable(OP_REVENUE_OK_BUTTON)
+        self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()
+        
+        
+        
+        
         time.sleep(2)
         # scroll down within in panel 
         self.scroll_to_bottom()
