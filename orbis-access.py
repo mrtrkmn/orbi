@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np 
 import yaml 
 import re
+from argparse import ArgumentParser
 
 
 # ORBIS ELEMENT VARIABLES 
@@ -32,15 +33,21 @@ OP_REVENUE_SETTINGS = '//*[@id="KEY_FINANCIALS*KEY_FINANCIALS.OPRE:UNIVERSAL"]/d
 ABSOLUTE_IN_COLUMN_OP = '//*[@id="ClassicOption"]/div/div[1]/div/div[1]/div[1]/div/table/tbody/tr/td[2]/a'
 
 SCROLLABLE_XPATH =  '//*[@id="ClassicOption"]/div/div[1]/div/div[1]/div[4]/div[1]/div'
+SCROLLABLE_XPATH_IN_SECOND_OPTION = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[3]/div/div'
 
 ANNUAL_DATA_LIST = '//*[@id="ClassicOption"]/div/div[1]/div/div[1]/div[4]/div[1]/div/ul'
 MILLION_UNITS = '//*[@id="ClassicOption"]/div/div[3]/div[1]/ul/li[3]/label'
 OP_REVENUE_OK_BUTTON = '/html/body/section[2]/div[6]/div[3]/a[2]'
 
+SEARCH_INPUT_ADD_RM_COLUMNS = '//*[@id="Search"]'
+SEARCH_ICON_ADD_RM_COLUMNS = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[1]/div[2]/div/span'
+CIK_NUMBER_VIEW= '//*[@id="IDENTIFIERS*IDENTIFIERS.COMPANY_ID_NUMBER:UNIVERSAL"]/div[2]/span' # Other company ID number
+POPUP_SAVE_BUTTON= '/html/body/section[2]/div[6]/div[3]/a[2]' # when adding Other company ID number column to data view
+
+# IDENTIFICATION_NUMBER_VIEW = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]'
+IDENTIFICATION_NUMBER_VIEW = '/html/body/section[2]/div[3]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]/div'
 
 
-
-IDENTIFICATION_NUMBER_VIEW = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]'
 BVD_ID_NUMBER_ADD = '//*[@id="IDENTIFIERS*IDENTIFIERS.BVD_ID_NUMBER:UNIVERSAL"]'    
 ORBIS_ID_NUMBER_ADD = '//*[@id="IDENTIFIERS*IDENTIFIERS.ORBISID:UNIVERSAL"]'
 OWNERSHIP_COLUMN = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/div'
@@ -68,22 +75,31 @@ class Orbis:
         self.password = config["orbis"]["password"]
         self.driver_options = config["selenium"]["driver_options"]
         self.data_path = path.join(config["data"]["path"], config["data"]["file"])
-        self.chrome_options = webdriver.ChromeOptions()
-        # for options in self.driver_options:
-        #     self.chrome_options.add_argument(options)
-        self.chrome_options.add_experimental_option("detach", True)
-        self.driver = webdriver.Chrome(executable_path=self.executable_path, chrome_options=self.chrome_options)
+        self.driver = None
         self.license_data = config["data"]["path"] + config["data"]["license"]
         self.orbis_data = config["data"]["path"] + config["data"]["orbis"]
         
         
     def __exit__(self, exc_type, exc_value, traceback):
-        return self.driver.close()
-        
+        if self.driver is not None:
+            return self.driver.close()
+        return None
+    
     def __enter__(self):
         return self
     
-    
+    def init_driver(self):
+        self.chrome_options = webdriver.ChromeOptions()
+            # for options in self.driver_options:
+            #     self.chrome_options.add_argument(options)
+        # prefs = {"download.default_directory":self.data_path}
+        # self.chrome_options.add_experimental_option("prefs",prefs)
+        self.chrome_options.add_experimental_option("detach", True)
+        self.driver = webdriver.Chrome(executable_path=self.executable_path, chrome_options=self.chrome_options)
+        
+        
+        
+        
     def read_config(self, path):
         # read from yaml config file
         with open(path, "r") as f:
@@ -233,6 +249,29 @@ class Orbis:
         
         
         # identification number column 
+        
+        self.wait_until_clickable(IDENTIFICATION_NUMBER_VIEW)
+        self.driver.find_element(By.XPATH, IDENTIFICATION_NUMBER_VIEW).click()
+        
+        # search input for Other company ID number (CIK number)
+        self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
+        # try: 
+        search_input = self.driver.find_element(By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
+        search_input.send_keys("Other company ID number")
+        search_input.send_keys(Keys.RETURN)
+        # except Exception as e:
+        #     print(e)
+                
+        self.wait_until_clickable(CIK_NUMBER_VIEW)
+        self.driver.find_element(By.XPATH, CIK_NUMBER_VIEW).click()
+        
+        
+        self.wait_until_clickable(POPUP_SAVE_BUTTON)
+        self.driver.find_element(By.XPATH, POPUP_SAVE_BUTTON).click()
+        
+        # self.driver.refresh()
+        search_input.clear()
+        time.sleep(1)
         self.wait_until_clickable(IDENTIFICATION_NUMBER_VIEW)
         self.driver.find_element(By.XPATH, IDENTIFICATION_NUMBER_VIEW).click()
         
@@ -325,14 +364,20 @@ class Orbis:
         return df 
     
     def prepare_data(self, df, df_orbis):
-        related_data = df[['Licensee','Licensor','Agreement Date']]
+        related_data = df[['Licensee','Licensee CIK 1_cleaned','Licensor','Agreement Date']]
+        # drop rows where Licensee CIK 1_cleaned is null
+        related_data = related_data[related_data['Licensee CIK 1_cleaned'].notna()]
+        
+        
         related_data['Agreement Date'] = pd.to_datetime(related_data['Agreement Date'])
         related_data['Financial Period'] = related_data['Agreement Date'].dt.year - 1
         # merging 
-        related_data['Licensee'] = related_data['Licensee'].astype(str).str.upper()
-        df_orbis['Company name Latin alphabet'] = df_orbis['Company name Latin alphabet'].astype(str).str.upper()
-        df_orbis = df_orbis.rename(columns={'Company name Latin alphabet': 'Licensee'})
-        df_merged = df_orbis.merge(related_data, on='Licensee')
+        # related_data['Licensee'] = related_data['Licensee'].astype(str).str.upper()
+        # df_orbis['Company name Latin alphabet'] = df_orbis['Company name Latin alphabet'].astype(str).str.upper()
+        # df_orbis['Other company ID number'] = df_orbis['Other company ID number'].astype(str).str.upper()
+        related_data = related_data.rename(columns={'Licensee CIK 1_cleaned': 'CIK'})
+        df_orbis = df_orbis.rename(columns={'Other company ID number': 'CIK'})
+        df_merged = df_orbis.merge(related_data, on='CIK')
         pattern = r'\D'
         # Use the `filter()` function to select the columns that contain "Operating revenue" in the column names
         # df_merged_filtered = df_merged.filter(like='Operating revenue')
@@ -370,15 +415,23 @@ class Orbis:
 
 if __name__ == "__main__":
     config_path = "./config/config.yaml"
+    
+    # add command line parser    
     with Orbis(config_path) as orbis:
-        orbis.login()
-        orbis.batch_search()
-        orbis.logout()
+        # orbis.init_driver()
+        # orbis.login()
+        # orbis.batch_search()
+        # orbis.logout()
         
         # adds financial data operation revenue of the licensee agreement date
-        # df_licensee_data = orbis.read_xlxs_file(orbis.license_data)
-        # df_orbis_data = orbis.read_xlxs_file(orbis.orbis_data, sheet_name='Results')
-        # df_licensee = orbis.strip_new_lines(df_licensee_data)
-        # df_result =orbis.prepare_data(df_licensee, df_orbis_data)
-        # orbis.to_xlsx(df_result, 'processed_data.xlsx')
+        
+        
+        
+        # data processing and augmentation
+        # after orbis search step following needs to run 
+        df_licensee_data = orbis.read_xlxs_file(orbis.license_data)
+        df_orbis_data = orbis.read_xlxs_file(orbis.orbis_data, sheet_name='Results')
+        df_licensee = orbis.strip_new_lines(df_licensee_data)
+        df_result =orbis.prepare_data(df_licensee, df_orbis_data)
+        orbis.to_xlsx(df_result, 'processed_data.xlsx')
 
