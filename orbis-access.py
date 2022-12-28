@@ -250,6 +250,40 @@ class Orbis:
         self.driver.find_element(By.XPATH, ADD_REMOVE_COLUMNS_VIEW).click()
         
         
+        
+        self.wait_until_clickable('//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[3]/div')
+        self.driver.find_element(By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[3]/div').click()
+        
+        
+        
+        self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
+         
+        search_input = self.driver.find_element(By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
+        search_input.send_keys("City")
+        search_input.send_keys(Keys.RETURN)
+        
+        # add city 
+        self.wait_until_clickable('//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.CITY:UNIVERSAL"]/div[2]/span')
+        self.driver.find_element(By.XPATH, '//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.CITY:UNIVERSAL"]/div[2]/span').click()
+        
+        
+        self.wait_until_clickable(POPUP_SAVE_BUTTON)
+        self.driver.find_element(By.XPATH, POPUP_SAVE_BUTTON).click()
+        
+        # self.driver.refresh()
+        search_input.clear()
+        time.sleep(1)
+        
+        search_input.send_keys("Country")
+        search_input.send_keys(Keys.RETURN)
+        
+        self.wait_until_clickable('//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.COUNTRY:UNIVERSAL"]/div[2]/span')
+        self.driver.find_element(By.XPATH, '//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.COUNTRY:UNIVERSAL"]/div[2]/span').click()
+        
+            
+        search_input.clear()
+        time.sleep(1)
+
         # identification number column 
         
         self.wait_until_clickable(IDENTIFICATION_NUMBER_VIEW)
@@ -359,7 +393,17 @@ class Orbis:
                 break
             else: 
                 time.sleep(2)
-                
+
+    # # create a file likewe have data.csv file
+    # # company name;city;country;identifier
+    # def generate_data_for_guo(self):
+    #     df = self.read_xlxs_file(sheet_name='Sheet1')
+        
+        
+        
+        
+        
+        
     
     def strip_new_lines(self, df, colunm_name='Licensee'):
         df[colunm_name] = df[colunm_name].apply(lambda x: x.strip('\n'))
@@ -420,10 +464,10 @@ if __name__ == "__main__":
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     # add command line parser    
     with Orbis(config_path) as orbis:
-        # orbis.init_driver()
-        # orbis.login()
-        # orbis.batch_search()
-        # orbis.logout()
+        orbis.init_driver()
+        orbis.login()
+        orbis.batch_search()
+        orbis.logout()
         
         # adds financial data operation revenue of the licensee agreement date
         
@@ -431,11 +475,11 @@ if __name__ == "__main__":
         
         # data processing and augmentation
         # after orbis search step following needs to run 
-        df_licensee_data = orbis.read_xlxs_file(orbis.license_data)
-        df_orbis_data = orbis.read_xlxs_file(orbis.orbis_data, sheet_name='Results')
-        df_licensee = orbis.strip_new_lines(df_licensee_data)
-        df_result = orbis.prepare_data(df_licensee, df_orbis_data)
-        orbis.to_xlsx(df_result, orbis.data_path + f"processed_data_{timestamp}.xlsx")
+        # df_licensee_data = orbis.read_xlxs_file(orbis.license_data)
+        # df_orbis_data = orbis.read_xlxs_file(orbis.orbis_data, sheet_name='Results')
+        # df_licensee = orbis.strip_new_lines(df_licensee_data)
+        # df_result = orbis.prepare_data(df_licensee, df_orbis_data)
+        # orbis.to_xlsx(df_result, orbis.data_path + f"processed_data_{timestamp}.xlsx")
         
         
 
