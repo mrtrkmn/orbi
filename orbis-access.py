@@ -45,6 +45,9 @@ SEARCH_INPUT_ADD_RM_COLUMNS = '//*[@id="Search"]'
 SEARCH_ICON_ADD_RM_COLUMNS = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[1]/div[2]/div/span'
 CIK_NUMBER_VIEW= '//*[@id="IDENTIFIERS*IDENTIFIERS.COMPANY_ID_NUMBER:UNIVERSAL"]/div[2]/span' # Other company ID number
 POPUP_SAVE_BUTTON= '/html/body/section[2]/div[6]/div[3]/a[2]' # when adding Other company ID number column to data view
+CITY_COLUMN= '//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.CITY:UNIVERSAL"]/div[2]/span'
+COUNTRY_COLUMN= '//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.COUNTRY:UNIVERSAL"]/div[2]/span'
+CONTACT_INFORMATION = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[3]/div'
 
 # IDENTIFICATION_NUMBER_VIEW = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]'
 IDENTIFICATION_NUMBER_VIEW = '/html/body/section[2]/div[3]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]/div'
@@ -251,20 +254,19 @@ class Orbis:
         
         
         
-        self.wait_until_clickable('//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[3]/div')
-        self.driver.find_element(By.XPATH, '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[3]/div').click()
+        self.wait_until_clickable(CONTACT_INFORMATION)
+        self.driver.find_element(By.XPATH, CONTACT_INFORMATION).click()
         
         
         
         self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
-         
         search_input = self.driver.find_element(By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
         search_input.send_keys("City")
         search_input.send_keys(Keys.RETURN)
         
         # add city 
-        self.wait_until_clickable('//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.CITY:UNIVERSAL"]/div[2]/span')
-        self.driver.find_element(By.XPATH, '//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.CITY:UNIVERSAL"]/div[2]/span').click()
+        self.wait_until_clickable(CITY_COLUMN)
+        self.driver.find_element(By.XPATH, CITY_COLUMN).click()
         
         
         self.wait_until_clickable(POPUP_SAVE_BUTTON)
@@ -277,8 +279,8 @@ class Orbis:
         search_input.send_keys("Country")
         search_input.send_keys(Keys.RETURN)
         
-        self.wait_until_clickable('//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.COUNTRY:UNIVERSAL"]/div[2]/span')
-        self.driver.find_element(By.XPATH, '//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.COUNTRY:UNIVERSAL"]/div[2]/span').click()
+        self.wait_until_clickable(COUNTRY_COLUMN)
+        self.driver.find_element(By.XPATH, COUNTRY_COLUMN).click()
         
             
         search_input.clear()
