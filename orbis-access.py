@@ -2,18 +2,20 @@
 # Python Version: 3.9.5
 # Python Libraries: selenium, pandas, yaml
 
-import time 
+import re
+import yaml 
+import time
+import pandas as pd
+import numpy as np 
 from os import path
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import pandas as pd
-import numpy as np 
-import yaml 
-import re
 from argparse import ArgumentParser
+from datetime import datetime
+
 
 
 # ORBIS ELEMENT VARIABLES 
@@ -415,7 +417,7 @@ class Orbis:
 
 if __name__ == "__main__":
     config_path = "./config/config.yaml"
-    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     # add command line parser    
     with Orbis(config_path) as orbis:
         # orbis.init_driver()
@@ -432,6 +434,8 @@ if __name__ == "__main__":
         df_licensee_data = orbis.read_xlxs_file(orbis.license_data)
         df_orbis_data = orbis.read_xlxs_file(orbis.orbis_data, sheet_name='Results')
         df_licensee = orbis.strip_new_lines(df_licensee_data)
-        df_result =orbis.prepare_data(df_licensee, df_orbis_data)
-        orbis.to_xlsx(df_result, 'processed_data.xlsx')
+        df_result = orbis.prepare_data(df_licensee, df_orbis_data)
+        orbis.to_xlsx(df_result, orbis.data_path + f"processed_data_{timestamp}.xlsx")
+        
+        
 
