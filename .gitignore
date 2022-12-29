@@ -1,3 +1,10 @@
 venv
 data/*
 config/config.yaml
+bin/*
+*.xlsx
+*.csv
+*.ipynb
+*.ipynb_checkpoints
+*.html
+
