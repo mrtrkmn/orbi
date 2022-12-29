@@ -6,20 +6,22 @@
 import requests
 from bs4 import BeautifulSoup
 from threading import Thread
+from datetime import datetime
 import time 
 import pandas as pd 
 import csv 
 import re 
-
+import yaml 
+import os 
 # class to crawl the IPO website for the patent-related data
 class Crawler:
 
-    def __init__(self):
+    def __init__(self, config_path):
         
         self.ipo_data = {}
         self.ipo_url = "https://www.ipo.gov.uk/p-ipsum/Case/PublicationNumber/"
         self.sec_cik_numbers = {} # set of companies and cik_numbers such as {"company_name": "cik_number"}
-
+        self.config = self.read_config(config_path)
     # crawl the IPO website for the patent-related data
     def find_publication(self, publication_number):
         # get the html content of the page
@@ -54,7 +56,10 @@ class Crawler:
             self.ipo_data[header] = value
 
         # publication_no = all_data.find(class_="CaseHeader").text
-        
+    
+    def __enter__(self):
+        return self
+    
     def __exit__(self, exc_type, exc_value, traceback):
         # empty the dictionaries 
         self.ipo_data = {}
@@ -172,71 +177,91 @@ class Crawler:
             return True
         return False
 
+    def read_config(self, path):
+        # read from yaml config file
+        with open(path, "r") as f:
+            try:
+                config = yaml.safe_load(f)
+            except yaml.YAMLError as exc:
+                raise exc
+        return config
+
+# prepare_data generates the file which needs to be used in orbis-access.py first step
+#  given_licensee_file: provided by the user
+#  output_file: csv file with the data from the SEC.gov website (columns: company name, city, country, identifier)
+def prepare_data(config_path, given_licensee_file, output_file):
+    with Crawler(config_path) as crawler:
+        results = []
+        data_path = crawler.config["data"]["path"]
+        output_file = os.path.join(data_path, output_file)
+        # read the given licensee file
+        given_licensee_file = os.path.join(data_path, given_licensee_file)
+        df = crawler.read_xlxs_file(given_licensee_file)
+        # get two columns
+        df=df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]]
+        df =df.replace(r'\n',' ', regex=True) 
+        # create file on data folder
+        columns = ["company name", "city", "country","identifier"] 
+        # Set the maximum number of requests per second
+        
+        max_requests_per_second = 10     # defined by SEC.gov
+        company_info = {}
+        
+        for index, row in df.iterrows():
+            try: 
+                company_name = row[0]
+                if company_name == "":
+                    continue
+                cik_number = row[1]
+            except IndexError as e:
+                raise Exception(f"Index error: {e}")
+            if(crawler.check_cik_number_format(cik_number)):
+                company_info[company_name] =f"https://data.sec.gov/submissions/CIK{cik_number}.json"
+            else: 
+                company_info[company_name] = ""
+        
+        threads = [Thread(target=crawler.get_data_from_sec_gov_in_parallel, args=(url,company_name, results)) for company_name, url in company_info.items()]
+
+        for thread in threads:
+            thread.start()
+            time.sleep(1 / max_requests_per_second)
+            
+        for thread in threads:
+            thread.join()
+
+
+        with open(output_file, "w") as f:
+            w = csv.writer(f, delimiter=';')
+            w.writerow(columns)
+
+            for result in results:
+                try:
+                    name = result['name']
+                    city = result['addresses']['business']['city']
+                    country = result['addresses']['business']['stateOrCountryDescription']
+                    identifier = result['cik_number']
+                    if crawler.is_usa(country):
+                        country = "United States of America"
+                    # cik_number = result["cikNumber"]
+                    w.writerow([name, city, country,identifier])
+                except KeyError as e:
+                    print(f"Failed to find the key: {e} for {result['name']}")
+                    if result['cik_number'] == "":
+                        w.writerow([result['name'], "", "",""])
+                    if result['name'] != "" and result['cik_number'] != "":
+                        w.writerow([result['name'], "", "",result['cik_number']])
+            
+      
+
     
 if __name__ == "__main__":
-    crawler = Crawler()
-    results = []
+    config_path = "./config/config.yaml"
+    timestamp = datetime.now().strftime("%d_%m_%Y")
     # crawler.find_publication("GB2419368")
     # print(crawler.get_publication())
     # company_name = "Apple Inc."
     # crawler.lookup_cik(company_name)
     # cik_number = crawler.get_existing_cik_numbers()[company_name]
     # print(crawler.get_data_from_sec_gov(cik_number))
- 
-    df = crawler.read_xlxs_file("data/sample_data.xlsx")
-    print(df.columns)
-    # get two columns
-    df=df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]]
-    df =df.replace(r'\n',' ', regex=True) 
-    # create file on data folder
-    columns = ["company name", "city", "country","identifier"] 
-    # Set the maximum number of requests per second
-    
-    max_requests_per_second = 10     # defined by SEC.gov
-    company_info = {}
-    
-    for index, row in df.iterrows():
-        try: 
-            company_name = row[0]
-            if company_name == "":
-                continue
-            cik_number = row[1]
-        except IndexError as e:
-            raise Exception(f"Index error: {e}")
-        if(crawler.check_cik_number_format(cik_number)):
-            company_info[company_name] =f" https://data.sec.gov/submissions/CIK{cik_number}.json"
-        else: 
-            company_info[company_name] = ""
-      
-    threads = [Thread(target=crawler.get_data_from_sec_gov_in_parallel, args=(url,company_name, results)) for company_name, url in company_info.items()]
-
-    for thread in threads:
-        thread.start()
-        time.sleep(1 / max_requests_per_second)
-        
-    for thread in threads:
-        thread.join()
-
-
-    with open("data/data.csv", "w") as f:
-        w = csv.writer(f, delimiter=';')
-        w.writerow(columns)
-
-        for result in results:
-            try:
-                name = result['name']
-                city = result['addresses']['business']['city']
-                country = result['addresses']['business']['stateOrCountryDescription']
-                identifier = result['cik_number']
-                if crawler.is_usa(country):
-                    country = "United States of America"
-                # cik_number = result["cikNumber"]
-                w.writerow([name, city, country,identifier])
-            except KeyError as e:
-                print(f"Failed to find the key: {e} for {result['name']}")
-                if result['cik_number'] == "":
-                    w.writerow([result['name'], "", "",""])
-                if result['name'] != "" and result['cik_number'] != "":
-                    w.writerow([result['name'], "", "",result['cik_number']])
-        
-      
+    # print(crawler.get_data_from_sec_gov_in_parallel(cik_number))
+    prepare_data(config_path,"sample_data.xlsx", f"orbis_data_{timestamp}.csv")
