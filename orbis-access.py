@@ -17,7 +17,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from argparse import ArgumentParser
 from datetime import datetime
-
+from crawl_data import prepare_data
 
 
 # ORBIS ELEMENT VARIABLES 
@@ -43,7 +43,7 @@ ANNUAL_DATA_LIST = '//*[@id="ClassicOption"]/div/div[1]/div/div[1]/div[4]/div[1]
 MILLION_UNITS = '//*[@id="ClassicOption"]/div/div[3]/div[1]/ul/li[3]/label'
 OP_REVENUE_OK_BUTTON = '/html/body/section[2]/div[6]/div[3]/a[2]'
 EXCEL_EXPORT_NAME_FIELD = '//*[@id="component_FileName"]'
-
+MAIN_DIV = '//*[@id="main-content"]'
 
 SEARCH_INPUT_ADD_RM_COLUMNS = '//*[@id="Search"]'
 SEARCH_ICON_ADD_RM_COLUMNS = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[1]/div[2]/div/span'
@@ -260,11 +260,19 @@ class Orbis:
         view_result_sub_url = self.driver.find_element(By.XPATH, VIEW_RESULTS_BUTTON)
         view_result_sub_url.send_keys(Keys.RETURN)
        
-        # add/remove columns //*[@id="main-content"]/div/div[2]/div[1]/a
-        self.wait_until_clickable(ADD_REMOVE_COLUMNS_VIEW)
+        # this is used to wait until processing overlay is gone
+        main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
+        main_content_style = main_content_div.value_of_css_property('max-width')
+        
+        while main_content_style != "none":
+            main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
+            main_content_style = main_content_div.value_of_css_property('max-width')
+            print(f"main content style is {main_content_style}")
+            time.sleep(0.5)
+            
+        self.wait_until_clickable(ADD_REMOVE_COLUMNS_VIEW)    
         self.driver.find_element(By.XPATH, ADD_REMOVE_COLUMNS_VIEW).click()
-        
-        
+       
         
         self.wait_until_clickable(CONTACT_INFORMATION)
         self.driver.find_element(By.XPATH, CONTACT_INFORMATION).click()
@@ -500,7 +508,7 @@ def aggregate_data(config_path, orbis_file, aggregated_output_file):
         df_result = orbis.prepare_data(df_licensee, df_orbis_data)
         orbis.to_xlsx(df_result, aggregate_output_file)
 
-def run_batch_in_parallel(config_path, function, *args):
+def run_batch_in_parallel(config_path):
     with Orbis(config_path, offline=True) as orbis:
         with multiprocessing.pool.ThreadPool(2) as pool:
             results = pool.starmap(run_batch_search, [(config_path, orbis.data_path), (config_path, orbis.data_dir+'guo_data.csv')])
@@ -515,28 +523,30 @@ if __name__ == "__main__":
 
     # Step 1 
     # --> crawl_data.py should generate data in data/data.csv
-    # Step 2 
-    # --> data/data.csv needs to be uploaded to Orbis to start batch search
+    prepare_data(config_path, "sample_data.xlsx",f"orbis_data_{timestamp}.csv")
+    
+    # # Step 2 
+    # # --> data/data.csv needs to be uploaded to Orbis to start batch search
     run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
-    # # # --> after batch search is completed, data downloaded from Orbis
+    # # # # --> after batch search is completed, data downloaded from Orbis
     
     time.sleep(2) # wait for 2 seconds for data to be saved in data folder
     
-    # # # Step 3 
-    # # # --> generate_data_for_guo to generate data by considering GUO of companies
+    # # # # Step 3 
+    # # # # --> generate_data_for_guo to generate data by considering GUO of companies
     generate_data_for_guo(config_path, orbis_data_file=f"orbis_data_{timestamp}.xlsx", output_file=f"orbis_data_guo_{timestamp}.csv")
 
     time.sleep(1) # wait for 1 second for data to be saved in data folder
     
-    # # # Step 4
-    # # # # --> run batch search for guo_data
+    # # # # Step 4
+    # # # # # --> run batch search for guo_data
     run_batch_search(config_path, f"orbis_data_guo_{timestamp}.csv")
     
-    # # # # Step 5
+    # # # # # Step 5
     time.sleep(2) # wait for 2 seconds for data to be saved in data folder
     
-    # # # --> aggregate_data to aggregate data by considering Licensee of companies
-    # # aggregate_data(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx")  #  aggregate data by considering the file searched with data.csv
-    # # aggregate_data(config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")  #  aggregate data by considering the file searched with guo_data.csv
+    # # # # --> aggregate_data to aggregate data by considering Licensee of companies
+    # # # aggregate_data(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx")  #  aggregate data by considering the file searched with data.csv
+    # # # aggregate_data(config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")  #  aggregate data by considering the file searched with guo_data.csv
 
     run_in_parallel_generic(function = aggregate_data, args=[(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx"), (config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")])
