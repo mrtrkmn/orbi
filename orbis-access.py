@@ -88,6 +88,7 @@ class Orbis:
         
         
     def __exit__(self, exc_type, exc_value, traceback):
+        self.logout()
         if self.driver is not None:
             return self.driver.close()
         return None
@@ -474,12 +475,10 @@ if __name__ == "__main__":
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     # add command line parser    
     with Orbis(config_path) as orbis:
-        orbis.login()
         # start in multithread 
-        orbis.batch_search(input_file=orbis.data_path)
+        # orbis.batch_search(input_file=orbis.data_path)
         # data generated through orbis and needs to be fed to orbis again 
-        # orbis.batch_search(input_file=orbis.data_dir + 'guo_data_20221229_002419.csv')
-        orbis.logout()
+        orbis.batch_search(input_file=orbis.data_dir + 'guo_data_20221229_002419.csv')
 
 
 
