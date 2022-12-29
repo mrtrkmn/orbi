@@ -42,6 +42,8 @@ SCROLLABLE_XPATH_IN_SECOND_OPTION = '//*[@id="main-content"]/div/div[2]/div[1]/d
 ANNUAL_DATA_LIST = '//*[@id="ClassicOption"]/div/div[1]/div/div[1]/div[4]/div[1]/div/ul'
 MILLION_UNITS = '//*[@id="ClassicOption"]/div/div[3]/div[1]/ul/li[3]/label'
 OP_REVENUE_OK_BUTTON = '/html/body/section[2]/div[6]/div[3]/a[2]'
+EXCEL_EXPORT_NAME_FIELD = '//*[@id="component_FileName"]'
+
 
 SEARCH_INPUT_ADD_RM_COLUMNS = '//*[@id="Search"]'
 SEARCH_ICON_ADD_RM_COLUMNS = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[1]/div[2]/div/span'
@@ -71,7 +73,7 @@ POPUP_DOWNLOAD_BUTTON = '/html/body/section[2]/div[6]/div[3]/a'
 class Orbis:
     
 
-    def __init__(self, config_path):
+    def __init__(self, config_path, offline=False):
         config = self.read_config(config_path)
         self.executable_path = config["selenium"]["executable_path"]
         self.orbis_access_url = config["orbis"]["urls"]["access"]
@@ -83,25 +85,27 @@ class Orbis:
         self.data_dir = config["data"]["path"]
         self.data_path = path.join(self.data_dir, config["data"]["file"])
         self.driver = None
+        self.offline = offline
         self.license_data = config["data"]["path"] + config["data"]["license"]
         self.orbis_data = config["data"]["path"] + config["data"]["orbis"]
         
         
     def __exit__(self, exc_type, exc_value, traceback):
-        self.logout()
-        if self.driver is not None:
-            return self.driver.close()
+        
+        if not self.offline:    
+            self.logout()
+            if self.driver is not None:
+                return self.driver.close()
         return None
     
     def __enter__(self):
-        self.chrome_options = webdriver.ChromeOptions()
-            # for options in self.driver_options:
-            #     self.chrome_options.add_argument(options)
-        # prefs = {"download.default_directory":self.data_path}
-        # self.chrome_options.add_experimental_option("prefs",prefs)
-        self.chrome_options.add_experimental_option("detach", True)
-        self.driver = webdriver.Chrome(executable_path=self.executable_path, chrome_options=self.chrome_options)
-        self.login()
+        if not self.offline:
+            self.chrome_options = webdriver.ChromeOptions()
+            prefs = {'download.default_directory' : self.data_dir}
+            self.chrome_options.add_experimental_option('prefs', prefs)
+            self.chrome_options.add_experimental_option("detach", True)
+            self.driver = webdriver.Chrome(executable_path=self.executable_path, chrome_options=self.chrome_options)
+            self.login()
         return self
     
         
@@ -210,6 +214,7 @@ class Orbis:
             print(f"input file {input_file} does not exist")
             return
 
+        excel_output_file_name = path.basename(input_file).split(".")[0] 
         
         self.driver.get(self.orbis_batch_search_url)
         
@@ -385,20 +390,22 @@ class Orbis:
         WebDriverWait(self.driver, 30*60).until(EC.text_to_be_present_in_element((By.XPATH, EXCEL_BUTTON), 'Excel'))
         self.driver.find_element(By.XPATH, EXCEL_BUTTON).click()
         
-
-        
-        
+        self.wait_until_clickable(EXCEL_EXPORT_NAME_FIELD)
+        excel_filename_input = self.driver.find_element(By.XPATH, EXCEL_EXPORT_NAME_FIELD)
+        excel_filename_input.clear()
+        excel_filename_input.send_keys(excel_output_file_name)
+        # excel_output_file_name.send_keys(Keys.RETURN)
+        time.sleep(2)
         WebDriverWait(self.driver, 30*60).until(EC.text_to_be_present_in_element((By.XPATH, EXPORT_BUTTON), 'Export'))
         self.driver.find_element(By.XPATH, EXPORT_BUTTON).click()
         
                 
         self.wait_until_clickable(POPUP_DOWNLOAD_BUTTON)
-
-        
         while True:
             download_button= self.driver.find_element(By.XPATH, POPUP_DOWNLOAD_BUTTON)
             if download_button.value_of_css_property("background-color") == "rgba(0, 20, 137, 1)":
-                download_button.send_keys(Keys.RETURN)                
+                # download_button.send_keys(Keys.RETURN)       
+                time.sleep(0.5)         
                 break
             else: 
                 time.sleep(2)
@@ -464,40 +471,72 @@ class Orbis:
         df.to_excel(file_name)
         
 
-def search_in_parallel(config_path, input_file):
+def run_batch_search(config_path, input_file):
     with Orbis(config_path) as orbis:
-        orbis.login()
-        orbis.batch_search(input_file)
-        orbis.logout()
+        orbis.batch_search(orbis.data_dir+input_file)
 
-if __name__ == "__main__":
-    config_path = "./config/config.yaml"
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # add command line parser    
-    with Orbis(config_path) as orbis:
-        # start in multithread 
-        # orbis.batch_search(input_file=orbis.data_path)
-        # data generated through orbis and needs to be fed to orbis again 
-        orbis.batch_search(input_file=orbis.data_dir + 'guo_data_20221229_002419.csv')
+# offline_data_aggregation is used to generate data by considering GUO of companies
+# this data needs to be generated when we have new data from Orbis (refer workflow in README.md)
+def generate_data_for_guo(config_path, orbis_data_file, output_file):
+    print(f"Generating data for GUO for file {orbis_data_file} and saving to {output_file}")
+    with Orbis(config_path, offline=True) as orbis:
+        output_file = path.join(orbis.data_dir, output_file)
+        orbis_data_file = path.join(orbis.data_dir, orbis_data_file)
+        orbis.generate_data_for_guo(orig_orbis_data=orbis_data_file, file=output_file)
 
 
 
-    # # use multi threading with Orbis class
-    # with multiprocessing.pool.ThreadPool(2) as pool:
-    #     results = pool.starmap(search_in_parallel, [(config_path, '/Users/mrturkmen/Desktop/idp-works/data/data.csv'), (config_path, '/Users/mrturkmen/Desktop/idp-works/data/guo_data_20221229_002419.csv')])
-    
-    
-        
-        # adds financial data operation revenue of the licensee agreement date
-        
+# aggregate_data is used to aggregate data by considering Licensee of companies
+# (refer workflow in README.md) 
+def aggregate_data(config_path, orbis_file, aggregated_output_file):
+    with Orbis(config_path, offline=True) as orbis:
         # data processing and augmentation
         # after orbis search step following needs to run 
-        # df_licensee_data = orbis.read_xlxs_file(orbis.license_data)
-        # df_orbis_data = orbis.read_xlxs_file(orbis.orbis_data, sheet_name='Results')
-        # df_licensee = orbis.strip_new_lines(df_licensee_data)
-        # df_result = orbis.prepare_data(df_licensee, df_orbis_data)
-        # orbis.to_xlsx(df_result, orbis.data_path + f"processed_data_{timestamp}.xlsx")
-        
-        # reorder 
-        # orbis.generate_data_for_guo(orig_orbis_data= orbis.data_dir+"orbis_data.xlsx", file=orbis.data_dir + f"guo_data_{timestamp}.csv")
+        orbis_file = path.join(orbis.data_dir, orbis_file)
+        aggregate_output_file = path.join(orbis.data_dir, aggregated_output_file)
+        df_licensee_data = orbis.read_xlxs_file(orbis.license_data)
+        df_orbis_data = orbis.read_xlxs_file(orbis_file, sheet_name='Results')
+        df_licensee = orbis.strip_new_lines(df_licensee_data)
+        df_result = orbis.prepare_data(df_licensee, df_orbis_data)
+        orbis.to_xlsx(df_result, aggregate_output_file)
 
+def run_batch_in_parallel(config_path, function, *args):
+    with Orbis(config_path, offline=True) as orbis:
+        with multiprocessing.pool.ThreadPool(2) as pool:
+            results = pool.starmap(run_batch_search, [(config_path, orbis.data_path), (config_path, orbis.data_dir+'guo_data.csv')])
+
+def run_in_parallel_generic(function, args):
+    with multiprocessing.pool.ThreadPool(2) as pool:
+        results = pool.starmap(function, args)
+    
+if __name__ == "__main__":
+    config_path = "./config/config.yaml"
+    timestamp = datetime.now().strftime("%d_%m_%Y")
+
+    # Step 1 
+    # --> crawl_data.py should generate data in data/data.csv
+    # Step 2 
+    # --> data/data.csv needs to be uploaded to Orbis to start batch search
+    run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
+    # # # --> after batch search is completed, data downloaded from Orbis
+    
+    time.sleep(2) # wait for 2 seconds for data to be saved in data folder
+    
+    # # # Step 3 
+    # # # --> generate_data_for_guo to generate data by considering GUO of companies
+    generate_data_for_guo(config_path, orbis_data_file=f"orbis_data_{timestamp}.xlsx", output_file=f"orbis_data_guo_{timestamp}.csv")
+
+    time.sleep(1) # wait for 1 second for data to be saved in data folder
+    
+    # # # Step 4
+    # # # # --> run batch search for guo_data
+    run_batch_search(config_path, f"orbis_data_guo_{timestamp}.csv")
+    
+    # # # # Step 5
+    time.sleep(2) # wait for 2 seconds for data to be saved in data folder
+    
+    # # # --> aggregate_data to aggregate data by considering Licensee of companies
+    # # aggregate_data(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx")  #  aggregate data by considering the file searched with data.csv
+    # # aggregate_data(config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")  #  aggregate data by considering the file searched with guo_data.csv
+
+    run_in_parallel_generic(function = aggregate_data, args=[(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx"), (config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")])
