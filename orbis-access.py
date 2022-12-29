@@ -7,6 +7,8 @@ import yaml
 import time
 import pandas as pd
 import numpy as np 
+import multiprocessing
+import multiprocessing.pool
 from os import path
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -49,7 +51,6 @@ CITY_COLUMN= '//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.CITY:UNIVERSAL"]/
 COUNTRY_COLUMN= '//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.COUNTRY:UNIVERSAL"]/div[2]/span'
 CONTACT_INFORMATION = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[3]/div'
 
-# IDENTIFICATION_NUMBER_VIEW = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]'
 IDENTIFICATION_NUMBER_VIEW = '/html/body/section[2]/div[3]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]/div'
 
 
@@ -79,7 +80,8 @@ class Orbis:
         self.email_address = config["orbis"]["email"]
         self.password = config["orbis"]["password"]
         self.driver_options = config["selenium"]["driver_options"]
-        self.data_path = path.join(config["data"]["path"], config["data"]["file"])
+        self.data_dir = config["data"]["path"]
+        self.data_path = path.join(self.data_dir, config["data"]["file"])
         self.driver = None
         self.license_data = config["data"]["path"] + config["data"]["license"]
         self.orbis_data = config["data"]["path"] + config["data"]["orbis"]
@@ -91,9 +93,6 @@ class Orbis:
         return None
     
     def __enter__(self):
-        return self
-    
-    def init_driver(self):
         self.chrome_options = webdriver.ChromeOptions()
             # for options in self.driver_options:
             #     self.chrome_options.add_argument(options)
@@ -101,7 +100,9 @@ class Orbis:
         # self.chrome_options.add_experimental_option("prefs",prefs)
         self.chrome_options.add_experimental_option("detach", True)
         self.driver = webdriver.Chrome(executable_path=self.executable_path, chrome_options=self.chrome_options)
-        
+        self.login()
+        return self
+    
         
         
         
@@ -202,7 +203,12 @@ class Orbis:
         self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()        
     
 
-    def batch_search(self):
+    def batch_search(self, input_file):
+        
+        if not path.exists(input_file):
+            print(f"input file {input_file} does not exist")
+            return
+
         
         self.driver.get(self.orbis_batch_search_url)
         
@@ -211,7 +217,7 @@ class Orbis:
 
         
         file_input=self.driver.find_element(By.XPATH, SELECT_FILE_BUTTON)
-        file_input.send_keys(self.data_path)
+        file_input.send_keys(input_file)
         
         self.wait_until_clickable(UPLOAD_BUTTON)
 
@@ -396,14 +402,14 @@ class Orbis:
             else: 
                 time.sleep(2)
 
-    # # create a file likewe have data.csv file
-    # # company name;city;country;identifier
-    # def generate_data_for_guo(self):
-    #     df = self.read_xlxs_file(sheet_name='Sheet1')
-        
-        
-        
-        
+    # create a file likewe have data.csv file
+    # company name;city;country;identifier
+    def generate_data_for_guo(self,orig_orbis_data, file):
+        df = self.read_xlxs_file(orig_orbis_data,sheet_name='Results')
+        df = df[['GUO - Name','City\nLatin Alphabet','Country','Other company ID number']]
+        # drop rows where company name is null
+        df = df[df['GUO - Name'].notna()]
+        df.to_csv(file, index=False,header=['company name','city','country','identifier'], sep=';')
         
         
     
@@ -456,24 +462,34 @@ class Orbis:
     def to_xlsx(self, df, file_name):
         df.to_excel(file_name)
         
-    
 
-        
-
+def search_in_parallel(config_path, input_file):
+    with Orbis(config_path) as orbis:
+        orbis.login()
+        orbis.batch_search(input_file)
+        orbis.logout()
 
 if __name__ == "__main__":
     config_path = "./config/config.yaml"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     # add command line parser    
     with Orbis(config_path) as orbis:
-        orbis.init_driver()
         orbis.login()
-        orbis.batch_search()
+        # start in multithread 
+        orbis.batch_search(input_file=orbis.data_path)
+        # data generated through orbis and needs to be fed to orbis again 
+        # orbis.batch_search(input_file=orbis.data_dir + 'guo_data_20221229_002419.csv')
         orbis.logout()
+
+
+
+    # # use multi threading with Orbis class
+    # with multiprocessing.pool.ThreadPool(2) as pool:
+    #     results = pool.starmap(search_in_parallel, [(config_path, '/Users/mrturkmen/Desktop/idp-works/data/data.csv'), (config_path, '/Users/mrturkmen/Desktop/idp-works/data/guo_data_20221229_002419.csv')])
+    
+    
         
         # adds financial data operation revenue of the licensee agreement date
-        
-        
         
         # data processing and augmentation
         # after orbis search step following needs to run 
@@ -483,5 +499,6 @@ if __name__ == "__main__":
         # df_result = orbis.prepare_data(df_licensee, df_orbis_data)
         # orbis.to_xlsx(df_result, orbis.data_path + f"processed_data_{timestamp}.xlsx")
         
-        
+        # reorder 
+        # orbis.generate_data_for_guo(orig_orbis_data= orbis.data_dir+"orbis_data.xlsx", file=orbis.data_dir + f"guo_data_{timestamp}.csv")
 
