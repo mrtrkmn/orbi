@@ -61,6 +61,10 @@ POPUP_SAVE_BUTTON= '/html/body/section[2]/div[6]/div[3]/a[2]' # when adding Othe
 CITY_COLUMN= '//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.CITY:UNIVERSAL"]/div[2]/span'
 COUNTRY_COLUMN= '//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.COUNTRY:UNIVERSAL"]/div[2]/span'
 CONTACT_INFORMATION = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[3]/div'
+BVD_SECTORS = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.BVD_SECTOR_CORE_LABEL:UNIVERSAL"]/div[2]/span'
+US_SIC_PRIMARY_CODES = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.USSIC_PRIMARY_CODE:UNIVERSAL"]/div[2]/span'
+US_SIC_SECONDARY_CODES = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.USSIC_SECONDARY_CODE:UNIVERSAL"]/div[2]/span'
+
 
 IDENTIFICATION_NUMBER_VIEW = '/html/body/section[2]/div[3]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]/div'
 
@@ -108,6 +112,9 @@ class Orbis:
             "Total assets": TOTAL_ASSETS_SETTINGS,
             "Number of employees": NUMBER_OF_EMPLOYEES_SETTINGS,
             "Trade description (English)": TRADE_DESC,
+            "BvD sectors": BVD_SECTORS,
+            "US SIC, primary code(s)": US_SIC_PRIMARY_CODES,
+            "US SIC, secondary code(s)": US_SIC_SECONDARY_CODES,
         }
         
     def __exit__(self, exc_type, exc_value, traceback):
@@ -129,8 +136,18 @@ class Orbis:
         return self
     
         
-        
-        
+    def get_financial_columns(self):
+        financial_columns = list(self.variables.keys())
+        financial_columns = financial_columns[:len(financial_columns)-2] # remove the last two columns
+        return financial_columns
+    
+    
+    def drop_columns(self, df, regex):
+       columns_to_drop = df.filter(regex=regex).columns
+       print("Dropping columns: ", columns_to_drop)
+       return df.drop(columns=columns_to_drop)
+   
+   
     def read_config(self, path):
         # read from yaml config file
         with open(path, "r") as f:
@@ -417,6 +434,7 @@ class Orbis:
         self.wait_until_clickable(ISH_NAME)
         self.driver.find_element(By.XPATH, ISH_NAME).click()
         
+        non_financial_items = list(set(self.variables.keys())-set(self.get_financial_columns()))
         is_checked = False 
         for item, xpath in self.variables.items():
             
@@ -429,7 +447,7 @@ class Orbis:
             self.wait_until_clickable(xpath)
             self.driver.find_element(By.XPATH, xpath).click()
             time.sleep(1)
-            if item == "Number of employees":
+            if item in non_financial_items:
                 self.select_all_years(field = item, is_financial_data=False, is_checked=is_checked)
             else:
                 self.select_all_years(field = item, is_checked=is_checked)
@@ -502,39 +520,26 @@ class Orbis:
         
         related_data['Agreement Date'] = pd.to_datetime(related_data['Agreement Date'])
         related_data['Financial Period'] = related_data['Agreement Date'].dt.year - 1
-        # merging 
-        # related_data['Licensee'] = related_data['Licensee'].astype(str).str.upper()
-        # df_orbis['Company name Latin alphabet'] = df_orbis['Company name Latin alphabet'].astype(str).str.upper()
-        # df_orbis['Other company ID number'] = df_orbis['Other company ID number'].astype(str).str.upper()
         related_data = related_data.rename(columns={'Licensee CIK 1_cleaned': 'CIK'})
         df_orbis = df_orbis.rename(columns={'Other company ID number': 'CIK'})
         df_merged = df_orbis.merge(related_data, on='CIK')
-        pattern = r'\D'
-        # Use the `filter()` function to select the columns that contain "Operating revenue" in the column names
-        # df_merged_filtered = df_merged.filter(like='Operating revenue')
-        # Use the `rename()` function and the `re.sub()` function to apply the regex pattern to the column names
-        df_merged_filtered = df_merged.rename(columns=lambda x:  re.sub(pattern, '', x) if x.startswith('Operating revenue') else x)
 
-        df_merged_filtered.insert(len(df_merged_filtered.columns), "Operating revenue (Turnover)m USD", np.nan)
-        for index, r in df_merged_filtered.iterrows():
+        df_merged = self.drop_columns(df_merged, 'Last avail. yr$')  # drop columns which ends with Last avail. yr
+        for index, r in df_merged.iterrows():
             year = r['Financial Period']
+            number_of_employees = r[f'Number of employees\n{year}']
+            df_merged.at[index, 'Number of employees (in Financial Period)'] = number_of_employees
             try: 
-                revenue = r[str(year)]
-                df_merged_filtered.at[index, 'Operating revenue (Turnover)m USD'] = revenue
+                for f_colunm in self.get_financial_columns():
+                    revenue_info = r[f'{f_colunm}\nm USD {year}']
+                    df_merged.at[index, f'{f_colunm}\nm USD'] = revenue_info
+                   
             except KeyError as ke: 
                 print(ke)
-        
-        df_merged_filtered=df_merged_filtered.drop(['Unnamed: 0'],axis=1)
-        
-        non_digit_cols = []
-        for i in df_merged_filtered.columns:
-            if i.isdigit():
-                continue
-            else:
-                non_digit_cols.append(i)
-                
-        
-        return df_merged_filtered[non_digit_cols]
+   
+        df_merged = self.drop_columns(df_merged, '[0-9]$') # drop columns which ends with a year 
+       
+        return df_merged
     
     def to_xlsx(self, df, file_name):
         df.to_excel(file_name)
@@ -588,7 +593,7 @@ if __name__ == "__main__":
     
     # # Step 2 
     # # --> data/data.csv needs to be uploaded to Orbis to start batch search
-    run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file needs to come from crawl_data.py
+    # run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file needs to come from crawl_data.py
 
     # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
     # # # # --> after batch search is completed, data downloaded from Orbis
@@ -609,7 +614,8 @@ if __name__ == "__main__":
     # time.sleep(2) # wait for 2 seconds for data to be saved in data folder
     
     # # # # --> aggregate_data to aggregate data by considering Licensee of companies
-    # # # aggregate_data(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx")  #  aggregate data by considering the file searched with data.csv
+    # aggregate_data(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx")  #  aggregate data by considering the file searched with data.csv
     # aggregate_data(config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")  #  aggregate data by considering the file searched with guo_data.csv
+    aggregate_data(config_path, f"orbis_d.xlsx", f"orbis_aggregated_d.xlsx")  #  aggregate data by considering the file searched with data.csv
 
     # run_in_parallel_generic(function = aggregate_data, args=[(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx"), (config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")])
