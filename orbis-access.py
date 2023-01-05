@@ -425,8 +425,6 @@ class Orbis:
             search_input.clear()
             search_input.send_keys(item)
             search_input.send_keys(Keys.RETURN)
-            # if item == "Cash flow":
-            #     is_checked = False 
             time.sleep(2)
             self.wait_until_clickable(xpath)
             self.driver.find_element(By.XPATH, xpath).click()
@@ -441,6 +439,21 @@ class Orbis:
         # apply changes button 
         self.wait_until_clickable(APPLY_CHANGES_BUTTON)
         self.driver.find_element(By.XPATH, APPLY_CHANGES_BUTTON).click()
+        
+        # currency select unit 
+        self.wait_until_clickable('/html/body/section[2]/div[1]/div[2]/div[2]/div[2]/ul/li[4]/a')
+        self.driver.find_element(By.XPATH, '/html/body/section[2]/div[1]/div[2]/div[2]/div[2]/ul/li[4]/a').click()
+        
+        # select million
+        self.wait_until_clickable('//*[@id="id-currency-menu-popup"]/ul[1]/li[4]')
+        self.driver.find_element(By.XPATH, '//*[@id="id-currency-menu-popup"]/ul[1]/li[4]').click()
+        
+        
+        # click apply from dropdown
+        
+        self.wait_until_clickable('//*[@id="id-currency-menu-popup"]/div/a[2]')
+        self.driver.find_element(By.XPATH, '//*[@id="id-currency-menu-popup"]/div/a[2]').click()
+        time.sleep(2)
         
         
         WebDriverWait(self.driver, 30*60).until(EC.text_to_be_present_in_element((By.XPATH, EXCEL_BUTTON), 'Excel'))
@@ -571,32 +584,32 @@ if __name__ == "__main__":
 
     # Step 1 
     # --> crawl_data.py should generate data in data/data.csv
-    prepare_data(config_path, "sample_data.xlsx",f"orbis_data_{timestamp}.csv")
+    # prepare_data(config_path, "sample_data.xlsx",f"orbis_data_{timestamp}.csv")
     
     # # Step 2 
     # # --> data/data.csv needs to be uploaded to Orbis to start batch search
-    run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
+    run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file needs to come from crawl_data.py
 
     # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
     # # # # --> after batch search is completed, data downloaded from Orbis
     
-    time.sleep(2) # wait for 2 seconds for data to be saved in data folder
+    # time.sleep(2) # wait for 2 seconds for data to be saved in data folder
     
     # # # # Step 3 
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
-    generate_data_for_guo(config_path, orbis_data_file=f"orbis_data_{timestamp}.xlsx", output_file=f"orbis_data_guo_{timestamp}.csv")
+    # generate_data_for_guo(config_path, orbis_data_file=f"orbis_data_{timestamp}.xlsx", output_file=f"orbis_data_guo_{timestamp}.csv")
 
     # time.sleep(2) # wait for 1 second for data to be saved in data folder
     
     # # # # Step 4
     # # # # # --> run batch search for guo_data
-    run_batch_search(config_path, f"orbis_data_guo_{timestamp}.csv")
+    # run_batch_search(config_path, f"orbis_data_guo_{timestamp}.csv")
     
     # # # # # Step 5
-    time.sleep(2) # wait for 2 seconds for data to be saved in data folder
+    # time.sleep(2) # wait for 2 seconds for data to be saved in data folder
     
     # # # # --> aggregate_data to aggregate data by considering Licensee of companies
     # # # aggregate_data(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx")  #  aggregate data by considering the file searched with data.csv
     # aggregate_data(config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")  #  aggregate data by considering the file searched with guo_data.csv
 
-    run_in_parallel_generic(function = aggregate_data, args=[(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx"), (config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")])
+    # run_in_parallel_generic(function = aggregate_data, args=[(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx"), (config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")])
