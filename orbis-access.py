@@ -371,18 +371,7 @@ class Orbis:
         self.wait_until_clickable(ORBIS_ID_NUMBER_ADD)
         self.driver.find_element(By.XPATH, ORBIS_ID_NUMBER_ADD).click()
         
-         # add operating revenue column in millions USD for all available years
-        # self.select_all_years()
-        
-        # self.wait_until_clickable(FINANCIAL_DATA_BUTTON)
-        # self.driver.find_element(By.XPATH, FINANCIAL_DATA_BUTTON).click()
-        
-        # self.wait_until_clickable(KEY_FINANCIAL_DATA)
-        # self.driver.find_element(By.XPATH, KEY_FINANCIAL_DATA).click()
 
-        # self.wait_until_clickable(OP_REVENUE_SETTINGS)
-        # self.driver.find_element(By.XPATH, OP_REVENUE_SETTINGS).click()
-        
         time.sleep(2)
         # scroll down within in panel 
         self.scroll_to_bottom()
