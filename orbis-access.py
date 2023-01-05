@@ -34,6 +34,15 @@ ADD_REMOVE_COLUMNS_VIEW = '//*[@id="main-content"]/div/div[2]/div[1]/a'
 FINANCIAL_DATA_BUTTON = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[7]/div'
 KEY_FINANCIAL_DATA = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[7]/ul/li[2]'
 OP_REVENUE_SETTINGS = '//*[@id="KEY_FINANCIALS*KEY_FINANCIALS.OPRE:UNIVERSAL"]/div[1]/span[2]'
+PL_BEFORE_TAX_SETTINGS = '//*[@id="KEY_FINANCIALS*KEY_FINANCIALS.PLBT:UNIVERSAL"]/div[1]'
+PL_FOR_PERIOD_SETTINGS = '//*[@id="KEY_FINANCIALS*KEY_FINANCIALS.PL:UNIVERSAL"]/div[1]'
+# PL_FOR_PROFIT_LOSS_SETTINGS = '//*[@id="PROFIT_LOSS_ACCOUNT*PROFIT_LOSS_ACCOUNT.PL:IND"]/div[1]/span[2]'
+CASH_FLOW_SETTINGS = '//*[@id="KEY_FINANCIALS*KEY_FINANCIALS.CF:UNIVERSAL"]/div[1]'
+TOTAL_ASSETS_SETTINGS = '//*[@id="KEY_FINANCIALS*KEY_FINANCIALS.TOAS:UNIVERSAL"]/div[1]'
+NUMBER_OF_EMPLOYEES_SETTINGS = '/html/body/section[2]/div[3]/div/div[2]/div[1]/div/div[3]/div/ul/li[2]/div[1]'
+OPERATING_PL_SETTINS = '//*[@id="PROFIT_LOSS_ACCOUNT*PROFIT_LOSS_ACCOUNT.OPPL:IND"]/div[1]'
+GROSS_PROFIT  = '//*[@id="PROFIT_LOSS_ACCOUNT*PROFIT_LOSS_ACCOUNT.GROS:IND"]/div[1]'
+SALES_SETTINGS = '//*[@id="PROFIT_LOSS_ACCOUNT*PROFIT_LOSS_ACCOUNT.TURN:IND"]/div[1]'
 ABSOLUTE_IN_COLUMN_OP = '//*[@id="ClassicOption"]/div/div[1]/div/div[1]/div[1]/div/table/tbody/tr/td[2]/a'
 
 SCROLLABLE_XPATH =  '//*[@id="ClassicOption"]/div/div[1]/div/div[1]/div[4]/div[1]/div'
@@ -88,7 +97,17 @@ class Orbis:
         self.offline = offline
         self.license_data = config["data"]["path"] + config["data"]["license"]
         self.orbis_data = config["data"]["path"] + config["data"]["orbis"]
-        
+        self.variables = {
+            "Operating revenue (Turnover)": OP_REVENUE_SETTINGS,
+            "Sales": SALES_SETTINGS,
+            "Gross profit": GROSS_PROFIT,
+            "Operating P/L [=EBIT]": OPERATING_PL_SETTINS,
+            "P/L before tax": PL_BEFORE_TAX_SETTINGS,
+            "P/L for period [=Net income]": PL_FOR_PERIOD_SETTINGS,
+            "Cash flow": CASH_FLOW_SETTINGS,
+            "Total assets": TOTAL_ASSETS_SETTINGS,
+             "Number of employees": NUMBER_OF_EMPLOYEES_SETTINGS,
+        }
         
     def __exit__(self, exc_type, exc_value, traceback):
         
@@ -157,31 +176,14 @@ class Orbis:
         return df
     
     
-    # get_op_revenue_data function is used to get the operating revenue data in millions for all available years
-    def get_op_revenue_data(self):
-        # click to finanacial data column
-        self.wait_until_clickable(FINANCIAL_DATA_BUTTON)
-        self.driver.find_element(By.XPATH, FINANCIAL_DATA_BUTTON).click()
-        
-        self.wait_until_clickable(KEY_FINANCIAL_DATA)
-        self.driver.find_element(By.XPATH, KEY_FINANCIAL_DATA).click()
-
-        self.wait_until_clickable(OP_REVENUE_SETTINGS)
-        self.driver.find_element(By.XPATH, OP_REVENUE_SETTINGS).click()
-        
-        self.wait_until_clickable(ABSOLUTE_IN_COLUMN_OP)
-        self.driver.find_element(By.XPATH, ABSOLUTE_IN_COLUMN_OP).click()
-        
-        self.wait_until_clickable(ANNUAL_DATA_LIST)
-        
+    def check_checkboxes(self, field=''):
         try: 
-        
+            
             scrollable = self.driver.find_element(By.XPATH, SCROLLABLE_XPATH)
             scroll_position = self.driver.execute_script("return arguments[0].scrollTop", scrollable)
             # print(f"scroll position is {scroll_position}")
             height_of_scrollable = self.driver.execute_script("return arguments[0].scrollHeight", scrollable)
-            # print(f"height of scrollable is {height_of_scrollable}")
-            
+            # print(f"height of scrollable is {height_of_scrollable}")    
             scroll_amount = 100
             while scroll_position < height_of_scrollable:
                 scrollable = self.driver.find_element(By.XPATH, SCROLLABLE_XPATH)
@@ -191,22 +193,44 @@ class Orbis:
                         if checkbox.get_attribute("checked") == "true":
                             continue
                         checkbox.click()
-                    except:
-                        continue
-                                
+                    except Exception as e:
+                        # print(f"exception on checkbox {e}")
+                        continue        
                 self.driver.execute_script(f"arguments[0].scrollTo(0,{scroll_position})", scrollable)
                 scroll_position += scroll_amount
-                print (f"operating revenue scroll position is {scroll_position}")
-                # time.sleep(0.5)
+                print (f"{field} scroll position is {scroll_position}")
+                time.sleep(0.5)
         except Exception as e:
             print(e)
-             
-        self.wait_until_clickable(MILLION_UNITS)
-        self.driver.find_element(By.XPATH, MILLION_UNITS).click()
-        
-        self.wait_until_clickable(OP_REVENUE_OK_BUTTON)
-        self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()        
     
+    # select_all_years function is used to get the operating revenue data in millions for all available years
+    def select_all_years(self, field='', is_financial_data=True, is_checked=False):
+        # click to finanacial data column        
+        if not is_checked: 
+            
+            self.wait_until_clickable(ABSOLUTE_IN_COLUMN_OP)
+            self.driver.find_element(By.XPATH, ABSOLUTE_IN_COLUMN_OP).click()
+
+            self.wait_until_clickable(ANNUAL_DATA_LIST)
+            
+            self.check_checkboxes(field)
+
+            try:
+                if is_financial_data:
+                    self.wait_until_clickable(MILLION_UNITS)
+                    self.driver.find_element(By.XPATH, MILLION_UNITS).click()
+            except Exception as e:
+                print(e)
+            
+            self.wait_until_clickable(OP_REVENUE_OK_BUTTON)
+            self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()     
+        
+        elif not is_financial_data:
+            self.check_checkboxes(field)
+            
+            self.wait_until_clickable(OP_REVENUE_OK_BUTTON)
+            self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()        
+        
 
     def batch_search(self, input_file):
         
@@ -261,15 +285,19 @@ class Orbis:
         view_result_sub_url.send_keys(Keys.RETURN)
        
         # this is used to wait until processing overlay is gone
-        main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
-        main_content_style = main_content_div.value_of_css_property('max-width')
-        
-        while main_content_style != "none":
+        try:
             main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
             main_content_style = main_content_div.value_of_css_property('max-width')
-            print(f"main content style is {main_content_style}")
-            time.sleep(0.5)
             
+            while main_content_style != "none":
+                main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
+                main_content_style = main_content_div.value_of_css_property('max-width')
+                print(f"main content style is {main_content_style}")
+                time.sleep(0.5)
+        except Exception as e:
+            print(e)
+            
+                    
         self.wait_until_clickable(ADD_REMOVE_COLUMNS_VIEW)    
         self.driver.find_element(By.XPATH, ADD_REMOVE_COLUMNS_VIEW).click()
        
@@ -304,7 +332,7 @@ class Orbis:
         
             
         search_input.clear()
-        time.sleep(1)
+        time.sleep(1) 
 
         # identification number column 
         
@@ -344,8 +372,17 @@ class Orbis:
         self.driver.find_element(By.XPATH, ORBIS_ID_NUMBER_ADD).click()
         
          # add operating revenue column in millions USD for all available years
-        self.get_op_revenue_data()
+        # self.select_all_years()
+        
+        # self.wait_until_clickable(FINANCIAL_DATA_BUTTON)
+        # self.driver.find_element(By.XPATH, FINANCIAL_DATA_BUTTON).click()
+        
+        # self.wait_until_clickable(KEY_FINANCIAL_DATA)
+        # self.driver.find_element(By.XPATH, KEY_FINANCIAL_DATA).click()
 
+        # self.wait_until_clickable(OP_REVENUE_SETTINGS)
+        # self.driver.find_element(By.XPATH, OP_REVENUE_SETTINGS).click()
+        
         time.sleep(2)
         # scroll down within in panel 
         self.scroll_to_bottom()
@@ -390,6 +427,27 @@ class Orbis:
         self.wait_until_clickable(ISH_NAME)
         self.driver.find_element(By.XPATH, ISH_NAME).click()
         
+        is_checked = False 
+        for item, xpath in self.variables.items():
+            
+            self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
+            search_input = self.driver.find_element(By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
+            search_input.clear()
+            search_input.send_keys(item)
+            search_input.send_keys(Keys.RETURN)
+            # if item == "Cash flow":
+            #     is_checked = False 
+            time.sleep(2)
+            self.wait_until_clickable(xpath)
+            self.driver.find_element(By.XPATH, xpath).click()
+            time.sleep(1)
+            if item == "Number of employees":
+                self.select_all_years(field = item, is_financial_data=False, is_checked=is_checked)
+            else:
+                self.select_all_years(field = item, is_checked=is_checked)
+            # self.driver.refresh()
+            print(f"item : {item} xpath : {xpath} ")
+            is_checked = True
         # apply changes button 
         self.wait_until_clickable(APPLY_CHANGES_BUTTON)
         self.driver.find_element(By.XPATH, APPLY_CHANGES_BUTTON).click()
@@ -527,6 +585,8 @@ if __name__ == "__main__":
     
     # # Step 2 
     # # --> data/data.csv needs to be uploaded to Orbis to start batch search
+    run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file needs to come from crawl_data.py
+
     run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
     # # # # --> after batch search is completed, data downloaded from Orbis
     
@@ -536,17 +596,17 @@ if __name__ == "__main__":
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
     generate_data_for_guo(config_path, orbis_data_file=f"orbis_data_{timestamp}.xlsx", output_file=f"orbis_data_guo_{timestamp}.csv")
 
-    time.sleep(1) # wait for 1 second for data to be saved in data folder
+    time.sleep(2) # wait for 1 second for data to be saved in data folder
     
     # # # # Step 4
     # # # # # --> run batch search for guo_data
     run_batch_search(config_path, f"orbis_data_guo_{timestamp}.csv")
     
     # # # # # Step 5
-    time.sleep(2) # wait for 2 seconds for data to be saved in data folder
+    # time.sleep(2) # wait for 2 seconds for data to be saved in data folder
     
     # # # # --> aggregate_data to aggregate data by considering Licensee of companies
     # # # aggregate_data(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx")  #  aggregate data by considering the file searched with data.csv
-    # # # aggregate_data(config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")  #  aggregate data by considering the file searched with guo_data.csv
+    # aggregate_data(config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")  #  aggregate data by considering the file searched with guo_data.csv
 
     run_in_parallel_generic(function = aggregate_data, args=[(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx"), (config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")])
