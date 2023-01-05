@@ -64,7 +64,7 @@ CONTACT_INFORMATION = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/
 
 IDENTIFICATION_NUMBER_VIEW = '/html/body/section[2]/div[3]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]/div'
 
-
+TRADE_DESC = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.TRADE_DESCRIPTION_EN:UNIVERSAL"]/div[1]/span'
 BVD_ID_NUMBER_ADD = '//*[@id="IDENTIFIERS*IDENTIFIERS.BVD_ID_NUMBER:UNIVERSAL"]'    
 ORBIS_ID_NUMBER_ADD = '//*[@id="IDENTIFIERS*IDENTIFIERS.ORBISID:UNIVERSAL"]'
 OWNERSHIP_COLUMN = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/div'
@@ -106,7 +106,8 @@ class Orbis:
             "P/L for period [=Net income]": PL_FOR_PERIOD_SETTINGS,
             "Cash flow": CASH_FLOW_SETTINGS,
             "Total assets": TOTAL_ASSETS_SETTINGS,
-             "Number of employees": NUMBER_OF_EMPLOYEES_SETTINGS,
+            "Number of employees": NUMBER_OF_EMPLOYEES_SETTINGS,
+            "Trade description (English)": TRADE_DESC,
         }
         
     def __exit__(self, exc_type, exc_value, traceback):
@@ -574,9 +575,9 @@ if __name__ == "__main__":
     
     # # Step 2 
     # # --> data/data.csv needs to be uploaded to Orbis to start batch search
-    run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file needs to come from crawl_data.py
-
     run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
+
+    # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
     # # # # --> after batch search is completed, data downloaded from Orbis
     
     time.sleep(2) # wait for 2 seconds for data to be saved in data folder
@@ -585,14 +586,14 @@ if __name__ == "__main__":
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
     generate_data_for_guo(config_path, orbis_data_file=f"orbis_data_{timestamp}.xlsx", output_file=f"orbis_data_guo_{timestamp}.csv")
 
-    time.sleep(2) # wait for 1 second for data to be saved in data folder
+    # time.sleep(2) # wait for 1 second for data to be saved in data folder
     
     # # # # Step 4
     # # # # # --> run batch search for guo_data
     run_batch_search(config_path, f"orbis_data_guo_{timestamp}.csv")
     
     # # # # # Step 5
-    # time.sleep(2) # wait for 2 seconds for data to be saved in data folder
+    time.sleep(2) # wait for 2 seconds for data to be saved in data folder
     
     # # # # --> aggregate_data to aggregate data by considering Licensee of companies
     # # # aggregate_data(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx")  #  aggregate data by considering the file searched with data.csv
