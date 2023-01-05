@@ -3,4 +3,4 @@ bs4
 selenium
 openpyxl
 pandas
-
+pyyaml
