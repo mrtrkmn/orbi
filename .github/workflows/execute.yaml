@@ -44,10 +44,10 @@ jobs:
       run: |
         python /home/runner/work/IDP-Works/IDP-Works/orbis-access-auto.py 
       env:
-        ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL }}
+        ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL_ADDRESS }}
         ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
         ORBIS_ACCESS_URL: ${{ secrets.ORBIS_ACCESS_URL }}
-        ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_URL }}
+        ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_SEARCH_URL }}
         ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
         CHROMEDRIVER_PATH: /home/runner/work/IDP-Works/IDP-Works/chromedriver
         DATA_DIR: /home/runner/work/IDP-Works/IDP-Works/data/
