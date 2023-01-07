@@ -16,10 +16,6 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./orbis-access 
 
     steps:
     - uses: actions/checkout@v3
@@ -45,7 +41,7 @@ jobs:
 
     - name: Execute the script
       run: |
-        python ./orbis-access/orbis-access-auto.py 
+        python /home/runner/work/IDP-Works/IDP-Works/orbis-access-auto.py 
       env:
         ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL }}
         ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
@@ -53,7 +49,7 @@ jobs:
         ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_URL }}
         ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
         CHROMEDRIVER_PATH: /usr/bin/chromedriver
-        DATA_DIR: ./orbis-access/data/
+        DATA_DIR: /home/runner/work/IDP-Works/IDP-Works/data/
         DATA_SOURCE: sample_data.xlsx
 
   # get timestamp in format DD-MM-YYYY
@@ -67,8 +63,8 @@ jobs:
       with:
          name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
          path: | 
-          ./orbis-access/data/*
-          !./orbis-access/data/sample_data.xlsx
+          /home/runner/work/IDP-Works/IDP-Works/data/*
+          !/home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
 
     # zip the data except sample_data.xlsx
     - name: Zip data
