@@ -8,6 +8,8 @@ on:
   #   branches: [ "main" ]
 
   workflow_dispatch:
+    name: Execute Orbis Access Automation
+    
 
 permissions:
   contents: read
@@ -36,7 +38,7 @@ jobs:
         wget https://chromedriver.storage.googleapis.com/95.0.4638.17/chromedriver_linux64.zip
         unzip chromedriver_linux64.zip
         chmod +x chromedriver
-        mv chromedriver /usr/bin/chromedriver
+        mv chromedriver /home/runner/work/IDP-Works/IDP-Works/
         chromedriver --version
 
     - name: Execute the script
@@ -48,7 +50,7 @@ jobs:
         ORBIS_ACCESS_URL: ${{ secrets.ORBIS_ACCESS_URL }}
         ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_URL }}
         ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
-        CHROMEDRIVER_PATH: /usr/bin/chromedriver
+        CHROMEDRIVER_PATH: /home/runner/work/IDP-Works/IDP-Works/chromedriver
         DATA_DIR: /home/runner/work/IDP-Works/IDP-Works/data/
         DATA_SOURCE: sample_data.xlsx
 
@@ -69,7 +71,7 @@ jobs:
     # zip the data except sample_data.xlsx
     - name: Zip data
       run: |
-        zip -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip ./orbis-access/data/* -x ./orbis-access/data/sample_data.xlsx
+        zip -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip /home/runner/work/IDP-Works/IDP-Works/data/* -x /home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
     
     - name: Send it to Telegram 
       run: |
