@@ -187,18 +187,22 @@ class Crawler:
         return config
 
 # prepare_data generates the file which needs to be used in orbis-access.py first step
-#  given_licensee_file: provided by the user
+#  source_file: provided by the user
 #  output_file: csv file with the data from the SEC.gov website (columns: company name, city, country, identifier)
-def prepare_data(config_path, given_licensee_file, output_file):
+def prepare_data(config_path, source_file, output_file, is_licensee = False):
+    if is_licensee:
+        cols = ["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]
+    else: 
+        cols = ["Licensor 1_cleaned", "Licensor CIK 1_cleaned"]
     with Crawler(config_path) as crawler:
         results = []
         data_path = crawler.config["data"]["path"]
         output_file = os.path.join(data_path, output_file)
         # read the given licensee file
-        given_licensee_file = os.path.join(data_path, given_licensee_file)
-        df = crawler.read_xlxs_file(given_licensee_file)
+        source_file = os.path.join(data_path, source_file)
+        df = crawler.read_xlxs_file(source_file)
         # get two columns
-        df=df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]]
+        df=df[cols]
         df =df.replace(r'\n',' ', regex=True) 
         # create file on data folder
         columns = ["company name", "city", "country","identifier"] 
