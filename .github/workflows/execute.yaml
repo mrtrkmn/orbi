@@ -45,7 +45,7 @@ jobs:
 
     - name: Execute the script
       run: |
-        python ./orbis-access/orbis-access.py 
+        python ./orbis-access/orbis-access-auto.py 
       env:
         ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL }}
         ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
