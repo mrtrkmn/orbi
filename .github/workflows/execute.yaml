@@ -70,7 +70,7 @@ jobs:
     # zip the data except sample_data.xlsx
     - name: Zip data
       run: |
-        zip -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip /home/runner/work/IDP-Works/IDP-Works/data/* -x /home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
+        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip /home/runner/work/IDP-Works/IDP-Works/data/* -x /home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
     
     - name: Send it to Telegram 
       run: |
