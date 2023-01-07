@@ -682,10 +682,10 @@ if __name__ == "__main__":
     
     # crawl_data: prepare_data 
     # generates csv file for licensee 
-    prepare_data(config_path, "sample_data.xlsx",f"orbis_data_licensee_{timestamp}.csv", is_licensee=True)
+    prepare_data("sample_data.xlsx",f"orbis_data_licensee_{timestamp}.csv", is_licensee=True)
     
     # # generates csv file for licensor
-    prepare_data(config_path, "sample_data.xlsx",f"orbis_data_licensor_{timestamp}.csv", is_licensee=False)
+    prepare_data( "sample_data.xlsx",f"orbis_data_licensor_{timestamp}.csv", is_licensee=False)
     
     time.sleep(4) # wait for 4 seconds for data to be saved in data folder
     
