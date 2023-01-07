@@ -16,12 +16,11 @@ import os
 # class to crawl the IPO website for the patent-related data
 class Crawler:
 
-    def __init__(self, config_path):
+    def __init__(self):
         
         self.ipo_data = {}
         self.ipo_url = "https://www.ipo.gov.uk/p-ipsum/Case/PublicationNumber/"
         self.sec_cik_numbers = {} # set of companies and cik_numbers such as {"company_name": "cik_number"}
-        self.config = self.read_config(config_path)
     # crawl the IPO website for the patent-related data
     def find_publication(self, publication_number):
         # get the html content of the page
@@ -189,17 +188,17 @@ class Crawler:
 # prepare_data generates the file which needs to be used in orbis-access.py first step
 #  source_file: provided by the user
 #  output_file: csv file with the data from the SEC.gov website (columns: company name, city, country, identifier)
-def prepare_data(config_path, source_file, output_file, is_licensee = False):
+def prepare_data(source_file, output_file, is_licensee = False):
     if is_licensee:
         cols = ["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]
     else: 
         cols = ["Licensor 1_cleaned", "Licensor CIK 1_cleaned"]
-    with Crawler(config_path) as crawler:
+    with Crawler() as crawler:
         results = []
-        data_path = crawler.config["data"]["path"]
-        output_file = os.path.join(data_path, output_file)
+        # get 
+        output_file = os.path.join(os.path.dirname(os.path.abspath(f"data/{output_file}")), output_file)
         # read the given licensee file
-        source_file = os.path.join(data_path, source_file)
+        source_file = os.path.join(os.path.dirname(os.path.abspath(f"data/{source_file}")), source_file)
         df = crawler.read_xlxs_file(source_file)
         # get two columns
         df=df[cols]
@@ -259,7 +258,7 @@ def prepare_data(config_path, source_file, output_file, is_licensee = False):
 
     
 if __name__ == "__main__":
-    config_path = "./config/config.yaml"
+    data_path = os.path.join(os.path.dirname(os.path.abspath('data')), "sample_data.xlsx")
     timestamp = datetime.now().strftime("%d_%m_%Y")
     # crawler.find_publication("GB2419368")
     # print(crawler.get_publication())
@@ -268,4 +267,4 @@ if __name__ == "__main__":
     # cik_number = crawler.get_existing_cik_numbers()[company_name]
     # print(crawler.get_data_from_sec_gov(cik_number))
     # print(crawler.get_data_from_sec_gov_in_parallel(cik_number))
-    prepare_data(config_path,"sample_data.xlsx", f"orbis_data_{timestamp}.csv")
+    prepare_data("sample_data.xlsx", f"orbis_data_{timestamp}.csv")
