@@ -1,0 +1,80 @@
+
+name: Python application
+
+on:
+  # push:
+  #   branches: [ "main" ]
+  # pull_request:
+  #   branches: [ "main" ]
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./orbis-access 
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    # download chromedriver
+    - name: Download chromedriver
+      run: |
+        wget https://chromedriver.storage.googleapis.com/95.0.4638.17/chromedriver_linux64.zip
+        unzip chromedriver_linux64.zip
+        chmod +x chromedriver
+        mv chromedriver /usr/bin/chromedriver
+        chromedriver --version
+
+    - name: Execute the script
+      run: |
+        python ./orbis-access/orbis-access.py 
+      env:
+        ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL }}
+        ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
+        ORBIS_ACCESS_URL: ${{ secrets.ORBIS_ACCESS_URL }}
+        ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_URL }}
+        ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
+        CHROMEDRIVER_PATH: /usr/bin/chromedriver
+        DATA_DIR: ./orbis-access/data/
+        DATA_SOURCE: sample_data.xlsx
+
+  # get timestamp in format DD-MM-YYYY
+    - name: Get timestamp
+      id: get-timestamp
+      run: |
+        echo "::set-output name=timestamp::$(date +'%d-%m-%Y')"
+   # upload all data which ends with timestamp.xlsx and *.csv under ./orbis-access/data
+    - name: Upload data
+      uses: actions/upload-artifact@v2
+      with:
+         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
+         path: | 
+          ./orbis-access/data/*
+          !./orbis-access/data/sample_data.xlsx
+
+    # zip the data except sample_data.xlsx
+    - name: Zip data
+      run: |
+        zip -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip ./orbis-access/data/* -x ./orbis-access/data/sample_data.xlsx
+    
+    - name: Send it to Telegram 
+      run: |
+        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
