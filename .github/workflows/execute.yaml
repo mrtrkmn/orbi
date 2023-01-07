@@ -35,7 +35,7 @@ jobs:
     # download chromedriver
     - name: Download chromedriver
       run: |
-        wget https://chromedriver.storage.googleapis.com/95.0.4638.17/chromedriver_linux64.zip
+        wget https://chromedriver.storage.googleapis.com/108.0.5359.71/chromedriver_linux64.zip
         unzip chromedriver_linux64.zip
         chmod +x chromedriver
         chromedriver --version
