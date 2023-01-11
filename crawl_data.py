@@ -13,6 +13,8 @@ import csv
 import re 
 import yaml 
 import os 
+import hashlib
+
 # class to crawl the IPO website for the patent-related data
 class Crawler:
 
@@ -185,6 +187,10 @@ class Crawler:
                 raise exc
         return config
 
+
+
+def generate_unique_id(company_name):
+    return hashlib.sha256(company_name.encode()).hexdigest() 
 # prepare_data generates the file which needs to be used in orbis-access.py first step
 #  source_file: provided by the user
 #  output_file: csv file with the data from the SEC.gov website (columns: company name, city, country, identifier)
@@ -204,7 +210,7 @@ def prepare_data(source_file, output_file, is_licensee = False):
         df=df[cols]
         df =df.replace(r'\n',' ', regex=True) 
         # create file on data folder
-        columns = ["company name", "city", "country","identifier"] 
+        columns = ["company name", "city", "country","identifier", "own id"]
         # Set the maximum number of requests per second
         
         max_requests_per_second = 10     # defined by SEC.gov
@@ -213,6 +219,7 @@ def prepare_data(source_file, output_file, is_licensee = False):
         for index, row in df.iterrows():
             try: 
                 company_name = row[0]
+                
                 if company_name == "":
                     continue
                 cik_number = row[1]
@@ -240,13 +247,14 @@ def prepare_data(source_file, output_file, is_licensee = False):
             for result in results:
                 try:
                     name = result['name']
+                    own_id = generate_unique_id(name)[:25]
                     city = result['addresses']['business']['city']
                     country = result['addresses']['business']['stateOrCountryDescription']
                     identifier = result['cik_number']
                     if crawler.is_usa(country):
                         country = "United States of America"
                     # cik_number = result["cikNumber"]
-                    w.writerow([name, city, country,identifier])
+                    w.writerow([name, city, country,identifier, own_id])
                 except KeyError as e:
                     print(f"Failed to find the key: {e} for {result['name']}")
                     if result['cik_number'] == "":
