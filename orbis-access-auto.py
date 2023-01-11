@@ -69,6 +69,7 @@ CONTACT_INFORMATION = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/
 BVD_SECTORS = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.BVD_SECTOR_CORE_LABEL:UNIVERSAL"]/div[2]/span'
 US_SIC_PRIMARY_CODES = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.USSIC_PRIMARY_CODE:UNIVERSAL"]/div[2]/span'
 US_SIC_SECONDARY_CODES = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.USSIC_SECONDARY_CODE:UNIVERSAL"]/div[2]/span'
+DELISTING_NOTE  = '//*[@id="STOCKDATA*STOCKDATA.SD_DELISTED_NOTE:UNIVERSAL"]/div[2]/span'
 
 
 IDENTIFICATION_NUMBER_VIEW = '/html/body/section[2]/div[3]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]/div'
@@ -369,7 +370,18 @@ class Orbis:
             
         search_input.clear()
         time.sleep(1) 
-
+        
+        # delisting note  : required for the M&A activities note 
+        
+        search_input.send_keys("Delisting note")
+        search_input.send_keys(Keys.RETURN)
+        print(f"{process_name} delisting note is searched")
+        
+        self.wait_until_clickable(DELISTING_NOTE)
+        self.driver.find_element(By.XPATH, DELISTING_NOTE).click()
+        
+        search_input.clear()
+        time.sleep(1)
         # identification number column 
         
         self.wait_until_clickable(IDENTIFICATION_NUMBER_VIEW)
