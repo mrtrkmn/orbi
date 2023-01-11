@@ -41,8 +41,12 @@ jobs:
         chromedriver --version
 
     - name: Execute the script
-      run: |
-        python /home/runner/work/IDP-Works/IDP-Works/orbis-access-auto.py 
+      uses: nick-fields/retry@v2
+      with:
+        timeout_minutes: 40
+        max_attempts: 3
+        command: |
+          python /home/runner/work/IDP-Works/IDP-Works/orbis-access-auto.py 
       env:
         ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL_ADDRESS }}
         ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
