@@ -17,10 +17,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.common.exceptions import NoSuchElementException
-from argparse import ArgumentParser
 from datetime import datetime
 from crawl_data import prepare_data
-
+import hashlib
 
 # ORBIS ELEMENT VARIABLES 
 LOGIN_BUTTON = "/html/body/div[2]/div/div[1]/div[1]/div[1]/form/fieldset/div[3]/input"
@@ -92,7 +91,7 @@ POPUP_DOWNLOAD_BUTTON = '/html/body/section[2]/div[6]/div[3]/a'
 class Orbis:
     
 
-    def __init__(self, config_path, offline=False):
+    def __init__(self, offline=False):
     
         
         self.executable_path = getenv("CHROMEDRIVER_PATH")
@@ -649,25 +648,31 @@ class Orbis:
         df.to_excel(file_name)
         
 
-def run_batch_search(config_path, input_file, process_name):
-    with Orbis(config_path) as orbis:
+def run_batch_search( input_file, process_name):
+    with Orbis() as orbis:
         orbis.batch_search(orbis.data_dir+input_file, process_name)
 
 # offline_data_aggregation is used to generate data by considering GUO of companies
 # this data needs to be generated when we have new data from Orbis (refer workflow in README.md)
-def generate_data_for_guo(config_path, orbis_data_file, output_file):
+def generate_data_for_guo( orbis_data_file, output_file):
     print(f"Generating data for GUO for file {orbis_data_file} and saving to {output_file}")
-    with Orbis(config_path, offline=True) as orbis:
+    with Orbis( offline=True) as orbis:
         output_file = path.join(orbis.data_dir, output_file)
         orbis_data_file = path.join(orbis.data_dir, orbis_data_file)
         orbis.generate_data_for_guo(orig_orbis_data=orbis_data_file, file=output_file)
 
+def generate_data_for_ish( orbis_data_file, output_file):
+    print(f"Generating data for ISH for file {orbis_data_file} and saving to {output_file}")
+    with Orbis( offline=True) as orbis:
+        output_file = path.join(orbis.data_dir, output_file)
+        orbis_data_file = path.join(orbis.data_dir, orbis_data_file)
+        orbis.generate_data_for_ish(orig_orbis_data=orbis_data_file, file=output_file)
 
 
 # aggregate_data is used to aggregate data by considering Licensee of companies
 # (refer workflow in README.md) 
-def aggregate_data(config_path, orbis_file, aggregated_output_file):
-    with Orbis(config_path, offline=True) as orbis:
+def aggregate_data( orbis_file, aggregated_output_file):
+    with Orbis(offline=True) as orbis:
         # data processing and augmentation
         # after orbis search step following needs to run 
         orbis_file = path.join(orbis.data_dir, orbis_file)
@@ -678,15 +683,43 @@ def aggregate_data(config_path, orbis_file, aggregated_output_file):
         df_result = orbis.prepare_data(df_licensee, df_orbis_data)
         orbis.to_xlsx(df_result, aggregate_output_file)
 
+def generate_unique_id(company_name, n):
+    sha256 = hashlib.sha256()
+    sha256.update(company_name.encode())
+    return sha256.hexdigest()[:n]
+
+def post_process_data(excel_file):
+    # create another column for unique identifier with hash for column 1 however no negative values
+    # drop all rows where Orbis ID number is null
+    # get data/ folder path and append file name to it
+    get_dir_path = getenv("DATA_DIR")
+    # append data and file name to it
+    excel_file = path.join(get_dir_path, excel_file)
+    
+    if not path.exists(excel_file):
+        print(f"{excel_file} does not exist")
+        return
+    print(f"post process data for {excel_file}")
+    df = pd.read_excel(excel_file, sheet_name='Results')
+    df = df[df['Orbis ID number'].notna()]
+    # drop Unnamed: 0 column and duplicate columns
+    df = df.drop(columns=['Unnamed: 0'])
+    
+    # remove duplicate columns however keep first occurance
+    df = df.loc[:,~df.columns.duplicated()]
+    
+    # fix lentgth uniquie identifier
+    df['Unique identifier'] = df['Orbis ID number'].apply(lambda x: generate_unique_id(str(x), 10))    
+    df.to_excel(excel_file)
+    print(f"post process data for {excel_file} completed")
+    
 
 def run_in_parallel_generic(function, args):
     with multiprocessing.pool.ThreadPool(2) as pool:
         results = pool.starmap(function, args)
     
 if __name__ == "__main__":
-    config_path = "./config/config.yaml"
     timestamp = datetime.now().strftime("%d_%m_%Y")
-   
         
     # Step 1 
     # --> crawl_data.py should generate data in data/data.csv
@@ -704,7 +737,7 @@ if __name__ == "__main__":
     # # Step 2 
     # # --> data/data.csv needs to be uploaded to Orbis to start batch search
     # run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file needs to come from crawl_data.py
-    run_in_parallel_generic(run_batch_search, [(config_path, f"orbis_data_licensee_{timestamp}.csv","turtle"), (config_path, f"orbis_data_licensor_{timestamp}.csv","viper")])
+    run_in_parallel_generic(run_batch_search, [( f"orbis_data_licensee_{timestamp}.csv","turtle"), (f"orbis_data_licensor_{timestamp}.csv","viper")])
 
 
     # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
@@ -715,30 +748,33 @@ if __name__ == "__main__":
     # # # # Step 3 
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
    
+    run_in_parallel_generic(generate_data_for_guo, [( f"orbis_data_licensee_{timestamp}.xlsx",  f"orbis_data_licensee_guo_{timestamp}.csv"), ( f"orbis_data_licensor_{timestamp}.xlsx",  f"orbis_data_licensor_guo_{timestamp}.csv")])
    
-    run_in_parallel_generic(generate_data_for_guo, [(config_path, f"orbis_data_licensee_{timestamp}.xlsx",  f"orbis_data_licensee_guo_{timestamp}.csv"), (config_path,  f"orbis_data_licensor_{timestamp}.xlsx",  f"orbis_data_licensor_guo_{timestamp}.csv")])
-   
-    # generate_data_for_guo(config_path, orbis_data_file=f"orbis_data_licensee_{timestamp}.xlsx", output_file=f"orbis_data_licensee_guo_{timestamp}.csv")
-
-    # generate_data_for_guo(config_path, orbis_data_file=f"orbis_data_licensor_{timestamp}.xlsx", output_file=f"orbis_data_licensor_guo_{timestamp}.csv")
-    # time.sleep(2) # wait for 1 second for data to be saved in data folder
-    
-    # # # # Step 4
-    # # # # # --> run batch search for guo_data
-    # run_batch_search(config_path, f"orbis_data_guo_{timestamp}.csv")
-    
-    
-    run_in_parallel_generic(run_batch_search, [(config_path, f"orbis_data_licensee_guo_{timestamp}.csv","turtle_guo"), (config_path, f"orbis_data_licensor_guo_{timestamp}.csv","viper_guo")])
+  
+    run_in_parallel_generic(run_batch_search, [( f"orbis_data_licensee_guo_{timestamp}.csv","turtle_guo"), ( f"orbis_data_licensor_guo_{timestamp}.csv","viper_guo")])
         
+    time.sleep(2) # wait for 2 seconds for data to be saved in data folder
     
+    run_in_parallel_generic(generate_data_for_ish, [( f"orbis_data_licensee_{timestamp}.xlsx",  f"orbis_data_licensee_ish_{timestamp}.csv"), ( f"orbis_data_licensor_{timestamp}.xlsx",  f"orbis_data_licensor_ish_{timestamp}.csv")])
+    
+    
+    run_in_parallel_generic(run_batch_search, [( f"orbis_data_licensee_ish_{timestamp}.csv","turtle_ish"), ( f"orbis_data_licensor_ish_{timestamp}.csv","viper_ish")])
     # # # # # Step 5
-    # time.sleep(2) # wait for 2 seconds for data to be saved in data folder
+    time.sleep(2) # wait for 2 seconds for data to be saved in data folder
     
-    # # # # --> aggregate_data to aggregate data by considering Licensee of companies
-    # aggregate_data(config_path, f"orbis_data_{timestamp}.xlsx", f"orbis_aggregated_data_{timestamp}.xlsx")  #  aggregate data by considering the file searched with data.csv
-    # aggregate_data(config_path, f"orbis_data_guo_{timestamp}.xlsx", f"orbis_aggregated_data_guo_{timestamp}.xlsx")  #  aggregate data by considering the file searched with guo_data.csv
-    # aggregate_data(config_path, f"orbis_d.xlsx", f"orbis_aggregated_d.xlsx")  #  aggregate data by considering the file searched with data.csv
-
-    
-    run_in_parallel_generic(aggregate_data, [(config_path, f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"), (config_path, f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx")])
+    run_in_parallel_generic(aggregate_data, [( f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"), (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx")])
         
+        
+    run_in_parallel_generic(post_process_data, [(f"orbis_aggregated_data_{timestamp}.xlsx"),
+                                                (f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
+                                                (f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
+                                                (f"orbis_aggregated_data_guo_{timestamp}.xlsx"),
+                                                (f"orbis_data_guo_{timestamp}.xlsx"),
+                                                (f"orbis_data_licensee_ish_{timestamp}.xlsx"),
+                                                (f"orbis_data_licensor_ish_{timestamp}.xlsx"),
+                                                (f"orbis_data_licensee_{timestamp}.xlsx"),
+                                                (f"orbis_data_licensee_guo_{timestamp}.xlsx"),
+                                                (f"orbis_data_licensor_{timestamp}.xlsx"),
+                                                (f"orbis_data_licensor_guo_{timestamp}.xlsx"),
+                                                (f"orbis_data_{timestamp}.xlsx")])
+    
