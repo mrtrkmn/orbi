@@ -42,6 +42,5 @@ Beside the given main workflow given below, there are other options which can be
 
 The workflow is subject to change in time. 
 
-
-![Workflow](./github/imgs/workflow-on-dark.png#gh-dark-mode-only)
-![Workflow](./github/imgs/workflow-on-light.png#gh-light-mode-only)
+![workflow](.github/imgs/workflow-on-dark.png#gh-dark-mode-only)
+![workflow](.github/imgs/workflow-on-light.png#gh-light-mode-only)
