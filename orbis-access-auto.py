@@ -714,13 +714,16 @@ def post_process_data(excel_file):
     print(f"post process data for {excel_file} completed")
     
 
-def run_in_parallel_generic(function, args_list):
-    num_threads = multiprocessing.cpu_count()
-    with multiprocessing.pool.ThreadPool(num_threads) as pool:
-        # results = pool.starmap(function, args)
-        pool.imap(function, args_list)
-        pool.close()
-        pool.join()
+def run_in_parallel_generic(function,starmap, args):
+    number_of_processes = multiprocessing.cpu_count()
+    if starmap:
+        with multiprocessing.pool.ThreadPool(number_of_processes) as pool:
+            results = pool.starmap(function, args)
+    else: 
+        with multiprocessing.pool.ThreadPool(number_of_processes) as pool:
+            pool.imap(function, args)
+            pool.close()
+            pool.join()
     
 if __name__ == "__main__":
     timestamp = datetime.now().strftime("%d_%m_%Y")
@@ -741,7 +744,7 @@ if __name__ == "__main__":
     # # Step 2 
     # # --> data/data.csv needs to be uploaded to Orbis to start batch search
     # run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file needs to come from crawl_data.py
-    run_in_parallel_generic(run_batch_search, [( f"orbis_data_licensee_{timestamp}.csv","turtle"), (f"orbis_data_licensor_{timestamp}.csv","viper")])
+    run_in_parallel_generic(run_batch_search, True,[( f"orbis_data_licensee_{timestamp}.csv","turtle"), (f"orbis_data_licensor_{timestamp}.csv","viper")])
 
 
     # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
@@ -752,24 +755,24 @@ if __name__ == "__main__":
     # # # # Step 3 
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
    
-    run_in_parallel_generic(generate_data_for_guo, [( f"orbis_data_licensee_{timestamp}.xlsx",  f"orbis_data_licensee_guo_{timestamp}.csv"), ( f"orbis_data_licensor_{timestamp}.xlsx",  f"orbis_data_licensor_guo_{timestamp}.csv")])
+    run_in_parallel_generic(generate_data_for_guo, True,[( f"orbis_data_licensee_{timestamp}.xlsx",  f"orbis_data_licensee_guo_{timestamp}.csv"), ( f"orbis_data_licensor_{timestamp}.xlsx",  f"orbis_data_licensor_guo_{timestamp}.csv")])
    
   
-    run_in_parallel_generic(run_batch_search, [( f"orbis_data_licensee_guo_{timestamp}.csv","turtle_guo"), ( f"orbis_data_licensor_guo_{timestamp}.csv","viper_guo")])
+    run_in_parallel_generic(run_batch_search, True,[( f"orbis_data_licensee_guo_{timestamp}.csv","turtle_guo"), ( f"orbis_data_licensor_guo_{timestamp}.csv","viper_guo")])
         
     time.sleep(2) # wait for 2 seconds for data to be saved in data folder
     
-    run_in_parallel_generic(generate_data_for_ish, [( f"orbis_data_licensee_{timestamp}.xlsx",  f"orbis_data_licensee_ish_{timestamp}.csv"), ( f"orbis_data_licensor_{timestamp}.xlsx",  f"orbis_data_licensor_ish_{timestamp}.csv")])
+    run_in_parallel_generic(generate_data_for_ish, True,[( f"orbis_data_licensee_{timestamp}.xlsx",  f"orbis_data_licensee_ish_{timestamp}.csv"), ( f"orbis_data_licensor_{timestamp}.xlsx",  f"orbis_data_licensor_ish_{timestamp}.csv")])
     
     
-    run_in_parallel_generic(run_batch_search, [( f"orbis_data_licensee_ish_{timestamp}.csv","turtle_ish"), ( f"orbis_data_licensor_ish_{timestamp}.csv","viper_ish")])
+    run_in_parallel_generic(run_batch_search,True, [( f"orbis_data_licensee_ish_{timestamp}.csv","turtle_ish"), ( f"orbis_data_licensor_ish_{timestamp}.csv","viper_ish")])
     # # # # # Step 5
     time.sleep(2) # wait for 2 seconds for data to be saved in data folder
     
-    run_in_parallel_generic(aggregate_data, [( f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"), (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx")])
+    run_in_parallel_generic(aggregate_data,True, [( f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"), (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx")])
         
         
-    run_in_parallel_generic(post_process_data, [(f"orbis_aggregated_data_{timestamp}.xlsx"),
+    run_in_parallel_generic(post_process_data, False, [(f"orbis_aggregated_data_{timestamp}.xlsx"),
                                                 (f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
                                                 (f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
                                                 (f"orbis_aggregated_data_guo_{timestamp}.xlsx"),
