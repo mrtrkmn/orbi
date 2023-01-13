@@ -714,9 +714,13 @@ def post_process_data(excel_file):
     print(f"post process data for {excel_file} completed")
     
 
-def run_in_parallel_generic(function, args):
-    with multiprocessing.pool.ThreadPool(2) as pool:
-        results = pool.starmap(function, args)
+def run_in_parallel_generic(function, args_list):
+    num_threads = multiprocessing.cpu_count()
+    with multiprocessing.pool.ThreadPool(num_threads) as pool:
+        # results = pool.starmap(function, args)
+        pool.imap(function, args_list)
+        pool.close()
+        pool.join()
     
 if __name__ == "__main__":
     timestamp = datetime.now().strftime("%d_%m_%Y")
