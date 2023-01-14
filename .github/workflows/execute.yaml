@@ -80,3 +80,10 @@ jobs:
     - name: Send it to Telegram 
       run: |
         curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+
+
+    - name: Upload to artifact 
+      uses: actions/upload-artifact@v3
+      with:
+        name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
+        path: /home/runner/work/IDP-Works/IDP-Works/data/
