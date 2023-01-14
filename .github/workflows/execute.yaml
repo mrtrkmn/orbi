@@ -57,6 +57,7 @@ jobs:
         CHROMEDRIVER_PATH: /home/runner/work/IDP-Works/IDP-Works/chromedriver
         DATA_DIR: /home/runner/work/IDP-Works/IDP-Works/data/
         DATA_SOURCE: sample_data.xlsx
+        LOG_DIR: /home/runner/work/IDP-Works/IDP-Works/log/
 
   # get timestamp in format DD-MM-YYYY
     - name: Get timestamp
