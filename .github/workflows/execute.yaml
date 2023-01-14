@@ -102,7 +102,7 @@ jobs:
     - name: Slack Notify
       uses: rtCamp/action-slack-notify@v2.2.0
       env:
-        SLACK_CHANNEL: general
+        SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
         SLACK_MESSAGE: 'Post Content :rocket: data link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}/'
         SLACK_TITLE: Data is ready !
