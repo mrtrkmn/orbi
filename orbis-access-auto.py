@@ -71,8 +71,8 @@ BVD_SECTORS = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.BVD_SECTOR_CORE_
 US_SIC_PRIMARY_CODES = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.USSIC_PRIMARY_CODE:UNIVERSAL"]/div[2]/span'
 US_SIC_SECONDARY_CODES = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.USSIC_SECONDARY_CODE:UNIVERSAL"]/div[2]/span'
 DELISTING_NOTE  = '//*[@id="STOCKDATA*STOCKDATA.SD_DELISTED_NOTE:UNIVERSAL"]/div[2]/span'
-
-
+DESCRIPTION_HISTORY = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.DESCRIPTION_HISTORY:UNIVERSAL"]/div[2]/span'
+HISTORY = '//*[@id="OVERVIEW*OVERVIEW.OVERVIEW_HISTORY:UNIVERSAL"]/div[2]/span'
 IDENTIFICATION_NUMBER_VIEW = '/html/body/section[2]/div[3]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]/div'
 
 TRADE_DESC = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.TRADE_DESCRIPTION_EN:UNIVERSAL"]/div[1]/span'
@@ -444,7 +444,19 @@ class Orbis:
         self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()
         logger.debug (f"{process_name} us sic secondary codes is added")
     
-                    
+        
+        search_input.clear()
+        search_input.send_keys("Description and history")
+        search_input.send_keys(Keys.RETURN)
+        self.wait_until_clickable(DESCRIPTION_HISTORY)
+        self.driver.find_element(By.XPATH, DESCRIPTION_HISTORY).click()
+        
+        search_input.clear()
+        search_input.send_keys("History")
+        search_input.send_keys(Keys.RETURN)
+        self.wait_until_clickable(HISTORY)
+        self.driver.find_element(By.XPATH, HISTORY).click()
+    
       
         # self.driver.refresh()
         search_input.clear()
@@ -453,6 +465,9 @@ class Orbis:
         self.driver.find_element(By.XPATH, IDENTIFICATION_NUMBER_VIEW).click()
         logger.debug(f"{process_name} identification number is clicked")
         # add BVD ID number column
+       
+       
+       
        
         self.wait_until_clickable(BVD_ID_NUMBER_ADD)
         self.driver.find_element(By.XPATH, BVD_ID_NUMBER_ADD).click()
