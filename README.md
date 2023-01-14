@@ -1,6 +1,8 @@
 
 # The Crawler 
 
+[![Crawl Data](https://github.com/mrtrkmn/IDP-Works/actions/workflows/execute.yaml/badge.svg)](https://github.com/mrtrkmn/IDP-Works/actions/workflows/execute.yaml)
+
 This is a simple crawler that crawls data from two websites currently:
 
 - https://www.ipo.gov.uk
