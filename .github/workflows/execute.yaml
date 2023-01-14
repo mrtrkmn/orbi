@@ -1,5 +1,5 @@
 
-name: Python application
+name: Crawl Data
 
 on:
   # push:
@@ -9,7 +9,9 @@ on:
 
   workflow_dispatch:
     name: Execute Orbis Access Automation
-    
+  
+  repository_dispatch:
+    types: crawl-data
 
 permissions:
   contents: read
