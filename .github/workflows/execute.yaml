@@ -77,7 +77,7 @@ jobs:
     - name: Zip data
       run: |
         zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip /home/runner/work/IDP-Works/IDP-Works/data/* -x /home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
-    
+
     - name: Send it to Telegram 
       run: |
         curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
@@ -87,4 +87,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
-        path: /home/runner/work/IDP-Works/IDP-Works/data/
+        path: |
+          /home/runner/work/IDP-Works/IDP-Works/data/
+          /home/runner/work/IDP-Works/IDP-Works/logs/
+          !/home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
