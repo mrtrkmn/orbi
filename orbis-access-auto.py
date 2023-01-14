@@ -20,6 +20,9 @@ from selenium.common.exceptions import NoSuchElementException
 from datetime import datetime
 from crawl_data import prepare_data
 import hashlib
+import logging 
+import pathlib 
+
 
 # ORBIS ELEMENT VARIABLES 
 LOGIN_BUTTON = "/html/body/div[2]/div/div[1]/div[1]/div[1]/form/fieldset/div[3]/input"
@@ -37,7 +40,6 @@ KEY_FINANCIAL_DATA = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/u
 OP_REVENUE_SETTINGS = '//*[@id="KEY_FINANCIALS*KEY_FINANCIALS.OPRE:UNIVERSAL"]/div[1]/span[2]'
 PL_BEFORE_TAX_SETTINGS = '//*[@id="KEY_FINANCIALS*KEY_FINANCIALS.PLBT:UNIVERSAL"]/div[1]'
 PL_FOR_PERIOD_SETTINGS = '//*[@id="KEY_FINANCIALS*KEY_FINANCIALS.PL:UNIVERSAL"]/div[1]'
-# PL_FOR_PROFIT_LOSS_SETTINGS = '//*[@id="PROFIT_LOSS_ACCOUNT*PROFIT_LOSS_ACCOUNT.PL:IND"]/div[1]/span[2]'
 CASH_FLOW_SETTINGS = '//*[@id="KEY_FINANCIALS*KEY_FINANCIALS.CF:UNIVERSAL"]/div[1]'
 TOTAL_ASSETS_SETTINGS = '//*[@id="KEY_FINANCIALS*KEY_FINANCIALS.TOAS:UNIVERSAL"]/div[1]'
 NUMBER_OF_EMPLOYEES_SETTINGS = '/html/body/section[2]/div[3]/div/div[2]/div[1]/div/div[3]/div/ul/li[2]/div[1]'
@@ -88,6 +90,22 @@ EXPORT_BUTTON = '/html/body/section[2]/div[5]/form/div[2]/a[2]'
 POPUP_DOWNLOAD_BUTTON = '/html/body/section[2]/div[6]/div[3]/a'
 
 
+# initialize logger 
+
+timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+log_file = pathlib.Path(getenv("LOG_DIR")).joinpath(rf'{timestamp}_orbis.log')
+
+
+logging.basicConfig(
+    filename=log_file,
+    level=logging.DEBUG,
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S')
+
+logger = logging.getLogger()
+
+
+
 class Orbis:
     
 
@@ -129,7 +147,7 @@ class Orbis:
     
     def __enter__(self):
         if not self.offline:
-            print("Starting chrome driver...")
+            logger.debug("Starting chrome driver...")
             service = ChromeService(executable_path=self.executable_path)
             self.chrome_options = webdriver.ChromeOptions()
             prefs = {'download.default_directory' : self.data_dir}
@@ -140,7 +158,7 @@ class Orbis:
             self.chrome_options.add_experimental_option('prefs', prefs)
             self.chrome_options.add_experimental_option("detach", True)
             self.driver = webdriver.Chrome(service=service, options=self.chrome_options)
-            print("Logging in to Orbis...")
+            logger.debug("Chrome driver started")
             self.login()
         return self
     
@@ -153,7 +171,7 @@ class Orbis:
     
     def drop_columns(self, df, regex):
        columns_to_drop = df.filter(regex=regex).columns
-       print("Dropping columns: ", columns_to_drop)
+       logger.debug("Dropping columns: ", columns_to_drop)
        return df.drop(columns=columns_to_drop)
    
    
@@ -179,10 +197,12 @@ class Orbis:
         login_button = self.driver.find_element(By.XPATH,LOGIN_BUTTON)
         # click the login button
         login_button.click()
+        logger.debug("Logging in Orbis ...")
 
     def logout(self):
         # logout from the web site
         time.sleep(3)
+        logger.debug("Logging out Orbis ...")
         self.driver.get(self.orbis_logout_url)
         
     def scroll_to_bottom(self):
@@ -211,6 +231,7 @@ class Orbis:
         search_input.send_keys(item)
         search_input.send_keys(Keys.RETURN)
         time.sleep(5)
+        logger.debug(f"Searching for {item} ...")
         
         
     def check_checkboxes(self, field=''):
@@ -235,14 +256,15 @@ class Orbis:
                         continue        
                 self.driver.execute_script(f"arguments[0].scrollTo(0,{scroll_position})", scrollable)
                 scroll_position += scroll_amount
-                print (f"{field} scroll position is {scroll_position}")
+                logger.debug(f"{field} Scrolling to {scroll_position} ...")
                 time.sleep(0.5)
         except Exception as e:
-            print(e)
+            logger.debug(f"Exception on check_checkboxes {e}")
     
     # select_all_years function is used to get the operating revenue data in millions for all available years
     def select_all_years(self, field='',  is_checked=False):
         # click to finanacial data column        
+        logger.debug(f"Selecting all years for {field} ...")
         if not is_checked: 
             
             retry = 0
@@ -258,16 +280,16 @@ class Orbis:
                     self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()     
                     break 
                 except Exception as e:
-                    print(f"exception on click {e} retrying... {retry}")
+                    logger.debug(f"exception on click {e} retrying... {retry}")
                     retry += 1
                     time.sleep(5)
             
     def batch_search(self, input_file, process_name=''):
        
-       
+        logger.debug(f"Starting batch search for {process_name} ...")
 
         if not path.exists(input_file):
-            print(f"{process_name}: input file {input_file} does not exist")
+            logger.debug(f"{process_name}: input file {input_file} does not exist")
             return
 
         excel_output_file_name = path.basename(input_file).split(".")[0] 
@@ -294,7 +316,7 @@ class Orbis:
 
         self.driver.find_element(By.XPATH, FIELD_SEPERATOR).send_keys(Keys.RETURN)
         
-        print(f"{process_name} field seperator is cleared")
+        logger.debug(f"{process_name} field seperator is cleared")
         time.sleep(2)
         self.wait_until_clickable(APPLY_BUTTON)
 
@@ -308,10 +330,10 @@ class Orbis:
             while warning_message.text == "Search is not finished":
                     time.sleep(5)
                     warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
-                    print(f"{process_name}: {warning_message.text}")
+                    logger.debug(f"{process_name}: {warning_message.text}")
             time.sleep(5)
         except Exception as e:
-            print(f"{process_name}: search is not finished: stale element exception {e}")
+            logger.debug(f"{process_name}: search is not finished: stale element exception {e}")
             
         self.wait_until_clickable(VIEW_RESULTS_BUTTON)
         view_result_sub_url = self.driver.find_element(By.XPATH, VIEW_RESULTS_BUTTON)
@@ -325,10 +347,10 @@ class Orbis:
             while main_content_style != "none":
                 main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
                 main_content_style = main_content_div.value_of_css_property('max-width')
-                print(f"{process_name}main content style is {main_content_style}")
+                logger.debug(f"{process_name}main content style is {main_content_style}")
                 time.sleep(0.5)
         except Exception as e:
-            print(e)
+             logger.debug(e)
             
         time.sleep(5)            
         self.wait_until_clickable(ADD_REMOVE_COLUMNS_VIEW)    
@@ -344,16 +366,16 @@ class Orbis:
         search_input = self.driver.find_element(By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
         search_input.send_keys("City")
         search_input.send_keys(Keys.RETURN)
-        print (f"{process_name} city is searched")
+        logger.debug (f"{process_name} city is searched")
         
         # add city 
         self.wait_until_clickable(CITY_COLUMN)
         self.driver.find_element(By.XPATH, CITY_COLUMN).click()
-        print(f"{process_name} city is added")
+        logger.debug(f"{process_name} city is added")
         
         self.wait_until_clickable(POPUP_SAVE_BUTTON)
         self.driver.find_element(By.XPATH, POPUP_SAVE_BUTTON).click()
-        print(f"{process_name} popup save button is clicked")
+        logger.debug(f"{process_name} popup save button is clicked")
         
         # self.driver.refresh()
         search_input.clear()
@@ -361,11 +383,11 @@ class Orbis:
         
         search_input.send_keys("Country")
         search_input.send_keys(Keys.RETURN)
-        print(f"{process_name} country is searched")
+        logger.debug(f"{process_name} country is searched")
            
         self.wait_until_clickable(COUNTRY_COLUMN)
         self.driver.find_element(By.XPATH, COUNTRY_COLUMN).click()
-        print(f"{process_name} country is added")
+        logger.debug(f"{process_name} country is added")
             
         search_input.clear()
         time.sleep(1) 
@@ -374,7 +396,7 @@ class Orbis:
         
         search_input.send_keys("Delisting note")
         search_input.send_keys(Keys.RETURN)
-        print(f"{process_name} delisting note is searched")
+        logger.debug(f"{process_name} delisting note is searched")
         
         self.wait_until_clickable(DELISTING_NOTE)
         self.driver.find_element(By.XPATH, DELISTING_NOTE).click()
@@ -385,22 +407,22 @@ class Orbis:
         
         self.wait_until_clickable(IDENTIFICATION_NUMBER_VIEW)
         self.driver.find_element(By.XPATH, IDENTIFICATION_NUMBER_VIEW).click()
-        print(f"{process_name} identification number is clicked")
+        logger.debug(f"{process_name} identification number is clicked")
         # search input for Other company ID number (CIK number)
         self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
         # try: 
         search_input = self.driver.find_element(By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
         search_input.send_keys("Other company ID number")
         search_input.send_keys(Keys.RETURN)
-        print(f"{process_name} other company id number is searched")
+        logger.debug(f"{process_name} other company id number is searched")
         
         self.wait_until_clickable(CIK_NUMBER_VIEW)
         self.driver.find_element(By.XPATH, CIK_NUMBER_VIEW).click()
-        print(f"{process_name} cik number is added")
+        logger.debug(f"{process_name} cik number is added")
         
         self.wait_until_clickable(POPUP_SAVE_BUTTON)
         self.driver.find_element(By.XPATH, POPUP_SAVE_BUTTON).click()
-        print(f"{process_name} popup save button is clicked")
+        logger.debug(f"{process_name} popup save button is clicked")
         
         search_input = self.driver.find_element(By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
         search_input.clear()
@@ -410,7 +432,7 @@ class Orbis:
         self.driver.find_element(By.XPATH, US_SIC_PRIMARY_CODES).click()
         self.wait_until_clickable(OP_REVENUE_OK_BUTTON)
         self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()
-        print (f"{process_name} us sic primary codes is added")
+        logger.debug (f"{process_name} us sic primary codes is added")
         
         search_input = self.driver.find_element(By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
         search_input.clear()
@@ -420,7 +442,7 @@ class Orbis:
         self.driver.find_element(By.XPATH, US_SIC_SECONDARY_CODES).click()
         self.wait_until_clickable(OP_REVENUE_OK_BUTTON)
         self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()
-        print (f"{process_name} us sic secondary codes is added")
+        logger.debug (f"{process_name} us sic secondary codes is added")
     
                     
       
@@ -429,17 +451,17 @@ class Orbis:
         time.sleep(1)
         self.wait_until_clickable(IDENTIFICATION_NUMBER_VIEW)
         self.driver.find_element(By.XPATH, IDENTIFICATION_NUMBER_VIEW).click()
-        print(f"{process_name} identification number is clicked")
+        logger.debug(f"{process_name} identification number is clicked")
         # add BVD ID number column
        
         self.wait_until_clickable(BVD_ID_NUMBER_ADD)
         self.driver.find_element(By.XPATH, BVD_ID_NUMBER_ADD).click()
-        print(f"{process_name} bvd id number is added")
+        logger.debug(f"{process_name} bvd id number is added")
         # add ORBIS ID number column
        
         self.wait_until_clickable(ORBIS_ID_NUMBER_ADD)
         self.driver.find_element(By.XPATH, ORBIS_ID_NUMBER_ADD).click()
-        print(f"{process_name} orbis id number is added")
+        logger.debug(f"{process_name} orbis id number is added")
 
         time.sleep(2)
         # scroll down within in panel 
@@ -450,7 +472,7 @@ class Orbis:
        
         self.wait_until_clickable(OWNERSHIP_COLUMN)
         self.driver.find_element(By.XPATH, OWNERSHIP_COLUMN).click()
-        print(f"{process_name} ownership data is added")
+        logger.debug(f"{process_name} ownership data is added")
         
         # scroll down within in panel 
         self.scroll_to_bottom()
@@ -460,7 +482,7 @@ class Orbis:
         
         self.wait_until_clickable(SHAREHOLDERS_COLUMN)
         self.driver.find_element(By.XPATH, SHAREHOLDERS_COLUMN).click()
-        print(f"{process_name} shareholders is added")
+        logger.debug(f"{process_name} shareholders is added")
         
         self.scroll_to_bottom()
         time.sleep(1)
@@ -468,7 +490,7 @@ class Orbis:
         
         self.wait_until_clickable(GUO_COLUMN)
         self.driver.find_element(By.XPATH, GUO_COLUMN).click()
-        print(f"{process_name} global ultimate owner is added")
+        logger.debug(f"{process_name} global ultimate owner is added")
         
         self.scroll_to_bottom()
         time.sleep(1)
@@ -476,33 +498,33 @@ class Orbis:
         
         self.wait_until_clickable(GUO_NAME_INFO)
         self.driver.find_element(By.XPATH, GUO_NAME_INFO).click()
-        print(f"{process_name} global ultimate owner name is added")
+        logger.debug(f"{process_name} global ultimate owner name is added")
         
         self.scroll_to_bottom()
         time.sleep(1)
         
         self.wait_until_clickable(IMMEDIATE_PARENT_COMPANY_NAME)
         self.driver.find_element(By.XPATH, IMMEDIATE_PARENT_COMPANY_NAME).click()
-        print(f"{process_name} immediate parent company name is added")
+        logger.debug(f"{process_name} immediate parent company name is added")
             
         self.wait_until_clickable(ISH_NAME)
         self.driver.find_element(By.XPATH, ISH_NAME).click()
-        print (f"{process_name} ish name is added")
+        logger.debug (f"{process_name} ish name is added")
         
         attempts = 0
         max_attempts = 10
         while True:
             if not self.driver.title:
-                print(f"{process_name} page title is None retrying... {attempts}")
+                logger.debug(f"{process_name} page title is None retrying... {attempts}")
                 self.driver.refresh()
                 attempts += 1
                 if attempts > max_attempts:
                     break
                 time.sleep(1)
             else:
-                print(f"{process_name} page title is {self.driver.title}")
-                print(f"{process_name} page url is {self.driver.current_url}")
-                print(f"{process_name} exit from while loop self.driver.title not None")
+                logger.debug(f"{process_name} page title is {self.driver.title}")
+                logger.debug(f"{process_name} page url is {self.driver.current_url}")
+                logger.debug(f"{process_name} exit from while loop self.driver.title not None")
                 break
         
         
@@ -523,7 +545,7 @@ class Orbis:
                     user_selections_panel = self.driver.find_element(By.XPATH, USER_SELECTIONS_PANEL)
                     all_selected_fields = user_selections_panel.find_elements(By.CLASS_NAME, 'label')
                     if item in [field.text for field in all_selected_fields]:
-                        print(f"{process_name} item already selected : {item}")
+                        logger.debug(f"{process_name} item already selected : {item}")
                         item_already_selected = True
                         break
                     self.wait_until_clickable(xpath)
@@ -533,16 +555,16 @@ class Orbis:
                         self.select_all_years(field = item, is_financial_data=False, is_checked=is_checked)
                     else:
                         self.select_all_years(field = item, is_checked=is_checked)
-                    print(f"{process_name} item : {item} xpath : {xpath} ")
+                    logger.debug(f"{process_name} item : {item} xpath : {xpath} ")
                     break
                 except Exception as e:
                     if item_already_selected:
-                        print(f"{process_name} exception happened but item already selected ; skipping  {item} ")
+                        logger.debug(f"{process_name} exception happened but item already selected ; skipping  {item} ")
                         break 
                     retries += 1
-                    print(f"{process_name} stale element reference exception, trying again {retries} : {item}")
+                    logger.debug(f"{process_name} stale element reference exception, trying again {retries} : {item}")
             is_checked = True
-        print(f"{process_name} all items are added: {self.variables.keys()}")
+        logger.debug(f"{process_name} all items are added: {self.variables.keys()}")
         
         # apply changes button 
         
@@ -570,26 +592,26 @@ class Orbis:
         
         WebDriverWait(self.driver, 30*60).until(EC.text_to_be_present_in_element((By.XPATH, EXCEL_BUTTON), 'Excel'))
         self.driver.find_element(By.XPATH, EXCEL_BUTTON).click()
-        print(f"{process_name} excel button is clicked")
+        logger.debug(f"{process_name} excel button is clicked")
         
         self.wait_until_clickable(EXCEL_EXPORT_NAME_FIELD)
         excel_filename_input = self.driver.find_element(By.XPATH, EXCEL_EXPORT_NAME_FIELD)
         excel_filename_input.clear()
         excel_filename_input.send_keys(excel_output_file_name)
-        print(f"{process_name} excel file name is entered")
+        logger.debug(f"{process_name} excel file name is entered")
         
         # excel_output_file_name.send_keys(Keys.RETURN)
         time.sleep(2)
         WebDriverWait(self.driver, 30*60).until(EC.text_to_be_present_in_element((By.XPATH, EXPORT_BUTTON), 'Export'))
         self.driver.find_element(By.XPATH, EXPORT_BUTTON).click()
-        print(f"{process_name} export button is clicked")
+        logger.debug(f"{process_name} export button is clicked")
                 
         self.wait_until_clickable(POPUP_DOWNLOAD_BUTTON)
         while True:
             download_button= self.driver.find_element(By.XPATH, POPUP_DOWNLOAD_BUTTON)
             if download_button.value_of_css_property("background-color") == "rgba(0, 20, 137, 1)":
                 # download_button.send_keys(Keys.RETURN)       
-                print(f"{process_name} waiting for data generation to download ")
+                logger.debug(f"{process_name} waiting for data generation to download ")
                 time.sleep(0.5)         
                 break
             else: 
@@ -598,24 +620,28 @@ class Orbis:
     # create a file likewe have data.csv file
     # company name;city;country;identifier
     def generate_data_for_guo(self,orig_orbis_data, file):
+        logger.debug(f"Generating data for guo... ")
         df = self.read_xlxs_file(orig_orbis_data,sheet_name='Results')
         df = df[['GUO - Name','City\nLatin Alphabet','Country','Other company ID number']]
         # drop rows where company name is null
         df = df[df['GUO - Name'].notna()]
         df.to_csv(file, index=False,header=['company name','city','country','identifier'], sep=';')
+        logger.debug(f"Data for guo is generated... ")
         
     def generate_data_for_ish(self, orig_orbis_data, file):
+        logger.debug(f"Generating data for ish... ")
         df = self.read_xlxs_file(orig_orbis_data,sheet_name='Results')
         df = df[['ISH - Name','City\nLatin Alphabet','Country','Other company ID number']]
         df = df[df['ISH - Name'].notna()]
         df.to_csv(file, index=False,header=['company name','city','country','identifier'], sep=';')
-        
+        logger.debug(f"Data for ish is generated... ")
         
     def strip_new_lines(self, df, colunm_name='Licensee'):
         df[colunm_name] = df[colunm_name].apply(lambda x: x.strip('\n'))
         return df 
     
     def prepare_data(self, df, df_orbis):
+        logger.debug(f"Preparing data... ")
         related_data = df[['Licensee','Licensee CIK 1_cleaned','Licensor','Agreement Date']]
         # drop rows where Licensee CIK 1_cleaned is null
         related_data = related_data[related_data['Licensee CIK 1_cleaned'].notna()]
@@ -627,6 +653,8 @@ class Orbis:
         df_orbis = df_orbis.rename(columns={'Other company ID number': 'CIK'})
         df_merged = df_orbis.merge(related_data, on='CIK')
 
+        logger.debug(f"Data is merged on CIK numbers ... ")
+        
         df_merged = self.drop_columns(df_merged, 'Last avail. yr$')  # drop columns which ends with Last avail. yr
         for index, r in df_merged.iterrows():
             year = r['Financial Period'] 
@@ -638,10 +666,10 @@ class Orbis:
                     df_merged.at[index, f'{f_colunm}\nm USD'] = revenue_info
                    
             except KeyError as ke: 
-                print(ke)
+                logger.debug(f"KeyError: {ke} for index {index} and year {year}")
    
         df_merged = self.drop_columns(df_merged, '[0-9]$') # drop columns which ends with a year 
-       
+        logger.debug(f"Data is prepared... ")
         return df_merged
     
     def to_xlsx(self, df, file_name):
@@ -655,14 +683,14 @@ def run_batch_search( input_file, process_name):
 # offline_data_aggregation is used to generate data by considering GUO of companies
 # this data needs to be generated when we have new data from Orbis (refer workflow in README.md)
 def generate_data_for_guo( orbis_data_file, output_file):
-    print(f"Generating data for GUO for file {orbis_data_file} and saving to {output_file}")
+    logger.debug(f"Generating data for GUO for file {orbis_data_file} and saving to {output_file}")
     with Orbis( offline=True) as orbis:
         output_file = path.join(orbis.data_dir, output_file)
         orbis_data_file = path.join(orbis.data_dir, orbis_data_file)
         orbis.generate_data_for_guo(orig_orbis_data=orbis_data_file, file=output_file)
 
 def generate_data_for_ish( orbis_data_file, output_file):
-    print(f"Generating data for ISH for file {orbis_data_file} and saving to {output_file}")
+    logger.debug(f"Generating data for ISH for file {orbis_data_file} and saving to {output_file}")
     with Orbis( offline=True) as orbis:
         output_file = path.join(orbis.data_dir, output_file)
         orbis_data_file = path.join(orbis.data_dir, orbis_data_file)
@@ -672,6 +700,7 @@ def generate_data_for_ish( orbis_data_file, output_file):
 # aggregate_data is used to aggregate data by considering Licensee of companies
 # (refer workflow in README.md) 
 def aggregate_data( orbis_file, aggregated_output_file):
+    logger.debug(f"Aggregating data for file {orbis_file} and saving to {aggregated_output_file}")
     with Orbis(offline=True) as orbis:
         # data processing and augmentation
         # after orbis search step following needs to run 
@@ -682,8 +711,10 @@ def aggregate_data( orbis_file, aggregated_output_file):
         df_licensee = orbis.strip_new_lines(df_licensee_data)
         df_result = orbis.prepare_data(df_licensee, df_orbis_data)
         orbis.to_xlsx(df_result, aggregate_output_file)
+        logger.debug(f"Data is aggregated and saved to {aggregate_output_file}")
 
 def generate_unique_id(company_name, n):
+    logger.debug(f"Generating unique id for {company_name}")
     sha256 = hashlib.sha256()
     sha256.update(company_name.encode())
     return sha256.hexdigest()[:n]
@@ -692,14 +723,16 @@ def post_process_data(excel_file):
     # create another column for unique identifier with hash for column 1 however no negative values
     # drop all rows where Orbis ID number is null
     # get data/ folder path and append file name to it
+    
+    logger.debug(f"Post processing data for {excel_file}")
     get_dir_path = getenv("DATA_DIR")
     # append data and file name to it
     excel_file = path.join(get_dir_path, excel_file)
     
     if not path.exists(excel_file):
-        print(f"{excel_file} does not exist")
+        logger.debug(f"{excel_file} does not exist")
         return
-    print(f"post process data for {excel_file}")
+    logger.debug(f"post process data for {excel_file}")
     df = pd.read_excel(excel_file, sheet_name='Results')
     df = df[df['Orbis ID number'].notna()]
     # drop Unnamed: 0 column and duplicate columns
@@ -711,7 +744,7 @@ def post_process_data(excel_file):
     # fix lentgth uniquie identifier
     df['Unique identifier'] = df['Orbis ID number'].apply(lambda x: generate_unique_id(str(x), 10))    
     df.to_excel(excel_file)
-    print(f"post process data for {excel_file} completed")
+    logger.debug(f"post process data for {excel_file} completed")
     
 
 def run_in_parallel_generic(function,starmap, args):
