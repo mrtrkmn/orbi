@@ -116,7 +116,7 @@ jobs:
       env:
         SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-        SLACK_MESSAGE: ':rocket: Operation is completed data link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}/'
+        SLACK_MESSAGE: ':rocket: Operation is completed data link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}/ For more information check README page of the project: https://github.com/mrtrkmn/IDP-Works'
         SLACK_TITLE: Data is ready to download append file name to the link !
         SLACK_USERNAME: orbi
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
