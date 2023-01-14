@@ -93,3 +93,22 @@ jobs:
           /home/runner/work/IDP-Works/IDP-Works/data/
           /home/runner/work/IDP-Works/IDP-Works/logs/
           !/home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
+
+    - name: Download all workflow run artifacts
+      uses: actions/download-artifact@v3
+
+
+    - name: Upload to S3 
+      uses: jakejarvis/s3-sync-action@master
+      with:
+        args: --acl public-read --follow-symlinks --delete
+      env:
+        AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
+        SOURCE_DIR: /home/runner/work/IDP-Works/IDP-Works/data/
+        DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
+
+    - name: Slack webhook
+      run : |
+        curl -X POST -H 'Content-type: application/json' --data '{"text":"Data is crawled and ready ! Check S3 bucket name: ${{ secrets.AWS_S3_BUCKET }} "}' ${{ secrets.SLACK_WEBHOOK_URL }}
