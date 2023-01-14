@@ -72,20 +72,6 @@ jobs:
       run: |
         zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip /home/runner/work/IDP-Works/IDP-Works/data/* -x /home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
 
-    - name: Send it to Telegram 
-      run: |
-        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
-
-
-    - name: Upload to artifact 
-      uses: actions/upload-artifact@v3
-      with:
-        name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
-        path: |
-          /home/runner/work/IDP-Works/IDP-Works/data/
-          /home/runner/work/IDP-Works/IDP-Works/logs/
-          !/home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
-
 
     - name: Upload to S3 
       uses: jakejarvis/s3-sync-action@master
@@ -98,6 +84,27 @@ jobs:
         SOURCE_DIR: /home/runner/work/IDP-Works/IDP-Works/data/
         DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
 
-    - name: Slack webhook
-      run : |
-        curl -X POST -H 'Content-type: application/json' --data '{"text":"Data is crawled and ready ! Check S3 bucket name: ${{ secrets.AWS_S3_BUCKET }} "}' ${{ secrets.SLACK_WEBHOOK_URL }}
+    - name: Send it to Telegram 
+      run: |
+        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F text="Data is ready ! Link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}" https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
+
+    - name: Upload to artifact 
+      uses: actions/upload-artifact@v3
+      with:
+        name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
+        path: |
+          /home/runner/work/IDP-Works/IDP-Works/data/
+          /home/runner/work/IDP-Works/IDP-Works/logs/
+          !/home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
+        retention-days: 90
+
+    - name: Slack Notify
+      uses: rtCamp/action-slack-notify@v2.2.0
+      env:
+        SLACK_CHANNEL: general
+        SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+        SLACK_MESSAGE: 'Post Content :rocket: data link: https://${{ secrets.AWS_S3_BUCKET }}.${{ AWS_S3_ENDPOINT }}/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}/'
+        SLACK_TITLE: Data is ready !
+        SLACK_USERNAME: orbi
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
