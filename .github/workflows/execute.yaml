@@ -66,14 +66,6 @@ jobs:
       id: get-timestamp
       run: |
         echo "::set-output name=timestamp::$(date +'%d-%m-%Y')"
-   # upload all data which ends with timestamp.xlsx and *.csv under ./orbis-access/data
-    - name: Upload data
-      uses: actions/upload-artifact@v2
-      with:
-         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
-         path: | 
-          /home/runner/work/IDP-Works/IDP-Works/data/*
-          !/home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
 
     # zip the data except sample_data.xlsx
     - name: Zip data
@@ -93,9 +85,6 @@ jobs:
           /home/runner/work/IDP-Works/IDP-Works/data/
           /home/runner/work/IDP-Works/IDP-Works/logs/
           !/home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
-
-    - name: Download all workflow run artifacts
-      uses: actions/download-artifact@v3
 
 
     - name: Upload to S3 
