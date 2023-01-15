@@ -41,49 +41,57 @@ Automation of Orbis database access and batch search on Orbis database
 - Currently orbis-access.py file will produce following files, in order to download them you can use the link send to Slack, and append with following file names below.
 
 
-    - `orbis_aggregated_data_{timestamp}.csv` : example --> `orbis_aggregated_data_13_01_2023.csv`
-    - `orbis_aggregated_data_{timestamp}.xlsx` : example --> `orbis_aggregated_data_13_01_2023.xlsx`
-    - `orbis_aggregated_data_licensee_{timestamp}.xlsx` : example --> `orbis_aggregated_data_licensee_14_01_2023.xlsx`
-    - `orbis_aggregated_data_licensor_{timestamp}.xlsx` : example --> `orbis_aggregated_data_licensor_14_01_2023.xlsx`
-    - `orbis_data_licensee_{timestamp}.csv` : example --> `orbis_data_licensee_14_01_2023.csv`
-    - `orbis_data_licensee_14_01_2023.xlsx` : example --> `orbis_data_licensee_14_01_2023.xlsx`
-    - `orbis_data_licensee_guo_{timestamp}.csv` : example --> `orbis_data_licensee_guo_14_01_2023.csv`
-    - `orbis_data_licensee_guo_{timestamp}.xlsx` : example --> `orbis_data_licensee_guo_14_01_2023.xlsx`
-    - `orbis_data_licensee_ish_{timestamp}.csv` : example --> `orbis_data_licensee_ish_14_01_2023.csv`
-    - `orbis_data_licensee_ish_{timestamp}.xlsx` : example --> `orbis_data_licensee_ish_14_01_2023.xlsx`
-    - `orbis_data_licensor_{timestamp}.csv`  : example --> `orbis_data_licensor_14_01_2023.csv`
-    - `orbis_data_licensor_{timestamp}.xlsx` : example --> `orbis_data_licensor_14_01_2023.xlsx`
-    - `orbis_data_licensor_guo_{timestamp}.csv` : example --> `orbis_data_licensor_guo_14_01_2023.csv`
-    - `orbis_data_licensor_guo_{timestamp}.xlsx` : example --> `orbis_data_licensor_guo_14_01_2023.xlsx`
-    - `orbis_data_licensor_ish_{timestamp}.csv` : example --> `orbis_data_licensor_ish_14_01_2023.csv`
-    - `orbis_data_licensor_ish_{timestamp}.xlsx` : example --> `orbis_data_licensor_ish_14_01_2023.xlsx`
-    - `sample_data.xlsx`
-
-    Data is accessible through: **link + file name** 
+```raw
+orbis_aggregated_data_{timestamp}.csv : example --> orbis_aggregated_data_13_01_2023.csv
+orbis_aggregated_data_{timestamp}.xlsx : example --> orbis_aggregated_data_13_01_2023.xlsx
+orbis_aggregated_data_licensee_{timestamp}.xlsx : example --> orbis_aggregated_data_licensee_14_01_2023.xlsx
+orbis_aggregated_data_licensor_{timestamp}.xlsx : example --> orbis_aggregated_data_licensor_14_01_2023.xlsx
+orbis_data_licensee_{timestamp}.csv : example --> orbis_data_licensee_14_01_2023.csv
+orbis_data_licensee_14_01_2023.xlsx : example --> orbis_data_licensee_14_01_2023.xlsx
+orbis_data_licensee_guo_{timestamp}.csv : example --> orbis_data_licensee_guo_14_01_2023.csv
+orbis_data_licensee_guo_{timestamp}.xlsx : example --> orbis_data_licensee_guo_14_01_2023.xlsx
+orbis_data_licensee_ish_{timestamp}.csv : example --> orbis_data_licensee_ish_14_01_2023.csv
+orbis_data_licensee_ish_{timestamp}.xlsx : example --> orbis_data_licensee_ish_14_01_2023.xlsx
+orbis_data_licensor_{timestamp}.csv  : example --> orbis_data_licensor_14_01_2023.csv
+orbis_data_licensor_{timestamp}.xlsx : example --> orbis_data_licensor_14_01_2023.xlsx
+orbis_data_licensor_guo_{timestamp}.csv : example --> orbis_data_licensor_guo_14_01_2023.csv
+orbis_data_licensor_guo_{timestamp}.xlsx : example --> orbis_data_licensor_guo_14_01_2023.xlsx
+orbis_data_licensor_ish_{timestamp}.csv : example --> orbis_data_licensor_ish_14_01_2023.csv
+orbis_data_licensor_ish_{timestamp}.xlsx : example --> orbis_data_licensor_ish_14_01_2023.xlsx
+- sample_data.xlsx
+```
+Data is accessible through: **link + file name** 
 
 - The CSV files are generated through the `crawl_data.py` file.
 
-    - `orbis_aggregated_data_{timestamp}.csv` 
-    - `orbis_data_licensee_{timestamp}.csv`
-    - `orbis_data_licensee_guo_{timestamp}.csv`
-    - `orbis_data_licensee_ish_{timestamp}.csv`
-    - `orbis_data_licensor_{timestamp}.csv`
-    - `orbis_data_licensor_guo_{timestamp}.csv`
-    - `orbis_data_licensor_ish_{timestamp}.csv`
-
-- The XLSX files are generated through the `orbis-access.py` by conducting batch search on Orbis database. 
-
-    - `orbis_aggregated_data_{timestamp}.xlsx`
-    - `orbis_aggregated_data_licensee_{timestamp}.xlsx`
-    - `orbis_aggregated_data_licensor_{timestamp}.xlsx`
-    - `orbis_data_licensee_{timestamp}.xlsx`
-    - `orbis_data_licensee_guo_{timestamp}.xlsx`
-    - `orbis_data_licensee_ish_{timestamp}.xlsx`
-    - `orbis_data_licensor_{timestamp}.xlsx`
-    - `orbis_data_licensor_guo_{timestamp}.xlsx`
-    - `orbis_data_licensor_ish_{timestamp}.xlsx`
 
 
+```raw
+orbis_aggregated_data_{timestamp}.csv 
+orbis_data_licensee_{timestamp}.csv
+orbis_data_licensee_guo_{timestamp}.csv
+orbis_data_licensee_ish_{timestamp}.csv
+orbis_data_licensor_{timestamp}.csv
+orbis_data_licensor_guo_{timestamp}.csv
+orbis_data_licensor_ish_{timestamp}.csv
+```
+
+
+- The XLSX files are generated through the orbis-access.py` by conducting batch search on Orbis database. 
+
+
+```raw
+orbis_aggregated_data_{timestamp}.xlsx
+orbis_aggregated_data_licensee_{timestamp}.xlsx
+orbis_aggregated_data_licensor_{timestamp}.xlsx
+orbis_data_licensee_{timestamp}.xlsx
+orbis_data_licensee_guo_{timestamp}.xlsx
+orbis_data_licensee_ish_{timestamp}.xlsx
+orbis_data_licensor_{timestamp}.xlsx
+orbis_data_licensor_guo_{timestamp}.xlsx
+orbis_data_licensor_ish_{timestamp}.xlsx
+
+```
 
 
 ## Main Workflow 
