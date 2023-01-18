@@ -53,10 +53,11 @@ jobs:
         SLACK_TITLE: ':bell: Crawler is started successfully !'
         SLACK_USERNAME: orbi
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_FOOTER: ''
+        SLACK_FOOTER: 'automated bot Orbi 🤓'
 
     - name: Execute the script
       uses: nick-fields/retry@v2
+      id: batch_search
       with:
         timeout_minutes: 40
         max_attempts: 3
@@ -72,6 +73,20 @@ jobs:
         DATA_DIR: /home/runner/work/IDP-Works/IDP-Works/data/
         DATA_SOURCE: sample_data.xlsx
         LOG_DIR: /home/runner/work/IDP-Works/IDP-Works/logs/
+
+
+    - name: Slack Notify
+      if: ${{ failure() && steps.batch_search.conclusion == 'failure' }}
+      uses: rtCamp/action-slack-notify@v2.2.0
+      env:
+        SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+        SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+        SLACK_MESSAGE: ':x: Failed to run batch search, please check on Github. '
+        SLACK_TITLE: ':x: Batch search failed at some point, in most cases this is caused due to slowness in the network (since it causes slow rendering of the page and leads to have no element we are looking for) !'
+        SLACK_USERNAME: orbi
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_FOOTER: 'automated bot Orbi 🤓'
+
 
   # get timestamp in format DD-MM-YYYY
     - name: Get timestamp
