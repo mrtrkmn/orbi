@@ -44,7 +44,7 @@ jobs:
         chromedriver --version
       
 
-    - name: Slack Notify
+    - name: Send Job Started Notification to Slack
       uses: rtCamp/action-slack-notify@v2.2.0
       env:
         SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
@@ -75,7 +75,7 @@ jobs:
         LOG_DIR: /home/runner/work/IDP-Works/IDP-Works/logs/
 
 
-    - name: Slack Notify
+    - name: Send Job Failed Notification to Slack
       if: ${{ failure() && steps.batch_search.conclusion == 'failure' }}
       uses: rtCamp/action-slack-notify@v2.2.0
       env:
@@ -111,12 +111,12 @@ jobs:
         SOURCE_DIR: /home/runner/work/IDP-Works/IDP-Works/data/
         DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
 
-    - name: Send it to Telegram 
+    - name: Send data to Telegram 
       run: |
         curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
         curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F text="Data is ready ! Link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}" https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
 
-    - name: Upload to artifact 
+    - name: Upload data to artifact 
       uses: actions/upload-artifact@v3
       with:
         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
@@ -126,7 +126,7 @@ jobs:
           !/home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
         retention-days: 90
 
-    - name: Slack Notify
+    - name:  Send Job Success Notification to Slack
       uses: rtCamp/action-slack-notify@v2.2.0
       env:
         SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
