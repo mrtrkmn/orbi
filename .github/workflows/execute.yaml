@@ -53,7 +53,7 @@ jobs:
         SLACK_TITLE: ':bell: Crawler is started successfully !'
         SLACK_USERNAME: orbi
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_FOOTER: 'automated bot Orbi 🤓'
+        SLACK_FOOTER: '🤓 automated bot Orbi'
 
     - name: Execute the script
       uses: nick-fields/retry@v2
@@ -85,7 +85,7 @@ jobs:
         SLACK_TITLE: ':x: Batch search failed at some point, in most cases this is caused due to slowness in the network (since it causes slow rendering of the page and leads to have no element we are looking for) !'
         SLACK_USERNAME: orbi
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_FOOTER: 'automated bot Orbi 🤓'
+        SLACK_FOOTER: '🤓 automated bot Orbi'
 
 
   # get timestamp in format DD-MM-YYYY
@@ -122,7 +122,7 @@ jobs:
         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
         path: |
           /home/runner/work/IDP-Works/IDP-Works/data/
-          /home/runner/work/IDP-Works/IDP-Works/logs/
+          /home/runner/work/IDP-Works/IDP-Works/logs/*_orbis.log
           !/home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
         retention-days: 90
 
@@ -135,3 +135,4 @@ jobs:
         SLACK_TITLE: Data is ready to download append file name to the link !
         SLACK_USERNAME: orbi
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_FOOTER: '🤓 automated bot Orbi'
