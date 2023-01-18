@@ -94,11 +94,27 @@ orbis_data_licensor_ish_{timestamp}.xlsx
 ```
 
 
+## Slack Integration 
+
+Currently, action results are uploaded to AWS S3 service and accesible with the link sent to private Slack channel. 
+The files can be downloaded as decribed in the slack channel. 
+
+
+
 ## Main Workflow 
 
 Beside the given main workflow given below, there are other options which can be used with this repository. 
 
 The workflow is subject to change in time. 
 
-![workflow](.github/imgs/workflow-on-dark.png#gh-dark-mode-only)
-![workflow](.github/imgs/workflow-on-light.png#gh-light-mode-only)
+![workflow](https://user-images.githubusercontent.com/13614433/213180207-3855244f-29f9-42c5-ab7f-9655f0c78479.png#gh-light-mode-only)
+
+
+
+
+
+
+
+
+
+
