@@ -122,7 +122,6 @@ jobs:
         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
         path: |
           /home/runner/work/IDP-Works/IDP-Works/data/
-          /home/runner/work/IDP-Works/IDP-Works/logs/*_orbis.log
           !/home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
         retention-days: 90
 
