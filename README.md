@@ -5,9 +5,9 @@
 
 This is a simple crawler that crawls data from two websites currently:
 
-- https://www.ipo.gov.uk
-- https://www.sec.gov
-- https://www.bvdinfo.com/de-de/unsere-losungen/daten/international/orbis
+- [https://www.ipo.gov.uk](https://www.ipo.gov.uk)
+- [https://www.sec.gov/edgar/searchedgar/companysearch](https://www.sec.gov/edgar/searchedgar/companysearch)
+- [https://www.bvdinfo.com/de-de/unsere-losungen/daten/international/orbis](https://www.bvdinfo.com/de-de/unsere-losungen/daten/international/orbis)
 
 for company and patent related data.
 
