@@ -593,17 +593,16 @@ class Orbis:
         self.driver.find_element(By.XPATH, CURRENY_DROPDOWN).click()
         
         
-        time.sleep(3)
-        
+        time.sleep(7)
         self.wait_until_clickable(MILLION_UNITS)
         self.driver.find_element(By.XPATH, MILLION_UNITS).click()
         # select million
                 
-        time.sleep(2)
+        time.sleep(3)
         # click apply from dropdown
              
         self.driver.find_element(By.XPATH, DROPDOWN_APPLY).click()
-        time.sleep(2)
+        time.sleep(3)
         
         WebDriverWait(self.driver, 30*60).until(EC.text_to_be_present_in_element((By.XPATH, EXCEL_BUTTON), 'Excel'))
         self.driver.find_element(By.XPATH, EXCEL_BUTTON).click()
