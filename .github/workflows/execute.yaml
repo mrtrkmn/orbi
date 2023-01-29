@@ -73,6 +73,7 @@ jobs:
         DATA_DIR: /home/runner/work/IDP-Works/IDP-Works/data/
         DATA_SOURCE: sample_data.xlsx
         LOG_DIR: /home/runner/work/IDP-Works/IDP-Works/logs/
+        LOCAL_DEV: False
 
 
     - name: Send Job Failed Notification to Slack

@@ -9,7 +9,8 @@ import numpy as np
 import multiprocessing
 import multiprocessing.pool
 from os import path
-from os import getenv 
+from os import environ
+from os import system 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -22,7 +23,7 @@ from crawl_data import prepare_data
 import hashlib
 import logging 
 import pathlib 
-
+import json
 
 # ORBIS ELEMENT VARIABLES 
 LOGIN_BUTTON = "/html/body/div[2]/div/div[1]/div[1]/div[1]/form/fieldset/div[3]/input"
@@ -93,11 +94,14 @@ POPUP_DOWNLOAD_BUTTON = '/html/body/section[2]/div[6]/div[3]/a'
 # initialize logger 
 
 timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-log_file = pathlib.Path(getenv("LOG_DIR")).joinpath(rf'{timestamp}_orbis.log')
+
+# log_file = pathlib.Path(getenv("LOG_DIR")).joinpath(rf'{timestamp}_orbis.log')
+# get current working directory
+log_file = pathlib.Path.cwd().joinpath(rf'logs/{timestamp}_orbis.log')
 
 
 logging.basicConfig(
-    filename=log_file,
+    filename=log_file ,
     level=logging.DEBUG,
     format='%(asctime)s %(levelname)-8s %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S')
@@ -110,18 +114,31 @@ class Orbis:
     
 
     def __init__(self, offline=False):
-    
         
-        self.executable_path = getenv("CHROMEDRIVER_PATH")
-        self.orbis_access_url = getenv("ORBIS_ACCESS_URL")
-        self.orbis_batch_search_url = getenv("ORBIS_BATCH_SEARCH_URL")
-        self.orbis_logout_url = getenv("ORBIS_LOGOUT_URL")
-        self.email_address = getenv("ORBIS_EMAIL_ADDRESS")
-        self.password = getenv("ORBIS_PASSWORD")
-        self.data_dir = getenv("DATA_DIR")
+        
+        if environ.get("LOCAL_DEV") == 'True':
+            config = self.read_config('./config/config.yaml')
+            self.executable_path = config['selenium']['executable_path']
+            self.orbis_access_url = config['orbis']['urls']['access']
+            self.orbis_batch_search_url = config['orbis']['urls']['batch']
+            self.orbis_logout_url = config['orbis']['urls']['logout']
+            self.email_address = config['orbis']['email']
+            self.data_dir = config['data']['path']
+            self.password = config['orbis']['password']
+            self.data_source = config['data']['source']           
+            self.license_data = path.join(self.data_dir, self.data_source) 
+        else: 
+            self.executable_path = environ.get("CHROMEDRIVER_PATH")
+            self.orbis_access_url = environ.get("ORBIS_ACCESS_URL")
+            self.orbis_batch_search_url = environ.get("ORBIS_BATCH_SEARCH_URL")
+            self.orbis_logout_url = environ.get("ORBIS_LOGOUT_URL")
+            self.email_address = environ.get("ORBIS_EMAIL_ADDRESS")
+            self.password = environ.get("ORBIS_PASSWORD")
+            self.data_dir = environ.get("DATA_DIR")
+            self.license_data = environ.get("DATA_DIR") + environ.get("DATA_SOURCE")
+    
         self.driver = None
         self.offline = offline
-        self.license_data = getenv("DATA_DIR") + getenv("DATA_SOURCE")
         self.variables = {
             "Operating revenue (Turnover)": OP_REVENUE_SETTINGS,
             "Sales": SALES_SETTINGS,
@@ -143,6 +160,7 @@ class Orbis:
             self.logout()
             if self.driver is not None:
                 return self.driver.close()
+            
         return None
     
     def __enter__(self):
@@ -153,16 +171,20 @@ class Orbis:
             prefs = {'download.default_directory' : self.data_dir}
             # add user agent to avoid bot detection
             self.chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36")
-            self.chrome_options.add_argument("--headless")
-            self.chrome_options.add_argument("--window-size=1920,1080")
+            if environ.get("LOCAL_DEV") != "True":
+                self.chrome_options.add_argument("--headless")
+                self.chrome_options.add_argument("--window-size=1920,1080")
+                self.chrome_options.add_experimental_option("detach", True)
+                
             self.chrome_options.add_experimental_option('prefs', prefs)
-            self.chrome_options.add_experimental_option("detach", True)
             self.driver = webdriver.Chrome(service=service, options=self.chrome_options)
             logger.debug("Chrome driver started")
-            self.login()
+            self.login()  
         return self
     
-        
+
+    
+    
     def get_financial_columns(self):
         financial_columns = list(self.variables.keys())
         financial_columns = financial_columns[:len(financial_columns)-2] # remove the last two columns
@@ -691,8 +713,12 @@ class Orbis:
         
 
 def run_batch_search( input_file, process_name):
+    # join path to input file
+    logger.debug(f"Running batch search for file {input_file} and process name {process_name}")
     with Orbis() as orbis:
-        orbis.batch_search(orbis.data_dir+input_file, process_name)
+        logger.debug(f"Data directory is {orbis.data_dir}")
+        logger.debug(f"Input file is {path.join(orbis.data_dir, input_file)}")
+        orbis.batch_search(path.join(orbis.data_dir, input_file), process_name)
 
 # offline_data_aggregation is used to generate data by considering GUO of companies
 # this data needs to be generated when we have new data from Orbis (refer workflow in README.md)
@@ -737,12 +763,13 @@ def post_process_data(excel_file):
     # create another column for unique identifier with hash for column 1 however no negative values
     # drop all rows where Orbis ID number is null
     # get data/ folder path and append file name to it
-    
+    get_dir_path = ''
     logger.debug(f"Post processing data for {excel_file}")
-    get_dir_path = getenv("DATA_DIR")
+    with Orbis(offline=True) as orbis:
+        get_dir_path = orbis.data_dir 
+
     # append data and file name to it
-    excel_file = path.join(get_dir_path, excel_file)
-    
+    excel_file = path.join(get_dir_path, excel_file)    
     if not path.exists(excel_file):
         logger.debug(f"{excel_file} does not exist")
         return
@@ -774,7 +801,7 @@ def run_in_parallel_generic(function,starmap, args):
     
 if __name__ == "__main__":
     timestamp = datetime.now().strftime("%d_%m_%Y")
-        
+    
     # Step 1 
     # --> crawl_data.py should generate data in data/data.csv
     
@@ -786,7 +813,7 @@ if __name__ == "__main__":
     # # generates csv file for licensor
     prepare_data( "sample_data.xlsx",f"orbis_data_licensor_{timestamp}.csv", is_licensee=False)
     
-    time.sleep(4) # wait for 4 seconds for data to be saved in data folder
+    # time.sleep(4) # wait for 4 seconds for data to be saved in data folder
     
     # # Step 2 
     # # --> data/data.csv needs to be uploaded to Orbis to start batch search
