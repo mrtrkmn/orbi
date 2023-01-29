@@ -107,8 +107,7 @@ Beside the given main workflow given below, there are other options which can be
 
 The workflow is subject to change in time. 
 
-![workflow](https://user-images.githubusercontent.com/13614433/213180207-3855244f-29f9-42c5-ab7f-9655f0c78479.png#gh-light-mode-only)
-
+![workflow](https://user-images.githubusercontent.com/13614433/213180207-3855244f-29f9-42c5-ab7f-9655f0c78479.png)
 
 
 
