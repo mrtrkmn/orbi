@@ -62,7 +62,7 @@ jobs:
         timeout_minutes: 120 # 2 hours
         max_attempts: 3  # 3 times retry if failed
         command: |
-          python /home/runner/work/IDP-Works/IDP-Works/orbis-access-auto.py 
+          python /home/runner/work/IDP-Works/IDP-Works/run-orbi.py 
       env:
         ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL_ADDRESS }}
         ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
