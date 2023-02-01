@@ -8,7 +8,11 @@ on:
   #   branches: [ "main" ]
 
   workflow_dispatch:
-    name: Execute Orbis Access Automation
+    inputs:
+      message:
+        description: 'Commit message'
+        required: false
+        default: 'Crawl data'
   
   repository_dispatch:
     types: crawl-data
