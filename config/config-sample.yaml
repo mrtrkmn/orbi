@@ -1,16 +1,19 @@
 orbis: 
-  email: ""
-  password: ""
+  email: "<email address>"
+  password: "<password>"
   urls:
     access: "https://login.eaccess.ub.tum.de/login?qurl=https://dbis.uni-regensburg.de%2fwarpto.php%3fbib_id%3dtum%26color%3d16%26titel_id%3d12630%26url%3dhttps%253A%2f%2forbis4.bvdinfo.com%2fip%2520"
     batch: "https://orbis-bvdinfo-com.eaccess.ub.tum.de/version-20221117/Orbis/1/Companies/BatchSearch/Start"
     logout: "https://orbis-bvdinfo-com.eaccess.ub.tum.de/version-20221117/Orbis/1/Companies/Login/LogOut/ext?setLanguage=en"
-    
+log: 
+  dir: "<path to log directory>"
+
 selenium:
   executable_path: ""
   driver_options:
-    - "--headless"
     - "--detach"
 data: 
-  path: "data/"
-  file: "d.csv"
+  path: "<absolute-path-to-data-dir>"  # [REQUIRED] Path to data directory better to define it as absolute path
+  file: "< >" #  [OPTIONAL] program is generating this file automatically
+  orbis: "< > " # [OPTIONAL] Program is generating this file automatically
+  source: "< >" # [REQUIRED] Contains license information 
