@@ -7,4 +7,4 @@ bin/*
 *.ipynb
 *.ipynb_checkpoints
 *.html
-
+logs/*

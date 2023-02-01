@@ -245,7 +245,7 @@ class Crawler:
 
 def generate_unique_id(company_name):
     return hashlib.sha256(company_name.encode()).hexdigest()
-# prepare_data generates the file which needs to be used in run-orbi.py first step
+# prepare_data generates the file which needs to be used in run_orbi.py first step
 #  source_file: provided by the user
 # output_file: csv file with the data from the SEC.gov website (columns:
 # company name, city, country, identifier)
