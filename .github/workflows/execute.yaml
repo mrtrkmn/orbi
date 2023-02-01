@@ -59,8 +59,8 @@ jobs:
       uses: nick-fields/retry@v2
       id: batch_search
       with:
-        timeout_minutes: 40
-        max_attempts: 3
+        timeout_minutes: 120 # 2 hours
+        max_attempts: 3  # 3 times retry if failed
         command: |
           python /home/runner/work/IDP-Works/IDP-Works/orbis-access-auto.py 
       env:
