@@ -3,6 +3,14 @@ on:
   push:
     paths:
       - "**.py"
+
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Commit message'
+        required: false
+        default: 'Format python code'
+
 jobs:
   autopep8:
     runs-on: ubuntu-latest
@@ -13,13 +21,13 @@ jobs:
         with:
           args: --recursive --in-place --aggressive --aggressive *.py
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1
+        uses: peter-evans/create-pull-request@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
           commit-message: autopep8 action fixes
-          author-email: 75378701+robotcuk@users.noreply.github.com
-          author-name: robotcuk
+          author: 'robotcuk <75378701+robotcuk@users.noreply.github.com>'
           title: Fixes by autopep8 action
           body: This is an auto-generated PR with fixes by autopep8.
           labels: autopep8, automated pr
           branch: autopep8-patches
+          delete-branch: true
