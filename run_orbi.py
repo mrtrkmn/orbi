@@ -5,7 +5,6 @@
 import yaml
 import time
 import pandas as pd
-import numpy as np
 import multiprocessing
 import multiprocessing.pool
 from os import path
@@ -328,7 +327,8 @@ class Orbis:
         excel_output_file_name = path.basename(input_file).split(".")[0]
 
         self.driver.get(self.orbis_batch_search_url)
-
+        time.sleep(5)
+        
         self.wait_until_clickable(DRAG_DROP_BUTTON)
         self.driver.find_element(By.XPATH, DRAG_DROP_BUTTON).click()
 
