@@ -115,7 +115,7 @@ class Orbis:
     def __init__(self, offline=False):
 
         if environ.get("LOCAL_DEV") == 'True':
-            config = self.read_config('./config/config.yaml')
+            config = self.read_config(environ.get("CONFIG_PATH"))
             self.executable_path = config['selenium']['executable_path']
             self.orbis_access_url = config['orbis']['urls']['access']
             self.orbis_batch_search_url = config['orbis']['urls']['batch']
@@ -905,8 +905,17 @@ def save_screenshot(driver, file_name):
 
 
 if __name__ == "__main__":
-    timestamp = datetime.now().strftime("%d_%m_%Y")
 
+    # initial checks
+    if environ.get('LOCAL_DEV') == 'True':
+        if not path.exists(environ.get('CONFIG_PATH')):
+            # exit with an error message
+            exit(
+                f"Config file {path.abspath(environ.get('CONFIG_PATH')) } does not exist")
+
+    # start to work
+
+    timestamp = datetime.now().strftime("%d_%m_%Y")
     # Step 1
     # --> crawl_data.py should generate data in data/data.csv
 
