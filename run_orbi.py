@@ -932,7 +932,7 @@ if __name__ == "__main__":
         f"orbis_data_licensor_{timestamp}.csv",
         is_licensee=False)
 
-    # time.sleep(4) # wait for 4 seconds for data to be saved in data folder
+    time.sleep(4) # wait for 4 seconds for data to be saved in data folder
 
     # # Step 2
     # # --> data/data.csv needs to be uploaded to Orbis to start batch search
@@ -948,7 +948,7 @@ if __name__ == "__main__":
     # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
     # # # # --> after batch search is completed, data downloaded from Orbis
 
-    # time.sleep(2) # wait for 2 seconds for data to be saved in data folder
+    time.sleep(2) # wait for 2 seconds for data to be saved in data folder
 
     # # # # Step 3
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
