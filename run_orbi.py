@@ -178,7 +178,7 @@ class Orbis:
                 self.chrome_options.add_argument("--disable-dev-shm-usage")
                 self.chrome_options.add_argument("--disable-extensions")
                 self.chrome_options.add_argument("--start-maximized")
-                
+
             self.chrome_options.add_experimental_option('prefs', prefs)
             self.driver = webdriver.Chrome(
                 service=service, options=self.chrome_options)
@@ -332,7 +332,7 @@ class Orbis:
 
         self.driver.get(self.orbis_batch_search_url)
         time.sleep(5)
-        
+
         self.wait_until_clickable(DRAG_DROP_BUTTON)
         self.driver.find_element(By.XPATH, DRAG_DROP_BUTTON).click()
 
@@ -936,7 +936,7 @@ if __name__ == "__main__":
         f"orbis_data_licensor_{timestamp}.csv",
         is_licensee=False)
 
-    time.sleep(4) # wait for 4 seconds for data to be saved in data folder
+    time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
 
     # # Step 2
     # # --> data/data.csv needs to be uploaded to Orbis to start batch search
@@ -952,7 +952,7 @@ if __name__ == "__main__":
     # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
     # # # # --> after batch search is completed, data downloaded from Orbis
 
-    time.sleep(2) # wait for 2 seconds for data to be saved in data folder
+    time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
     # # # # Step 3
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
