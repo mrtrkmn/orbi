@@ -111,14 +111,13 @@ logger = logging.getLogger()
 
 class Orbis:
     """
-    Orbis class is used to handle connections to Orbis database 
+    Orbis class is used to handle connections to Orbis database
     :param offline: if True, the class will not attempt to connect to Orbis
-    
+
     To login manually follow this link: https://www.ub.tum.de/en/datenbanken/details/12630
-    
-    Batch search will be performed with provided data file in the config file. 
+
+    Batch search will be performed with provided data file in the config file.
     """
-    
 
     def __init__(self, offline=False):
         """
@@ -173,7 +172,7 @@ class Orbis:
         """
         The `__exit__` method is used to exit a runtime context related to the class.
 
-        
+
         :param exc_type: The type of exception raised.
         :param exc_value: The exception raised.
         :param traceback: The traceback associated with the exception.
@@ -286,21 +285,21 @@ class Orbis:
         :return:
         None
         """
-        
+
         time.sleep(3)
-        
+
         logger.debug("Logging out Orbis ...")
-        
+
         self.driver.get(self.orbis_logout_url)
 
     def scroll_to_bottom(self):
         # scroll to the bottom of the page
         # only used after add/remove column step
         """
-        Scrolls to the bottom of the hierarchy container on the current Orbis page. 
-        
-        This method is typically called after adding or removing columns to ensure that all changes are reflected in the container. 
-        
+        Scrolls to the bottom of the hierarchy container on the current Orbis page.
+
+        This method is typically called after adding or removing columns to ensure that all changes are reflected in the container.
+
         :return:
         None
         """
@@ -309,17 +308,16 @@ class Orbis:
 
     def wait_until_clickable(self, xpath):
         # wait until the element is clickable
-        
         """
-        Waits until an element located by the given XPath is clickable. 
-        
+        Waits until an element located by the given XPath is clickable.
+
         Raises a TimeoutException if the element is not clickable after 30 minutes.
 
         :param xpath (str): The XPath of the element to wait for.
 
         :raises TimeoutException: If the element is not clickable after 30 minutes.
         """
-        
+
         WebDriverWait(
             self.driver,
             30 *
@@ -347,9 +345,9 @@ class Orbis:
     def search_and_add(self, item):
         """
         Searches for the given `item` and adds it to the list of columns.
-        
+
         :param item: A string representing the name of the item to be searched for and added.
-        
+
         :return: None
         """
         self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
@@ -366,7 +364,7 @@ class Orbis:
         Checks all checkboxes for a specific field in the Orbis webpage.
 
         :param field (str): The name of the field to check the checkboxes for.
-        
+
 
         :return: None
         """
@@ -438,7 +436,7 @@ class Orbis:
     def check_processing_overlay(self, process_name):
         # this is used to wait until processing overlay is gone
         """Waits for the processing overlay to disappear.
-        
+
         :param process_name (str): A string identifying the process being waited for.
 
         :return:None
@@ -453,7 +451,8 @@ class Orbis:
                     'max-width')
                 logger.debug(
                     f"{process_name}main content style is {main_content_style}")
-                print(f"{process_name} main content style is still NOT NONE {main_content_style}")
+                print(
+                    f"{process_name} main content style is still NOT NONE {main_content_style}")
                 time.sleep(0.5)
         except Exception as e:
             logger.debug(e)
@@ -542,7 +541,7 @@ class Orbis:
 
         # this is used to wait until processing overlay is gone
         self.check_processing_overlay(process_name)
-        
+
         # try:
         #     main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
         #     main_content_style = main_content_div.value_of_css_property(
@@ -885,11 +884,11 @@ class Orbis:
 
         :param orig_orbis_data (str): The path to the original ORBIS data in XLSX format.
         :param file (str): The path to the output CSV file.
-        
+
         :return:
         None
         """
-        
+
         logger.debug(f"Generating data for guo... ")
         df = self.read_xlxs_file(orig_orbis_data, sheet_name='Results')
         df = df[['GUO - Name', 'City\nLatin Alphabet',
@@ -943,7 +942,7 @@ class Orbis:
         :return:
         pandas.DataFrame: the modified DataFrame
         """
-        
+
         df[colunm_name] = df[colunm_name].apply(lambda x: x.strip('\n'))
         return df
 
@@ -959,7 +958,7 @@ class Orbis:
         :param df_orbis: A pandas dataframe containing Orbis data.
         :return: A pandas dataframe containing the merged and prepared data.
         """
-        
+
         logger.debug(f"Preparing data... ")
         related_data = df[['Licensee',
                            'Licensee CIK 1_cleaned',
@@ -1010,7 +1009,7 @@ class Orbis:
         :return:
         None
         """
-        
+
         df.to_excel(file_name)
 
 
@@ -1024,7 +1023,7 @@ def run_batch_search(input_file, process_name):
     :return:
     None
     """
-    
+
     logger.debug(
         f"Running batch search for file {input_file} and process name {process_name}")
     with Orbis() as orbis:
@@ -1041,7 +1040,7 @@ def generate_data_for_guo(orbis_data_file, output_file):
     """
     Generates data for GUO based on the input Orbis data file and saves the output to a file.
 
-    :param orbis_data_file (str): The name of the input Orbis data file to use. This should be a CSV file containing 
+    :param orbis_data_file (str): The name of the input Orbis data file to use. This should be a CSV file containing
             the Orbis data to be processed.
     :param output_file (str): The name of the file to save the output to. This should be a CSV file.
 
@@ -1053,7 +1052,7 @@ def generate_data_for_guo(orbis_data_file, output_file):
     :raises FileNotFoundError: If the output file directory does not exist.
     :raises ValueError: If the output file already exists and the user does not want to overwrite it.
 
-    Notes: 
+    Notes:
     - This function requires an instance of the Orbis class with the offline flag set to True.
     - The output file will be saved in the same directory as the input Orbis data file.
     - This function will overwrite the output file if it already exists, unless the user specifies otherwise.
@@ -1096,11 +1095,11 @@ def aggregate_data(orbis_file, aggregated_output_file):
     """
     Aggregates data from an Orbis file and saves the aggregated output to a file.
 
-    
+
     :param orbis_file (str): The name of the Orbis file to aggregate data from.
     :param aggregated_output_file (str): The name of the file to save the aggregated data to.
-    
-    :return: 
+
+    :return:
     None: This function doesn't return anything.
     """
     logger.debug(
@@ -1124,7 +1123,7 @@ def generate_unique_id(company_name, n):
     """
     Generate a unique ID for a company using SHA-256 hashing.
 
-    
+
     :param company_name (str): The name of the company.
     :param n (int): The number of characters to include in the unique ID.
 
@@ -1145,8 +1144,8 @@ def post_process_data(excel_file):
     Post-processes the data by creating a column for unique identifier with hash for column 1.
     Drops all rows where Orbis ID number is null.
     Gets data/ folder path and appends file name to it.
-    
-   
+
+
     :param excel_file (str): File path of the excel file to post-process.
 
     :return:
@@ -1182,18 +1181,18 @@ def run_in_parallel_generic(function, starmap, args):
     """
     Runs a given function in parallel using multiple processes. It uses the Python multiprocessing module to create a process pool, and distributes the function calls across the available CPUs.
 
-    
+
     :param function (function): The function to be run in parallel.
     :param starmap (bool): If True, use starmap() function to apply the function to the input tuples in args. Otherwise, use imap() function.
     :param args (list): A list of tuples, where each tuple contains the arguments to be passed to the function.
 
     :return:
     None
-    
+
     :raises:
     None
     """
-    
+
     number_of_processes = multiprocessing.cpu_count()
     if starmap:
         with multiprocessing.pool.ThreadPool(number_of_processes) as pool:
