@@ -110,8 +110,25 @@ logger = logging.getLogger()
 
 
 class Orbis:
+    """
+    Orbis class is used to handle connections to Orbis database 
+    :param offline: if True, the class will not attempt to connect to Orbis
+    
+    To login manually follow this link: https://www.ub.tum.de/en/datenbanken/details/12630
+    
+    Batch search will be performed with provided data file in the config file. 
+    """
+    
 
     def __init__(self, offline=False):
+        """
+        Initialize an instance of the Orbis class.
+
+        :param offline (bool): If True, the class will not attempt to connect to the Orbis database.
+
+        :return:
+        None
+        """
 
         if environ.get("LOCAL_DEV") == 'True':
             config = self.read_config(environ.get("CONFIG_PATH"))
@@ -153,7 +170,17 @@ class Orbis:
         }
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """
+        The `__exit__` method is used to exit a runtime context related to the class.
 
+        
+        :param exc_type: The type of exception raised.
+        :param exc_value: The exception raised.
+        :param traceback: The traceback associated with the exception.
+
+        :return:
+        None
+        """
         if not self.offline:
             self.logout()
             if self.driver is not None:
@@ -187,18 +214,39 @@ class Orbis:
         return self
 
     def get_financial_columns(self):
+        """
+        Get a list of financial columns.
+
+        :return:
+        financial_columns (list): A list of financial columns.
+        """
         financial_columns = list(self.variables.keys())
         financial_columns = financial_columns[:len(
             financial_columns) - 2]  # remove the last two columns
         return financial_columns
 
     def drop_columns(self, df, regex):
+        """
+        Drop columns from a pandas dataframe based on a regular expression.
+
+        :param df (pandas.DataFrame): The pandas dataframe to drop columns from.
+        :param regex (str): The regular expression to match column names.
+
+        :return pandas.DataFrame: The pandas dataframe with columns dropped.
+        """
         columns_to_drop = df.filter(regex=regex).columns
         logger.debug("Dropping columns: ", columns_to_drop)
         return df.drop(columns=columns_to_drop)
 
     def read_config(self, path):
-        # read from yaml config file
+        """
+        Read a YAML configuration file.
+
+        :param path (str): The path to the YAML configuration file.
+
+        :return:
+        dict: A dictionary with the configuration settings.
+        """
         with open(path, "r") as f:
             try:
                 config = yaml.safe_load(f)
@@ -207,34 +255,71 @@ class Orbis:
         return config
 
     def login(self):
-        # login to the web site
+        """
+        Logs in to the Orbis website using Selenium.
+        """
+        # Open the Orbis login page
         self.driver.get(self.orbis_access_url)
-        # find with XPath the username and password fields
+
+        # Find the username and password fields using their IDs
         username = self.driver.find_element(By.ID, "user")
         password = self.driver.find_element(By.ID, "pass")
-        # fill the fields with given values
+
+        # Fill in the fields with the email and password
         username.send_keys(self.email_address)
         password.send_keys(self.password)
-        # find with XPath the login button and click it
+
+        # Find the login button using an XPath expression and click it
         login_button = self.driver.find_element(By.XPATH, LOGIN_BUTTON)
-        # click the login button
         login_button.click()
-        logger.debug("Logging in Orbis ...")
+
+        # Log a message to indicate that the login is in progress
+        logger.debug("Logging in to Orbis...")
 
     def logout(self):
         # logout from the web site
+        """
+        Logs out of the Orbis website.
+
+        Waits for 3 seconds before logging out to ensure that all actions have been completed.
+
+        :return:
+        None
+        """
+        
         time.sleep(3)
+        
         logger.debug("Logging out Orbis ...")
+        
         self.driver.get(self.orbis_logout_url)
 
     def scroll_to_bottom(self):
         # scroll to the bottom of the page
         # only used after add/remove column step
+        """
+        Scrolls to the bottom of the hierarchy container on the current Orbis page. 
+        
+        This method is typically called after adding or removing columns to ensure that all changes are reflected in the container. 
+        
+        :return:
+        None
+        """
         self.driver.execute_script(
             "document.getElementsByClassName('hierarchy-container')[0].scrollTo(0, document.getElementsByClassName('hierarchy-container')[0].scrollHeight)")
 
     def wait_until_clickable(self, xpath):
         # wait until the element is clickable
+        
+        """
+        Waits until an element located by the given XPath is clickable. 
+        
+        Raises a TimeoutException if the element is not clickable after 30 minutes.
+
+        :param xpath (str): The XPath of the element to wait for.
+
+        :raises TimeoutException: If the element is not clickable after 30 minutes.
+        """
+        
         WebDriverWait(
             self.driver,
             30 *
@@ -244,6 +329,15 @@ class Orbis:
                  xpath)))
 
     def read_xlxs_file(self, file_path, sheet_name=''):
+        """
+        Reads an xlsx file and returns a pandas DataFrame.
+
+        :param file_path (str): The path to the xlsx file.
+        :param sheet_name (str): The name of the sheet to read. If not specified, the first sheet is read.
+
+        :return: A pandas DataFrame
+
+        """
         if sheet_name == '':
             df = pd.read_excel(file_path)
         else:
@@ -251,7 +345,13 @@ class Orbis:
         return df
 
     def search_and_add(self, item):
-
+        """
+        Searches for the given `item` and adds it to the list of columns.
+        
+        :param item: A string representing the name of the item to be searched for and added.
+        
+        :return: None
+        """
         self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
         search_input = self.driver.find_element(
             By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
@@ -262,6 +362,14 @@ class Orbis:
         logger.debug(f"Searching for {item} ...")
 
     def check_checkboxes(self, field=''):
+        """
+        Checks all checkboxes for a specific field in the Orbis webpage.
+
+        :param field (str): The name of the field to check the checkboxes for.
+        
+
+        :return: None
+        """
         try:
 
             scrollable = self.driver.find_element(By.XPATH, SCROLLABLE_XPATH)
@@ -296,6 +404,14 @@ class Orbis:
     # select_all_years function is used to get the operating revenue data in
     # millions for all available years
     def select_all_years(self, field='', is_checked=False):
+        """Selects the operating revenue data in millions for all available years.
+
+        :param field (str): The name of the financial field to select. Defaults to an empty string.
+        :param is_checked (bool): A flag indicating whether the checkbox for the given field is already checked. Defaults to False.
+
+        :return:
+        None.
+        """
         # click to finanacial data column
         logger.debug(f"Selecting all years for {field} ...")
         if not is_checked:
@@ -319,7 +435,44 @@ class Orbis:
                     retry += 1
                     time.sleep(5)
 
+    def check_processing_overlay(self, process_name):
+        # this is used to wait until processing overlay is gone
+        """Waits for the processing overlay to disappear.
+        
+        :param process_name (str): A string identifying the process being waited for.
+
+        :return:None
+        """
+        try:
+            main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
+            main_content_style = main_content_div.value_of_css_property(
+                'max-width')
+            while main_content_style != "none":
+                main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
+                main_content_style = main_content_div.value_of_css_property(
+                    'max-width')
+                logger.debug(
+                    f"{process_name}main content style is {main_content_style}")
+                print(f"{process_name} main content style is still NOT NONE {main_content_style}")
+                time.sleep(0.5)
+        except Exception as e:
+            logger.debug(e)
+
     def batch_search(self, input_file, process_name=''):
+        """
+        Perform a batch search on the Orbis database using the specified input file.
+
+        - Overview
+            - Check if the input file exists, and return if not.
+            - Get the name of the input file and use it to set the name of the excel output file.
+            - Open a webpage and wait for it to load.
+            - Click on some buttons to upload the input file and apply some filters to the search.
+            - Wait for the search to complete and then click a button to view the results.
+            - Wait for the results page to load and then click on some buttons to customize the displayed data.
+            - Extract some data from the page and save it to an excel file.
+        :param input_file (_type_): source file to be processed
+        :param process_name (_type_): process name to be displayed in the log
+        """
 
         logger.debug(f"Starting batch search for {process_name} ...")
 
@@ -388,20 +541,22 @@ class Orbis:
         view_result_sub_url.send_keys(Keys.RETURN)
 
         # this is used to wait until processing overlay is gone
-        try:
-            main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
-            main_content_style = main_content_div.value_of_css_property(
-                'max-width')
+        self.check_processing_overlay(process_name)
+        
+        # try:
+        #     main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
+        #     main_content_style = main_content_div.value_of_css_property(
+        #         'max-width')
 
-            while main_content_style != "none":
-                main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
-                main_content_style = main_content_div.value_of_css_property(
-                    'max-width')
-                logger.debug(
-                    f"{process_name}main content style is {main_content_style}")
-                time.sleep(0.5)
-        except Exception as e:
-            logger.debug(e)
+        #     while main_content_style != "none":
+        #         main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
+        #         main_content_style = main_content_div.value_of_css_property(
+        #             'max-width')
+        #         logger.debug(
+        #             f"{process_name}main content style is {main_content_style}")
+        #         time.sleep(0.5)
+        # except Exception as e:
+        #     logger.debug(e)
 
         time.sleep(5)
         self.wait_until_clickable(ADD_REMOVE_COLUMNS_VIEW)
@@ -715,6 +870,26 @@ class Orbis:
     # create a file likewe have data.csv file
     # company name;city;country;identifier
     def generate_data_for_guo(self, orig_orbis_data, file):
+        """
+        Generates a CSV file containing data in a format that is compatible with the
+        requirements of the Guo database. The file will contain the following columns:
+
+        - company name
+        - city
+        - country
+        - identifier
+
+        This method reads an XLSX file located at `orig_orbis_data`, extracts data from
+        the 'Results' sheet, and formats it for the Guo database. The resulting CSV file
+        will be saved at the location specified by `file`.
+
+        :param orig_orbis_data (str): The path to the original ORBIS data in XLSX format.
+        :param file (str): The path to the output CSV file.
+        
+        :return:
+        None
+        """
+        
         logger.debug(f"Generating data for guo... ")
         df = self.read_xlxs_file(orig_orbis_data, sheet_name='Results')
         df = df[['GUO - Name', 'City\nLatin Alphabet',
@@ -733,6 +908,15 @@ class Orbis:
         logger.debug(f"Data for guo is generated... ")
 
     def generate_data_for_ish(self, orig_orbis_data, file):
+        """
+        Generate data for ISH based on the input ORBIS data and write to a CSV file.
+
+        :param orig_orbis_data (str): The path to the input ORBIS data file in .xlsx format.
+        :param file (str): The path to the output CSV file.
+
+        :return:
+        None
+        """
         logger.debug(f"Generating data for ish... ")
         df = self.read_xlxs_file(orig_orbis_data, sheet_name='Results')
         df = df[['ISH - Name', 'City\nLatin Alphabet',
@@ -750,10 +934,32 @@ class Orbis:
         logger.debug(f"Data for ish is generated... ")
 
     def strip_new_lines(self, df, colunm_name='Licensee'):
+        """
+        Strips new lines from the values of the specified column of a pandas DataFrame.
+
+        :param df (pandas.DataFrame): the DataFrame to modify
+        :param colunm_name (str): the name of the column to modify (default is 'Licensee')
+
+        :return:
+        pandas.DataFrame: the modified DataFrame
+        """
+        
         df[colunm_name] = df[colunm_name].apply(lambda x: x.strip('\n'))
         return df
 
     def prepare_data(self, df, df_orbis):
+        """
+        Prepares the input data for further processing.
+
+        Merges two dataframes, `df` and `df_orbis`, on the 'CIK' column and selects the relevant columns. The resulting
+        merged dataframe is then reformatted by renaming columns and dropping irrelevant ones. The method returns the
+        resulting dataframe.
+
+        :param df: A pandas dataframe containing license agreement data.
+        :param df_orbis: A pandas dataframe containing Orbis data.
+        :return: A pandas dataframe containing the merged and prepared data.
+        """
+        
         logger.debug(f"Preparing data... ")
         related_data = df[['Licensee',
                            'Licensee CIK 1_cleaned',
@@ -795,11 +1001,30 @@ class Orbis:
         return df_merged
 
     def to_xlsx(self, df, file_name):
+        """
+        Saves a pandas dataframe to an excel file.
+
+        :param df: A pandas dataframe to be saved to the excel file.
+        :param file_name: The name of the excel file to save the dataframe to.
+
+        :return:
+        None
+        """
+        
         df.to_excel(file_name)
 
 
 def run_batch_search(input_file, process_name):
     # join path to input file
+    """
+    Runs batch search using Orbis class for given input file and process name.
+    :param input_file(str): File name of the input file to be processed.
+    :param process_name(str) : Name of the process.
+
+    :return:
+    None
+    """
+    
     logger.debug(
         f"Running batch search for file {input_file} and process name {process_name}")
     with Orbis() as orbis:
@@ -813,6 +1038,26 @@ def run_batch_search(input_file, process_name):
 
 
 def generate_data_for_guo(orbis_data_file, output_file):
+    """
+    Generates data for GUO based on the input Orbis data file and saves the output to a file.
+
+    :param orbis_data_file (str): The name of the input Orbis data file to use. This should be a CSV file containing 
+            the Orbis data to be processed.
+    :param output_file (str): The name of the file to save the output to. This should be a CSV file.
+
+    :return:
+    - None: This function does not return anything. The output is saved to the output file instead.
+
+
+    :raises FileNotFoundError: If the input Orbis data file cannot be found.
+    :raises FileNotFoundError: If the output file directory does not exist.
+    :raises ValueError: If the output file already exists and the user does not want to overwrite it.
+
+    Notes: 
+    - This function requires an instance of the Orbis class with the offline flag set to True.
+    - The output file will be saved in the same directory as the input Orbis data file.
+    - This function will overwrite the output file if it already exists, unless the user specifies otherwise.
+    """
     logger.debug(
         f"Generating data for GUO for file {orbis_data_file} and saving to {output_file}")
     with Orbis(offline=True) as orbis:
@@ -824,6 +1069,17 @@ def generate_data_for_guo(orbis_data_file, output_file):
 
 
 def generate_data_for_ish(orbis_data_file, output_file):
+    """
+    Generates data for ISH from an Orbis Excel file and saves it to a CSV file.
+
+
+    :param orbis_data_file (str): The name of the input Excel file to read from.
+    :param output_file (str): The name of the CSV file to save the generated data to.
+
+    :return:
+    None
+
+    """
     logger.debug(
         f"Generating data for ISH for file {orbis_data_file} and saving to {output_file}")
     with Orbis(offline=True) as orbis:
@@ -837,6 +1093,16 @@ def generate_data_for_ish(orbis_data_file, output_file):
 # aggregate_data is used to aggregate data by considering Licensee of companies
 # (refer workflow in README.md)
 def aggregate_data(orbis_file, aggregated_output_file):
+    """
+    Aggregates data from an Orbis file and saves the aggregated output to a file.
+
+    
+    :param orbis_file (str): The name of the Orbis file to aggregate data from.
+    :param aggregated_output_file (str): The name of the file to save the aggregated data to.
+    
+    :return: 
+    None: This function doesn't return anything.
+    """
     logger.debug(
         f"Aggregating data for file {orbis_file} and saving to {aggregated_output_file}")
     with Orbis(offline=True) as orbis:
@@ -855,6 +1121,16 @@ def aggregate_data(orbis_file, aggregated_output_file):
 
 
 def generate_unique_id(company_name, n):
+    """
+    Generate a unique ID for a company using SHA-256 hashing.
+
+    
+    :param company_name (str): The name of the company.
+    :param n (int): The number of characters to include in the unique ID.
+
+    :return:
+    str: A unique ID string with n characters.
+    """
     logger.debug(f"Generating unique id for {company_name}")
     sha256 = hashlib.sha256()
     sha256.update(company_name.encode())
@@ -865,6 +1141,17 @@ def post_process_data(excel_file):
     # create another column for unique identifier with hash for column 1 however no negative values
     # drop all rows where Orbis ID number is null
     # get data/ folder path and append file name to it
+    """
+    Post-processes the data by creating a column for unique identifier with hash for column 1.
+    Drops all rows where Orbis ID number is null.
+    Gets data/ folder path and appends file name to it.
+    
+   
+    :param excel_file (str): File path of the excel file to post-process.
+
+    :return:
+    None
+    """
     get_dir_path = ''
     logger.debug(f"Post processing data for {excel_file}")
     with Orbis(offline=True) as orbis:
@@ -892,6 +1179,21 @@ def post_process_data(excel_file):
 
 
 def run_in_parallel_generic(function, starmap, args):
+    """
+    Runs a given function in parallel using multiple processes. It uses the Python multiprocessing module to create a process pool, and distributes the function calls across the available CPUs.
+
+    
+    :param function (function): The function to be run in parallel.
+    :param starmap (bool): If True, use starmap() function to apply the function to the input tuples in args. Otherwise, use imap() function.
+    :param args (list): A list of tuples, where each tuple contains the arguments to be passed to the function.
+
+    :return:
+    None
+    
+    :raises:
+    None
+    """
+    
     number_of_processes = multiprocessing.cpu_count()
     if starmap:
         with multiprocessing.pool.ThreadPool(number_of_processes) as pool:
@@ -904,6 +1206,14 @@ def run_in_parallel_generic(function, starmap, args):
 
 
 def save_screenshot(driver, file_name):
+    """
+    Save a screenshot of the current browser window to the specified file.
+
+    :param driver: Selenium WebDriver instance to use for taking the screenshot
+    :type driver: selenium.webdriver.remote.webdriver.WebDriver
+    :param file_name: File name and path to save the screenshot to
+    :type file_name: str
+    """
     driver.save_screenshot(f'{file_name}.png')
     logger.debug(f"Screenshot saved to {file_name}.png")
 
@@ -930,7 +1240,7 @@ if __name__ == "__main__":
         f"orbis_data_licensee_{timestamp}.csv",
         is_licensee=True)
 
-    # # generates csv file for licensor
+    # generates csv file for licensor
     prepare_data(
         "sample_data.xlsx",
         f"orbis_data_licensor_{timestamp}.csv",
