@@ -251,7 +251,7 @@ def generate_unique_id(company_name):
 # company name, city, country, identifier)
 
 
-def prepare_data(source_file, output_file, is_licensee=False):
+def create_input_file_for_orbis_batch_search(source_file, output_file, is_licensee=False):
     if is_licensee:
         cols = ["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]
     else:

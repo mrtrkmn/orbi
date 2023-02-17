@@ -17,7 +17,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.common.exceptions import NoSuchElementException
 from datetime import datetime
-from crawl_data import prepare_data
+from crawl_data import create_input_file_for_orbis_batch_search
 import hashlib
 import logging
 import pathlib
@@ -1235,13 +1235,13 @@ if __name__ == "__main__":
 
     # crawl_data: prepare_data
     # generates csv file for licensee
-    prepare_data(
+    create_input_file_for_orbis_batch_search(
         "sample_data.xlsx",
         f"orbis_data_licensee_{timestamp}.csv",
         is_licensee=True)
 
     # generates csv file for licensor
-    prepare_data(
+    create_input_file_for_orbis_batch_search(
         "sample_data.xlsx",
         f"orbis_data_licensor_{timestamp}.csv",
         is_licensee=False)
