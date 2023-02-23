@@ -34,7 +34,7 @@ jobs:
       - run: pip install pdoc
 
       - run: pip install -r requirements.txt
-      - run: pdoc orbi/ '!orbi.variables'
+      - run: pdoc orbi/ '!orbi.variables' -o docs 
 
       - uses: actions/upload-pages-artifact@v1
         with:
