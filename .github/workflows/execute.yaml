@@ -14,7 +14,13 @@ on:
         required: false
         default: 'Crawl data'
       data: 
-        description: 'ONLY XLSX FILES ! The data link which contains list of licensee/licensor info. (e.g sample_data.xlsx)'
+        description: '
+          The data link which contains list of licensee/licensor info. (e.g sample_data.xlsx)
+          The link should be a public link which can be downloaded by wget command.
+          (e.g https://some-bucket.s3.amazonaws.com/some-excel-file.xlsx)
+          
+          **** ONLY XLSX FILE IS SUPPORTED ! ****
+          '
         required: false
         default: sample_data.xlsx
   repository_dispatch:
