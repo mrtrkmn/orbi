@@ -23,6 +23,11 @@ on:
           '
         required: false
         default: sample_data.xlsx
+      notify:
+        description: 'Send notification to Slack'
+        required: false
+        default: 'true'
+
   repository_dispatch:
     types: crawl-data
 
@@ -63,6 +68,7 @@ jobs:
         wget --directory-prefix=/home/runner/work/IDP-Works/IDP-Works/data/ ${{ github.event.inputs.data }}
 
     - name: Send Job Started Notification to Slack
+      if: ${{ github.event.inputs.notify == 'true' }}
       uses: rtCamp/action-slack-notify@v2.2.0
       env:
         SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
@@ -95,7 +101,7 @@ jobs:
 
 
     - name: Send Job Failed Notification to Slack
-      if: ${{ failure() && steps.batch_search.conclusion == 'failure' }}
+      if: ${{ failure() && steps.batch_search.conclusion == 'failure' && github.event.inputs.notify == 'true' }}
       uses: rtCamp/action-slack-notify@v2.2.0
       env:
         SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
