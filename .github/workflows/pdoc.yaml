@@ -27,7 +27,7 @@ jobs:
       - run: pip install pdoc
 
       - run: pip install -r requirements.txt
-      - run: pdoc -o docs/ run_orbi.py crawl_data.py
+      - run: PYTHONPATH=. pdoc -o docs/ orbi/
 
       - uses: actions/upload-pages-artifact@v1
         with:

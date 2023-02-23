@@ -87,7 +87,7 @@ jobs:
         timeout_minutes: 120 # 2 hours
         max_attempts: 3  # 3 times retry if failed
         command: |
-          python /home/runner/work/orbi/orbi/run_orbi.py 
+          python /home/runner/work/orbi/orbi/orbi.py 
       env:
         ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL_ADDRESS }}
         ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
