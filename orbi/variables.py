@@ -1,6 +1,3 @@
-__pdoc__ = {
-    'variables': False
-}
 import os
 import sys
 
