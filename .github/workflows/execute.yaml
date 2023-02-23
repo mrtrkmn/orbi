@@ -55,7 +55,12 @@ jobs:
         unzip chromedriver_linux64.zip
         chmod +x chromedriver
         chromedriver --version
-      
+
+
+    - name: Download data if needed
+      if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
+      run: |
+        wget --directory-prefix=/home/runner/work/IDP-Works/IDP-Works/data/ ${{ github.event.inputs.data }}
 
     - name: Send Job Started Notification to Slack
       uses: rtCamp/action-slack-notify@v2.2.0
@@ -67,12 +72,7 @@ jobs:
         SLACK_USERNAME: orbi
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
         SLACK_FOOTER: '🤓 automated bot Orbi'
-
-    - name: Download data if needed
-      if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
-      run: |
-        wget --directory-prefix=/home/runner/work/IDP-Works/IDP-Works/data/ ${{ github.event.inputs.data }}
-
+      
     - name: Execute the script
       uses: nick-fields/retry@v2
       id: batch_search
