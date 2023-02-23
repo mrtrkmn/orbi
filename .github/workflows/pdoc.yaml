@@ -3,8 +3,8 @@ name: website
 # build the documentation whenever there are new commits on main
 on:
   push:
-    branches:
-      - main
+    paths:
+      - **.py
     # Alternative: only build for tags.
     # tags:
     #   - '*'
