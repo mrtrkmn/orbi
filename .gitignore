@@ -8,3 +8,9 @@ bin/*
 *.ipynb_checkpoints
 *.html
 logs/*
+**/__pycache__/*
+**/.ipynb_checkpoints/*
+__pycache__/*
+**/.DS_Store
+.DS_Store
+.vscode/*
