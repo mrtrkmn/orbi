@@ -62,10 +62,10 @@ jobs:
         chromedriver --version
 
 
-    - name: Download data if needed
+    - name: Download data if provided 
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
       run: |
-        wget --directory-prefix=/home/runner/work/IDP-Works/IDP-Works/data/ ${{ github.event.inputs.data }}
+        wget --directory-prefix=/home/runner/work/orbi/orbi/data/ ${{ github.event.inputs.data }}
 
     - name: Send Job Started Notification to Slack
       if: ${{ github.event.inputs.notify == 'true' }}
@@ -86,17 +86,17 @@ jobs:
         timeout_minutes: 120 # 2 hours
         max_attempts: 3  # 3 times retry if failed
         command: |
-          python /home/runner/work/IDP-Works/IDP-Works/run_orbi.py 
+          python /home/runner/work/orbi/orbi/run_orbi.py 
       env:
         ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL_ADDRESS }}
         ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
         ORBIS_ACCESS_URL: ${{ secrets.ORBIS_ACCESS_URL }}
         ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_SEARCH_URL }}
         ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
-        CHROMEDRIVER_PATH: /home/runner/work/IDP-Works/IDP-Works/chromedriver
-        DATA_DIR: /home/runner/work/IDP-Works/IDP-Works/data/
+        CHROMEDRIVER_PATH: /home/runner/work/orbi/orbi/chromedriver
+        DATA_DIR: /home/runner/work/orbi/orbi/data/
         DATA_SOURCE: ${{ github.event.inputs.data }}
-        LOG_DIR: /home/runner/work/IDP-Works/IDP-Works/logs/
+        LOG_DIR: /home/runner/work/orbi/orbi/logs/
         LOCAL_DEV: False
 
 
@@ -122,7 +122,7 @@ jobs:
     # zip the data except sample_data.xlsx
     - name: Zip data
       run: |
-        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip /home/runner/work/IDP-Works/IDP-Works/data/* -x /home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
+        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip /home/runner/work/orbi/orbi/data/* -x /home/runner/work/orbi/orbi/data/sample_data.xlsx
 
 
     - name: Upload to S3 
@@ -133,7 +133,7 @@ jobs:
         AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
-        SOURCE_DIR: /home/runner/work/IDP-Works/IDP-Works/data/
+        SOURCE_DIR: /home/runner/work/orbi/orbi/data/
         DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
 
     - name: Send data to Telegram 
@@ -146,8 +146,8 @@ jobs:
       with:
         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
         path: |
-          /home/runner/work/IDP-Works/IDP-Works/data/
-          !/home/runner/work/IDP-Works/IDP-Works/data/sample_data.xlsx
+          /home/runner/work/orbi/orbi/data/
+          !/home/runner/work/orbi/orbi/data/sample_data.xlsx
         retention-days: 90
 
     - name:  Send Job Success Notification to Slack
@@ -155,7 +155,7 @@ jobs:
       env:
         SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-        SLACK_MESSAGE: ':rocket: Operation is completed data link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}/ For more information check README page of the project: https://github.com/mrtrkmn/IDP-Works'
+        SLACK_MESSAGE: ':rocket: Operation is completed data link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}/ For more information check README page of the project: https://github.com/mrtrkmn/orbi'
         SLACK_TITLE: Data is ready to download append file name to the link !
         SLACK_USERNAME: orbi
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
