@@ -54,13 +54,14 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     
     # download chromedriver
-    - name: Download chromedriver
+    - name: Download latest chromedriver
       run: |
-        wget https://chromedriver.storage.googleapis.com/108.0.5359.71/chromedriver_linux64.zip
-        unzip chromedriver_linux64.zip
+        PLATFORM=linux64
+        VERSION=$(wget http://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+        wget -N http://chromedriver.storage.googleapis.com/$VERSION/chromedriver_$PLATFORM.zip -P /home/runner/work/orbi/orbi/
+        unzip chromedriver_$PLATFORM.zip -d /home/runner/work/orbi/orbi/
         chmod +x chromedriver
         chromedriver --version
-
 
     - name: Download data if provided 
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
