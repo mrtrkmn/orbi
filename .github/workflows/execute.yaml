@@ -36,7 +36,9 @@ permissions:
 
 jobs:
   build:
-
+    defaults:
+      run:
+        working-directory: /app # default working directory
     runs-on: ubuntu-latest
 
     steps:
@@ -66,7 +68,7 @@ jobs:
     - name: Download data if provided 
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
       run: |
-        wget --directory-prefix=/home/runner/work/orbi/orbi/data/ ${{ github.event.inputs.data }}
+        wget --directory-prefix=/app/orbi/data/ ${{ github.event.inputs.data }}
 
     - name: Send Job Started Notification to Slack
       if: ${{ github.event.inputs.notify == 'true' }}
@@ -87,17 +89,17 @@ jobs:
         timeout_minutes: 120 # 2 hours
         max_attempts: 3  # 3 times retry if failed
         command: |
-          python /home/runner/work/orbi/orbi/orbi.py
+          python /app/orbi/orbi.py
       env:
         ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL_ADDRESS }}
         ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
         ORBIS_ACCESS_URL: ${{ secrets.ORBIS_ACCESS_URL }}
         ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_SEARCH_URL }}
         ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
-        CHROMEDRIVER_PATH: /home/runner/work/orbi/orbi/chromedriver
-        DATA_DIR: /home/runner/work/orbi/orbi/data/
+        CHROMEDRIVER_PATH: /app/orbi/chromedriver
+        DATA_DIR: /app/orbi/data/
         DATA_SOURCE: ${{ github.event.inputs.data }}
-        LOG_DIR: /home/runner/work/orbi/orbi/logs/
+        LOG_DIR: /app/orbi/logs/
         LOCAL_DEV: False
 
 
@@ -123,7 +125,7 @@ jobs:
     # zip the data except sample_data.xlsx
     - name: Zip data
       run: |
-        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip /home/runner/work/orbi/orbi/data/* -x /home/runner/work/orbi/orbi/data/sample_data.xlsx
+        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip /app/orbi/data/* -x /app/orbi/data/sample_data.xlsx
 
 
     - name: Upload to S3 
@@ -134,7 +136,7 @@ jobs:
         AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
-        SOURCE_DIR: /home/runner/work/orbi/orbi/data/
+        SOURCE_DIR: /app/orbi/data/
         DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
 
     - name: Send data to Telegram 
@@ -147,8 +149,8 @@ jobs:
       with:
         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
         path: |
-          /home/runner/work/orbi/orbi/data/
-          !/home/runner/work/orbi/orbi/data/sample_data.xlsx
+          /app/orbi/data/
+          !/app/orbi/data/sample_data.xlsx
         retention-days: 90
 
     - name:  Send Job Success Notification to Slack
