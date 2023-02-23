@@ -57,9 +57,9 @@ jobs:
     - name: Download latest chromedriver
       run: |
         PLATFORM=linux64
-        VERSION=$(wget http://chromedriver.storage.googleapis.com/LATEST_RELEASE)
-        wget -N http://chromedriver.storage.googleapis.com/$VERSION/chromedriver_$PLATFORM.zip -P /home/runner/work/orbi/orbi/
-        unzip chromedriver_$PLATFORM.zip -d /home/runner/work/orbi/orbi/
+        VERSION=$(curl http://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+        curl http://chromedriver.storage.googleapis.com/$VERSION/chromedriver_$PLATFORM.zip -LOk
+        unzip chromedriver_*
         chmod +x chromedriver
         chromedriver --version
 
