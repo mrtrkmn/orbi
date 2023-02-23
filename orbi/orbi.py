@@ -1642,7 +1642,7 @@ if __name__ == "__main__":
     # generates csv file for licensee
 
     if environ.get('DATA_SOURCE') == '':
-        environ.update({'DATA_SOURCE': 'data/data.csv'})
+        environ['DATA_SOURCE'] = 'sample_data.xlsx'
 
     
     create_input_file_for_orbis_batch_search(
