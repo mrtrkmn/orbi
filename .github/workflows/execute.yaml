@@ -66,6 +66,11 @@ jobs:
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
       run: |
         wget --directory-prefix=/home/runner/work/orbi/orbi/data/ ${{ github.event.inputs.data }}
+    
+    - name: Get file name
+      id: get-file-name
+      run: |
+        echo "::set-output name=file_name::$(basename ${{ github.event.inputs.data }})"
 
     - name: Send Job Started Notification to Slack
       if: ${{ github.event.inputs.notify == 'true' }}
@@ -96,7 +101,7 @@ jobs:
         ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
         CHROMEDRIVER_PATH: /home/runner/work/orbi/orbi/chromedriver
         DATA_DIR: /home/runner/work/orbi/orbi/data/
-        DATA_SOURCE: ${{ github.event.inputs.data }}
+        DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
         LOG_DIR: /home/runner/work/orbi/orbi/logs/
         LOCAL_DEV: False
 
