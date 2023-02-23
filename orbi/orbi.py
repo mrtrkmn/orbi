@@ -1627,6 +1627,7 @@ if __name__ == "__main__":
 
     # initial checks
     if environ.get('LOCAL_DEV') == 'True':
+        environ["DATA_SOURCE"] = "sample_data.xlsx"
         if not path.exists(environ.get('CONFIG_PATH')):
             # exit with an error message
             exit(
@@ -1641,18 +1642,14 @@ if __name__ == "__main__":
     # crawl_data: prepare_data
     # generates csv file for licensee
 
-    if environ.get('DATA_SOURCE') == '':
-        environ['DATA_SOURCE'] = 'sample_data.xlsx'
-
-    
     create_input_file_for_orbis_batch_search(
-        environ.get('DATA_SOURCE'), 
+        environ.get("DATA_SOURCE"), 
         f"orbis_data_licensee_{timestamp}.csv",
         is_licensee=True)
 
     # generates csv file for licensor
     create_input_file_for_orbis_batch_search(
-        environ.get('DATA_SOURCE'),
+        environ.get("DATA_SOURCE"),
         f"orbis_data_licensor_{timestamp}.csv",
         is_licensee=False)
 
