@@ -62,8 +62,8 @@ jobs:
       env:
         SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-        SLACK_MESSAGE: ':bell: Crawler is started on Github and when it is done, I will notify you ! '
-        SLACK_TITLE: ':bell: Crawler is started successfully !'
+        SLACK_MESSAGE: ':bell: Orbi is started crawl data from Orbis database on  Github using the file ${{ github.event.inputs.data }}  as input data.'
+        SLACK_TITLE: ':bell: Orbi is working on crawling data from Orbis database on Github'
         SLACK_USERNAME: orbi
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
         SLACK_FOOTER: '🤓 automated bot Orbi'
