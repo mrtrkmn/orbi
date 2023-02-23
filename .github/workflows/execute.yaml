@@ -13,7 +13,10 @@ on:
         description: 'Commit message'
         required: false
         default: 'Crawl data'
-  
+      data: 
+        description: 'ONLY XLSX FILES ! The data link which contains list of licensee/licensor info. (e.g sample_data.xlsx)'
+        required: false
+        default: sample_data.xlsx
   repository_dispatch:
     types: crawl-data
 
@@ -59,6 +62,11 @@ jobs:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
         SLACK_FOOTER: '🤓 automated bot Orbi'
 
+    - name: Download data if needed
+      if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
+      run: |
+        wget --directory-prefix=/home/runner/work/IDP-Works/IDP-Works/data/ ${{ github.event.inputs.data }}
+
     - name: Execute the script
       uses: nick-fields/retry@v2
       id: batch_search
@@ -75,7 +83,7 @@ jobs:
         ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
         CHROMEDRIVER_PATH: /home/runner/work/IDP-Works/IDP-Works/chromedriver
         DATA_DIR: /home/runner/work/IDP-Works/IDP-Works/data/
-        DATA_SOURCE: sample_data.xlsx
+        DATA_SOURCE: ${{ github.event.inputs.data }}
         LOG_DIR: /home/runner/work/IDP-Works/IDP-Works/logs/
         LOCAL_DEV: False
 
