@@ -305,7 +305,6 @@ class Orbis:
 
         :param field (str): The name of the field to check the checkboxes for.
 
-
         :return: None
         """
         try:
@@ -829,6 +828,10 @@ class Orbis:
         None
         """
 
+        if not path.exists(orig_orbis_data):
+            logger.debug(f"Original orbis data {orig_orbis_data} is not exists for generating GUO based CSV file, skipping this step !")
+            return
+
         logger.debug(f"Generating data for guo... ")
         df = self.read_xlxs_file(orig_orbis_data, sheet_name='Results')
         df = df[['GUO - Name', 'City\nLatin Alphabet',
@@ -856,6 +859,11 @@ class Orbis:
         :return:
         None
         """
+
+        if not path.exists(orig_orbis_data):
+            logger.debug(f"Original orbis data {orig_orbis_data} is not exists for generating ISH based CSV file, skipping this step !")
+            return
+
         logger.debug(f"Generating data for ish... ")
         df = self.read_xlxs_file(orig_orbis_data, sheet_name='Results')
         df = df[['ISH - Name', 'City\nLatin Alphabet',
@@ -1044,12 +1052,22 @@ def aggregate_data(orbis_file, aggregated_output_file):
     """
     logger.debug(
         f"Aggregating data for file {orbis_file} and saving to {aggregated_output_file}")
+   
     with Orbis(offline=True) as orbis:
         # data processing and augmentation
         # after orbis search step following needs to run
         orbis_file = path.join(orbis.data_dir, orbis_file)
         aggregate_output_file = path.join(
             orbis.data_dir, aggregated_output_file)
+
+        if not path.exists(orbis.license_data):
+            logger.debug(f"License file, {orbis.license_data}, does not exists, skipping to aggreagate data !")
+            return 
+
+        if not path.exists(orbis.license_data):
+            logger.debug(f"Orbis file, {orbis_file}, does not exists, skipping to aggreagate data !")
+            return 
+        
         df_licensee_data = orbis.read_xlxs_file(orbis.license_data)
         df_orbis_data = orbis.read_xlxs_file(orbis_file, sheet_name='Results')
         df_licensee = orbis.strip_new_lines(df_licensee_data)
@@ -1098,9 +1116,11 @@ def post_process_data(excel_file):
 
     # append data and file name to it
     excel_file = path.join(get_dir_path, excel_file)
+    
     if not path.exists(excel_file):
         logger.debug(f"{excel_file} does not exist")
         return
+
     logger.debug(f"post process data for {excel_file}")
     df = pd.read_excel(excel_file, sheet_name='Results')
     df = df[df['Orbis ID number'].notna()]
