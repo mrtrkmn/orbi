@@ -24,8 +24,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from variables import *
 
-path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(path)
+root_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(root_path)
 
 
 # initialize logger
