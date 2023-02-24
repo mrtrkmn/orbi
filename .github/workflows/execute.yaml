@@ -153,6 +153,7 @@ jobs:
         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
         path: |
           /home/runner/work/orbi/orbi/data/
+          /home/runner/work/orbi/orbi/logs/
           !/home/runner/work/orbi/orbi/data/sample_data.xlsx
         retention-days: 90
 
