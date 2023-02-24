@@ -177,16 +177,16 @@ class Orbis:
         logger.debug("Dropping columns: ", columns_to_drop)
         return df.drop(columns=columns_to_drop)
 
-    def read_config(self, path):
+    def read_config(self, config_path):
         """
         Read a YAML configuration file.
 
-        :param path (str): The path to the YAML configuration file.
+        :param config_path (str): The config_path to the YAML configuration file.
 
         :return:
         dict: A dictionary with the configuration settings.
         """
-        with open(path, "r") as f:
+        with open(config_path, "r", encoding="UTF-8") as f:
             try:
                 config = yaml.safe_load(f)
             except yaml.YAMLError as exc:

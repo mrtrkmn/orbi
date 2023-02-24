@@ -19,8 +19,8 @@ from bs4 import BeautifulSoup
 
 
 # this path append is needed for pdoc to generate the documentation
-path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(path)
+root_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(root_path)
 
 
 # class to crawl the IPO website for the patent-related data
