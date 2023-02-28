@@ -139,8 +139,8 @@ class Orbis:
             if environ.get("LOCAL_DEV") != "True":
                 self.chrome_options.add_argument("--headless")
                 self.chrome_options.add_argument("--window-size=1920,1080")
-
-            self.chrome_options.add_experimental_option('prefs', prefs)
+                self.chrome_options.add_experimental_option('prefs', prefs)
+            
             self.driver = webdriver.Chrome(
                 service=service, options=self.chrome_options)
             logger.debug("Chrome driver started")
