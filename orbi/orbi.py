@@ -130,7 +130,6 @@ class Orbis:
     def __enter__(self):
         if not self.offline:
             logger.debug("Starting chrome driver...")
-            service = ChromeService(executable_path=self.executable_path)
             self.chrome_options = webdriver.ChromeOptions()
             prefs = {'download.default_directory': self.data_dir}
             # add user agent to avoid bot detection
@@ -138,11 +137,12 @@ class Orbis:
                 "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36")
             if environ.get("LOCAL_DEV") != "True":
                 self.chrome_options.add_argument("--headless")
+                self.chrome_options.add_argument("--start-maximized")
                 self.chrome_options.add_argument("--window-size=1920,1080")
                 self.chrome_options.add_experimental_option('prefs', prefs)
             
             self.driver = webdriver.Chrome(
-                service=service, options=self.chrome_options)
+                executable_path=self.executable_path, options=self.chrome_options)
             logger.debug("Chrome driver started")
             self.login()
         return self
