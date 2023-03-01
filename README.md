@@ -11,7 +11,7 @@ for company and patent related data.
 
 ## How to run 
 
-[./orbi](./orbi/) contains the main script which is used to run the crawler. It contains two different classes to crawl data from the websites.
+[./orbi](https://github.com/mrtrkmn/orbi/tree/main/orbi) contains the main script which is used to run the crawler. It contains two different classes to crawl data from the websites.
 
 - Class Crawler: This class is used to crawl data from [ipo.gov.uk](https://www.ipo.gov.uk) and sec.gov website. It is used to generate csv file with; name, city, country and CIK number of the companies. Name, city and country are scraped from sec.gov website.(CIK number of the companies provided by a xlsx file)
 
@@ -34,7 +34,7 @@ $ pip install -r requirements.txt
 - After setting up virtual environment, and installing requirements you can run the script by running the following command:
 
 ```bash
-$ LOCAL_DEV=True CONFIG_PATH=./config/config.yaml python orbi.py
+$ LOCAL_DEV=True CONFIG_PATH=./config/config.yaml python orbi/orbi.py
 ```
 
 Make sure that you are defining the path to the config file correctly.
@@ -48,9 +48,9 @@ Make sure that you are defining the path to the config file correctly.
 - The action is also integrated with Slack. On the Slack channel, the same action can be triggered by typing `/run-orbis-crawler`. The notifications will be sent to the Slack channel #idp-data-c
 
 
-To run the crawler classs seperately , check out the commented code in [./orbi/orbi.py](./orbi/orbi.py)` file.
+To run the crawler classs seperately , check out the commented code in [./orbi/orbi.py](https://github.com/mrtrkmn/orbi/tree/main/orbi/orbi/orbi.py)` file.
 
-Specifically, this line: [./orbi/orbi.py#494](./orbi/orbi.py#L494)
+Specifically, this line: [./orbi/orbi.py#494](https://github.com/mrtrkmn/orbi/tree/main/orbi/orbi/orbi.py#L494)
 
 
 Automation of Orbis database access and batch search on Orbis database
@@ -98,7 +98,7 @@ orbis_data_licensor_ish_{timestamp}.csv
 </details>
 
 
-- The XLSX files are generated through the [./orbi/orbi.py](./orbi/orbi.py) by conducting batch search on Orbis database.
+- The XLSX files are generated through the [./orbi/orbi.py](https://github.com/mrtrkmn/orbi/tree/main/orbi/orbi/orbi.py) by conducting batch search on Orbis database.
 
 
 
