@@ -123,6 +123,21 @@ orbis_data_licensor_ish_{timestamp}.xlsx
 Currently, action results are uploaded to AWS S3 service and accesible with the link sent to private Slack channel. 
 The files can be downloaded as decribed in the slack channel. 
 
+### Run orbi from Slack
+
+Orbi can be triggered on Github from slack when you are in tum-tim.slack.com workspace. 
+
+Any user who writes in the message field of Slack the following command and press 'Enter', Orbi will start the process on Github: 
+
+```bash 
+/run-orbis-crawler 
+```
+
+You will receive a result as shown below from Slack. 
+
+---
+
+![how-to-run-orbi-from-slack](https://user-images.githubusercontent.com/13614433/222140712-86be7358-b90d-44fa-8cb8-6633a72d51e4.png)
 
 
 ## Main Workflow 
@@ -130,7 +145,7 @@ The files can be downloaded as decribed in the slack channel.
 Beside the given main workflow given below, there are other options which can be used with this repository. 
 
 The workflow is subject to change in time. 
-
+--- 
 <img src="https://user-images.githubusercontent.com/13614433/213180207-3855244f-29f9-42c5-ab7f-9655f0c78479.png"  width="750" height="300">
 
 
