@@ -44,11 +44,7 @@ Make sure that you are defining the path to the config file correctly.
 
 - The action can be triggered through [actions tab](https://github.com/mrtrkmn/orbi/actions/workflows/execute.yaml) on Github. Right side of the page, you can see the 'Run workflow' button to trigger the action.
 
-
-- The action is also integrated with Slack. On the Slack channel, the same action can be triggered by typing `/run-orbis-crawler`. The notifications will be sent to the Slack channel #idp-data-c
-
-
-To run the crawler classs seperately , check out the commented code in [./orbi/orbi.py](https://github.com/mrtrkmn/orbi/tree/main/orbi/orbi/orbi.py)` file.
+To run the crawler classs seperately , check out the commented code in [./orbi/crawl.py](https://github.com/mrtrkmn/orbi/tree/main/orbi/orbi/crawl.py)` file.
 
 Specifically, this line: [./orbi/orbi.py#494](https://github.com/mrtrkmn/orbi/tree/main/orbi/orbi/orbi.py#L494)
 
@@ -138,6 +134,25 @@ You will receive a result as shown below from Slack.
 ---
 
 ![how-to-run-orbi-from-slack](https://user-images.githubusercontent.com/13614433/222140712-86be7358-b90d-44fa-8cb8-6633a72d51e4.png)
+
+---
+
+After it is initialized, you will receive a message to #idp-data-c channel on Slack similar to the following:
+
+---
+![Initial Notification](https://user-images.githubusercontent.com/13614433/222143717-16cb6cfa-f9cb-4a10-a7aa-c71083e16ea4.png)
+
+--- 
+When it is done successfully, you will have a new notification with the link which provides access to data that similar to following: 
+
+![Screenshot 2023-03-01 at 13 47 46](https://user-images.githubusercontent.com/13614433/222143625-3115dcc3-e49d-40ac-bc8d-2af362c66feb.png)
+
+--- 
+
+In case of error on the process, similar notification will be received as provided below: 
+
+
+![Error notification](https://user-images.githubusercontent.com/13614433/222143963-d9d3443a-4e07-4adb-bcdd-a96360380934.png)
 
 
 ## Main Workflow 
