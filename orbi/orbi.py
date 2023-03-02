@@ -1,3 +1,4 @@
+import concurrent.futures
 import csv
 import hashlib
 import logging
@@ -137,10 +138,10 @@ class Orbis:
                 "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36")
             if environ.get("LOCAL_DEV") != "True":
                 self.chrome_options.add_argument("--headless")
-                self.chrome_options.add_argument("--start-maximized")
-                self.chrome_options.add_argument("--window-size=1920,1080")
-                self.chrome_options.add_experimental_option('prefs', prefs)
             
+            self.chrome_options.add_argument("--start-maximized")
+            self.chrome_options.add_argument("--window-size=1920,1080")    
+            self.chrome_options.add_experimental_option('prefs', prefs)
             self.driver = webdriver.Chrome(
                 executable_path=self.executable_path, options=self.chrome_options)
             logger.debug("Chrome driver started")
@@ -474,7 +475,7 @@ class Orbis:
         view_result_sub_url.send_keys(Keys.RETURN)
 
         # this is used to wait until processing overlay is gone
-        self.check_processing_overlay(process_name)
+        
 
         # try:
         #     main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
@@ -492,40 +493,78 @@ class Orbis:
         #     logger.debug(e)
 
         time.sleep(5)
-        self.wait_until_clickable(ADD_REMOVE_COLUMNS_VIEW)
-        self.driver.find_element(By.XPATH, ADD_REMOVE_COLUMNS_VIEW).click()
 
-        self.wait_until_clickable(CONTACT_INFORMATION)
-        self.driver.find_element(By.XPATH, CONTACT_INFORMATION).click()
+    
+    # wait until the processing overlay is gone
 
-        self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
-        search_input = self.driver.find_element(
-            By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
-        search_input.send_keys("City")
-        search_input.send_keys(Keys.RETURN)
-        logger.debug(f"{process_name} city is searched")
+        # check whether the processing overlay is gone
+        
+        PROCESSING_DIV = "//div[@class='processing-overlay']"
 
-        # add city
-        self.wait_until_clickable(CITY_COLUMN)
-        self.driver.find_element(By.XPATH, CITY_COLUMN).click()
-        logger.debug(f"{process_name} city is added")
+        try: 
+            processing_div_main = self.driver.find_element(By.XPATH, PROCESSING_DIV)
+            processing_div_main_style = processing_div_main.value_of_css_property('display')
+            while processing_div_main_style != "none":
+                processing_div_main = self.driver.find_element(By.XPATH, PROCESSING_DIV)
+                processing_div_main_style = processing_div_main.value_of_css_property('display')
+                logger.debug(f"{process_name} processing div main style is {processing_div_main_style}")
+                time.sleep(0.5)
+        except Exception as e:
+            print(f"{process_name} had an exception: {e} ")
+        
+        try:
+            self.wait_until_clickable(ADD_REMOVE_COLUMNS_VIEW)
+            self.driver.find_element(By.XPATH, ADD_REMOVE_COLUMNS_VIEW).click()
+        except Exception as e:
+            print(f"{process_name} had an exception: {e} ")
+            #  add implicit wait
+            self.driver.implicitly_wait(10)
 
-        self.wait_until_clickable(POPUP_SAVE_BUTTON)
-        self.driver.find_element(By.XPATH, POPUP_SAVE_BUTTON).click()
-        logger.debug(f"{process_name} popup save button is clicked")
+        
+        try:  
+            self.wait_until_clickable(CONTACT_INFORMATION)
+            self.driver.find_element(By.XPATH, CONTACT_INFORMATION).click()
+        except Exception as e:
+            print(f"{process_name} had an exception: {e} ")
+        
+        try: 
+            self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
+            search_input = self.driver.find_element(
+                By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
+            search_input.send_keys("City")
+            search_input.send_keys(Keys.RETURN)
+            logger.debug(f"{process_name} city is searched")
+        except Exception as e:
+             print(f"{process_name} had an exception: {e} ")
+        
+        try:    
+            # add city
+            self.wait_until_clickable(CITY_COLUMN)
+            self.driver.find_element(By.XPATH, CITY_COLUMN).click()
+            logger.debug(f"{process_name} city is added")
+
+            self.wait_until_clickable(POPUP_SAVE_BUTTON)
+            self.driver.find_element(By.XPATH, POPUP_SAVE_BUTTON).click()
+            logger.debug(f"{process_name} popup save button is clicked")
+        except Exception as e:
+            print(e)
 
         # self.driver.refresh()
         search_input.clear()
         time.sleep(1)
-
-        search_input.send_keys("Country")
-        search_input.send_keys(Keys.RETURN)
-        logger.debug(f"{process_name} country is searched")
-
-        self.wait_until_clickable(COUNTRY_COLUMN)
-        self.driver.find_element(By.XPATH, COUNTRY_COLUMN).click()
-        logger.debug(f"{process_name} country is added")
-
+        try: 
+            search_input.send_keys("Country")
+            search_input.send_keys(Keys.RETURN)
+            logger.debug(f"{process_name} country is searched")
+        except Exception as e:
+            print(e)
+        
+        try: 
+            self.wait_until_clickable(COUNTRY_COLUMN)
+            self.driver.find_element(By.XPATH, COUNTRY_COLUMN).click()
+            logger.debug(f"{process_name} country is added")
+        except Exception as e:
+            print(e)
         search_input.clear()
         time.sleep(1)
 
@@ -751,18 +790,11 @@ class Orbis:
 
         time.sleep(3)
         # click apply from dropdown
-
+        self.wait_until_clickable(DROPDOWN_APPLY)
         self.driver.find_element(By.XPATH, DROPDOWN_APPLY).click()
         time.sleep(3)
 
-        WebDriverWait(
-            self.driver,
-            30 *
-            60).until(
-            EC.text_to_be_present_in_element(
-                (By.XPATH,
-                 EXCEL_BUTTON),
-                'Excel'))
+        self.wait_until_clickable(EXCEL_BUTTON)
         self.driver.find_element(By.XPATH, EXCEL_BUTTON).click()
         logger.debug(f"{process_name} excel button is clicked")
 
@@ -775,14 +807,7 @@ class Orbis:
 
         # excel_output_file_name.send_keys(Keys.RETURN)
         time.sleep(2)
-        WebDriverWait(
-            self.driver,
-            30 *
-            60).until(
-            EC.text_to_be_present_in_element(
-                (By.XPATH,
-                 EXPORT_BUTTON),
-                'Export'))
+        self.wait_until_clickable(EXCEL_BUTTON)
         self.driver.find_element(By.XPATH, EXPORT_BUTTON).click()
         logger.debug(f"{process_name} export button is clicked")
 
@@ -956,7 +981,7 @@ class Orbis:
         df.to_excel(file_name)
 
 
-def run_batch_search(input_file, process_name):
+def run_batch_search(input_file):
     # join path to input file
     """
     Runs batch search using Orbis class for given input file and process name.
@@ -968,18 +993,18 @@ def run_batch_search(input_file, process_name):
     """
 
     logger.debug(
-        f"Running batch search for file {input_file} and process name {process_name}")
+        f"Running batch search for file {input_file}")
     with Orbis() as orbis:
         logger.debug(f"Data directory is {orbis.data_dir}")
         logger.debug(f"Input file is {path.join(orbis.data_dir, input_file)}")
-        orbis.batch_search(path.join(orbis.data_dir, input_file), process_name)
+        orbis.batch_search(path.join(orbis.data_dir, input_file))
 
 # offline_data_aggregation is used to generate data by considering GUO of companies
 # this data needs to be generated when we have new data from Orbis (refer
 # workflow in README.md)
 
 
-def generate_data_for_guo(orbis_data_file, output_file):
+def generate_data_for_guo(orbis_data_file):
     """
     Generates data for GUO based on the input Orbis data file and saves the output to a file.
 
@@ -1000,6 +1025,10 @@ def generate_data_for_guo(orbis_data_file, output_file):
     - The output file will be saved in the same directory as the input Orbis data file.
     - This function will overwrite the output file if it already exists, unless the user specifies otherwise.
     """
+    #  output_file name will be generated from the input file name
+    
+    output_file = f"{path.splitext(orbis_data_file)[0]}_guo.csv"
+    
     logger.debug(
         f"Generating data for GUO for file {orbis_data_file} and saving to {output_file}")
     with Orbis(offline=True) as orbis:
@@ -1010,18 +1039,18 @@ def generate_data_for_guo(orbis_data_file, output_file):
             file=output_file)
 
 
-def generate_data_for_ish(orbis_data_file, output_file):
+def generate_data_for_ish(orbis_data_file):
     """
     Generates data for ISH from an Orbis Excel file and saves it to a CSV file.
 
 
     :param orbis_data_file (str): The name of the input Excel file to read from.
-    :param output_file (str): The name of the CSV file to save the generated data to.
 
     :return:
     None
 
     """
+    output_file = f"{path.splitext(orbis_data_file)[0]}_ish.csv"
     logger.debug(
         f"Generating data for ISH for file {orbis_data_file} and saving to {output_file}")
     with Orbis(offline=True) as orbis:
@@ -1132,7 +1161,7 @@ def post_process_data(excel_file):
     logger.debug(f"post process data for {excel_file} completed")
 
 
-def run_in_parallel_generic(function, starmap, args):
+def run_in_parallel_generic(function, args):
     """
     Runs a given function in parallel using multiple processes. It uses the Python multiprocessing module to create a process pool, and distributes the function calls across the available CPUs.
 
@@ -1148,17 +1177,30 @@ def run_in_parallel_generic(function, starmap, args):
     None
     """
 
-    number_of_processes = multiprocessing.cpu_count()
-    if starmap:
-        with multiprocessing.pool.ThreadPool(number_of_processes) as pool:
-            pool.starmap(function, args)
-    else:
-        with multiprocessing.pool.ThreadPool(number_of_processes) as pool:
-            pool.imap(function, args)
-            pool.close()
-            pool.join()
-
-
+    # number_of_processes = multiprocessing.cpu_count()
+    # if starmap:
+        
+    #   with ThreadPoolExecutor(max_workers=number_of_processes) as executor:
+    #     # if starmap:
+    #     #     executor.starmap(function, args)
+    #     # else:
+    #     #     executor.map(function, args)
+    #    future = executor.submit(function, args)
+    #    print(future.result())
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    # Start the load operations and mark each future with its URL
+        future_to_url = {executor.submit(function, file_to_be_processed): file_to_be_processed for file_to_be_processed in args}
+        for future in concurrent.futures.as_completed(future_to_url):
+            url = future_to_url[future]
+            try:
+                data = future.result()
+            except Exception as exc:
+                print('%r generated an exception: %s' % (url, exc))
+            else:
+                print(f"result is --->  {data}")
+        
+    
 def save_screenshot(driver, file_name):
     """
     Save a screenshot of the current browser window to the specified file.
@@ -1191,16 +1233,16 @@ if __name__ == "__main__":
     # crawl_data: prepare_data
     # generates csv file for licensee
 
-    create_input_file_for_orbis_batch_search(
-        environ.get("DATA_SOURCE"), 
-        f"orbis_data_licensee_{timestamp}.csv",
-        is_licensee=True)
+    # create_input_file_for_orbis_batch_search(
+    #     environ.get("DATA_SOURCE"), 
+    #     f"orbis_data_licensee_{timestamp}.csv",
+    #     is_licensee=True)
 
-    # generates csv file for licensor
-    create_input_file_for_orbis_batch_search(
-        environ.get("DATA_SOURCE"),
-        f"orbis_data_licensor_{timestamp}.csv",
-        is_licensee=False)
+    # # generates csv file for licensor
+    # create_input_file_for_orbis_batch_search(
+    #     environ.get("DATA_SOURCE"),
+    #     f"orbis_data_licensor_{timestamp}.csv",
+    #     is_licensee=False)
 
     time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
 
@@ -1208,12 +1250,9 @@ if __name__ == "__main__":
     # # --> data/data.csv needs to be uploaded to Orbis to start batch search
     # run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file
     # needs to come from crawl_data.py
-    run_in_parallel_generic(run_batch_search,
-                            True,
-                            [(f"orbis_data_licensee_{timestamp}.csv",
-                              "turtle"),
-                             (f"orbis_data_licensor_{timestamp}.csv",
-                              "viper")])
+    run_in_parallel_generic(function=run_batch_search,
+                            args=[f"orbis_data_licensee_{timestamp}.csv",
+                             f"orbis_data_licensor_{timestamp}.csv"])
 
     # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
     # # # # --> after batch search is completed, data downloaded from Orbis
@@ -1223,56 +1262,50 @@ if __name__ == "__main__":
     # # # # Step 3
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
 
-    run_in_parallel_generic(generate_data_for_guo,
-                            True,
-                            [(f"orbis_data_licensee_{timestamp}.xlsx",
-                              f"orbis_data_licensee_guo_{timestamp}.csv"),
-                             (f"orbis_data_licensor_{timestamp}.xlsx",
-                              f"orbis_data_licensor_guo_{timestamp}.csv")])
+    run_in_parallel_generic(function=generate_data_for_guo,
+                            args=[f"orbis_data_licensee_{timestamp}.xlsx",
+                             f"orbis_data_licensor_{timestamp}.xlsx",
+                            ])
 
-    run_in_parallel_generic(run_batch_search,
-                            True,
-                            [(f"orbis_data_licensee_guo_{timestamp}.csv",
-                              "turtle_guo"),
-                             (f"orbis_data_licensor_guo_{timestamp}.csv",
-                              "viper_guo")])
+    run_in_parallel_generic(function=run_batch_search,
+                            args=[f"orbis_data_licensee_{timestamp}_guo.csv",
+                             f"orbis_data_licensor_{timestamp}_guo.csv",
+                             ])
 
+    # time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
+
+    run_in_parallel_generic(function=generate_data_for_ish,
+                            args=[f"orbis_data_licensee_{timestamp}.xlsx",
+                              f"orbis_data_licensor_{timestamp}.xlsx",
+                             ])
+
+    run_in_parallel_generic(function=run_batch_search,
+                            args= [f"orbis_data_licensee_ish_{timestamp}.csv",
+                             f"orbis_data_licensor_ish_{timestamp}.csv",
+                             ])
+    # # # # # # Step 5
     time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
-    run_in_parallel_generic(generate_data_for_ish,
-                            True,
-                            [(f"orbis_data_licensee_{timestamp}.xlsx",
-                              f"orbis_data_licensee_ish_{timestamp}.csv"),
-                             (f"orbis_data_licensor_{timestamp}.xlsx",
-                              f"orbis_data_licensor_ish_{timestamp}.csv")])
 
-    run_in_parallel_generic(run_batch_search,
-                            True,
-                            [(f"orbis_data_licensee_ish_{timestamp}.csv",
-                              "turtle_ish"),
-                             (f"orbis_data_licensor_ish_{timestamp}.csv",
-                              "viper_ish")])
-    # # # # # Step 5
-    time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
+    aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx",f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
+    aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx",f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
 
-    run_in_parallel_generic(aggregate_data,
-                            True,
-                            [(f"orbis_data_licensee_{timestamp}.xlsx",
-                              f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
-                             (f"orbis_data_licensor_{timestamp}.xlsx",
-                              f"orbis_aggregated_data_licensor_{timestamp}.xlsx")])
+    # run_in_parallel_generic(function=aggregate_data,
+    #                         [(f"orbis_data_licensee_{timestamp}.xlsx",
+    #                           f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
+    #                          (f"orbis_data_licensor_{timestamp}.xlsx",
+    #                           f"orbis_aggregated_data_licensor_{timestamp}.xlsx")])
 
-    run_in_parallel_generic(post_process_data,
-                            False,
-                            [(f"orbis_aggregated_data_{timestamp}.xlsx"),
-                             (f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
-                                (f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
-                                (f"orbis_aggregated_data_guo_{timestamp}.xlsx"),
-                                (f"orbis_data_guo_{timestamp}.xlsx"),
-                                (f"orbis_data_licensee_ish_{timestamp}.xlsx"),
-                                (f"orbis_data_licensor_ish_{timestamp}.xlsx"),
-                                (f"orbis_data_licensee_{timestamp}.xlsx"),
-                                (f"orbis_data_licensee_guo_{timestamp}.xlsx"),
-                                (f"orbis_data_licensor_{timestamp}.xlsx"),
-                                (f"orbis_data_licensor_guo_{timestamp}.xlsx"),
-                                (f"orbis_data_{timestamp}.xlsx")])
+    run_in_parallel_generic(function=post_process_data,
+                            args=[f"orbis_aggregated_data_{timestamp}.xlsx",
+                                f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
+                                f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
+                                f"orbis_aggregated_data_guo_{timestamp}.xlsx",
+                                f"orbis_data_guo_{timestamp}.xlsx",
+                                f"orbis_data_licensee_{timestamp}_ish.xlsx",
+                                f"orbis_data_licensor_{timestamp}_ish.xlsx",
+                                f"orbis_data_licensee_{timestamp}.xlsx",
+                                f"orbis_data_licensee_{timestamp}_guo.xlsx",
+                                f"orbis_data_licensor_{timestamp}.xlsx",
+                                f"orbis_data_licensor_{timestamp}_guo.xlsx",
+                                f"orbis_data_{timestamp}.xlsx"])
