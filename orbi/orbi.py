@@ -210,6 +210,21 @@ class Orbis:
 
         # Log a message to indicate that the login is in progress
         logger.debug("Logging in to Orbis...")
+        time.sleep(4)
+       
+        ERROR_MESSAGE = "/html/body/section[2]/div[2]/form/div[1]"
+        try: 
+            response = self.driver.find_element(By.XPATH, ERROR_MESSAGE)
+            print(response.text)
+        except NoSuchElementException:
+            print("No error message found")
+        
+        
+        
+        
+        
+        
+        
 
     def logout(self):
         # logout from the web site
@@ -227,6 +242,7 @@ class Orbis:
         logger.debug("Logging out Orbis ...")
 
         self.driver.get(self.orbis_logout_url)
+        time.sleep(5)
 
     def scroll_to_bottom(self):
         # scroll to the bottom of the page
@@ -941,7 +957,9 @@ class Orbis:
         related_data['Financial Period'] = related_data['Agreement Date'].dt.year - 1
         related_data = related_data.rename(
             columns={'Licensee CIK 1_cleaned': 'CIK'})
+        related_data['CIK'] = related_data['CIK'].astype(str)
         df_orbis = df_orbis.rename(columns={'Other company ID number': 'CIK'})
+        df_orbis['CIK']=df_orbis['CIK'].astype(str)
         df_merged = df_orbis.merge(related_data, on='CIK')
 
         logger.debug(f"Data is merged on CIK numbers ... ")
@@ -1092,8 +1110,8 @@ def aggregate_data(orbis_file, aggregated_output_file):
             logger.debug(f"Orbis file, {orbis_file}, does not exists, skipping to aggreagate data !")
             return 
         
-        df_licensee_data = orbis.read_xlxs_file(orbis.license_data)
-        df_orbis_data = orbis.read_xlxs_file(orbis_file, sheet_name='Results')
+        df_licensee_data = orbis.read_xlxs_file(orbis.license_data, sheet_name='')
+        df_orbis_data = orbis.read_xlxs_file(orbis_file, sheet_name='')
         df_licensee = orbis.strip_new_lines(df_licensee_data)
         df_result = orbis.prepare_data(df_licensee, df_orbis_data)
         orbis.to_xlsx(df_result, aggregate_output_file)
@@ -1146,7 +1164,7 @@ def post_process_data(excel_file):
         return
 
     logger.debug(f"post process data for {excel_file}")
-    df = pd.read_excel(excel_file, sheet_name='Results')
+    df = pd.read_excel(excel_file, sheet_name='Sheet1')
     df = df[df['Orbis ID number'].notna()]
     # drop Unnamed: 0 column and duplicate columns
     df = df.drop(columns=['Unnamed: 0'])
@@ -1232,17 +1250,29 @@ if __name__ == "__main__":
     
     # crawl_data: prepare_data
     # generates csv file for licensee
+    files_to_apply_batch_search = [f"orbis_data_licensee_{timestamp}.csv",
+                             f"orbis_data_licensor_{timestamp}.csv",
+                          
+                           ]
 
-    # create_input_file_for_orbis_batch_search(
-    #     environ.get("DATA_SOURCE"), 
-    #     f"orbis_data_licensee_{timestamp}.csv",
-    #     is_licensee=True)
+    generate_input_file_for_guo = [f"orbis_data_licensee_{timestamp}.xlsx",
+                             f"orbis_data_licensor_{timestamp}.xlsx",
+                            ]
 
-    # # generates csv file for licensor
-    # create_input_file_for_orbis_batch_search(
-    #     environ.get("DATA_SOURCE"),
-    #     f"orbis_data_licensor_{timestamp}.csv",
-    #     is_licensee=False)
+    generate_input_file_for_ish = [f"orbis_data_licensee_{timestamp}.xlsx",
+                              f"orbis_data_licensor_{timestamp}.xlsx",
+                             ]
+
+    create_input_file_for_orbis_batch_search(
+        environ.get("DATA_SOURCE"), 
+        f"orbis_data_licensee_{timestamp}.csv",
+        is_licensee=True)
+
+    # generates csv file for licensor
+    create_input_file_for_orbis_batch_search(
+        environ.get("DATA_SOURCE"),
+        f"orbis_data_licensor_{timestamp}.csv",
+        is_licensee=False)
 
     time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
 
@@ -1250,16 +1280,19 @@ if __name__ == "__main__":
     # # --> data/data.csv needs to be uploaded to Orbis to start batch search
     # run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file
     # needs to come from crawl_data.py
-    run_in_parallel_generic(function=run_batch_search,
-                            args=[f"orbis_data_licensee_{timestamp}.csv",
-                             f"orbis_data_licensor_{timestamp}.csv"])
+    # run_in_parallel_generic(function=run_batch_search,
+    #                         args=[f"orbis_data_licensee_{timestamp}.csv",
+    #                          f"orbis_data_licensor_{timestamp}.csv"])
 
     # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
     # # # # --> after batch search is completed, data downloaded from Orbis
+    for file_to_search in files_to_apply_batch_search:
+        print(f"Now searching for file {file_to_search}")
+        run_batch_search(file_to_search)
+        time.sleep(5)
+        print(f"Search is done for file {file_to_search}")
 
-    time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
-
-    # # # # Step 3
+     # # # # Step 3
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
 
     run_in_parallel_generic(function=generate_data_for_guo,
@@ -1267,22 +1300,53 @@ if __name__ == "__main__":
                              f"orbis_data_licensor_{timestamp}.xlsx",
                             ])
 
-    run_in_parallel_generic(function=run_batch_search,
-                            args=[f"orbis_data_licensee_{timestamp}_guo.csv",
-                             f"orbis_data_licensor_{timestamp}_guo.csv",
-                             ])
 
-    # time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
+    input_files_with_guo_info = [f"orbis_data_licensee_{timestamp}_guo.csv",
+                             f"orbis_data_licensor_{timestamp}_guo.csv"]
+                             
+    for guo_input_file in input_files_with_guo_info:
+        print(f"Running for the file with guo info: {guo_input_file}")
+        run_batch_search(guo_input_file)
+        time.sleep(4)
+        print(f"Search is done for guo file {guo_input_file}")
+        
+
+
+    # # # Step 3
+    # # # --> generate_data_for_guo to generate data by considering GUO of companies
+        
+    # # # Step 3
+    # # # --> generate_data_for_guo to generate data by considering GUO of companies
+
+
+    input_files_with_ish_info =   [f"orbis_data_licensee_{timestamp}_ish.csv",
+                             f"orbis_data_licensor_ish_{timestamp}_ish.csv"]
+                             
+    time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
     run_in_parallel_generic(function=generate_data_for_ish,
                             args=[f"orbis_data_licensee_{timestamp}.xlsx",
                               f"orbis_data_licensor_{timestamp}.xlsx",
                              ])
 
-    run_in_parallel_generic(function=run_batch_search,
-                            args= [f"orbis_data_licensee_ish_{timestamp}.csv",
-                             f"orbis_data_licensor_ish_{timestamp}.csv",
-                             ])
+    
+    for ish_input_file in input_files_with_ish_info:
+        print(f"Running for the file with guo info: {ish_input_file}")
+        run_batch_search(ish_input_file)
+        time.sleep(4)
+        print(f"Search is done for guo file {ish_input_file}")
+
+    # run_in_parallel_generic(function=run_batch_search,
+    #                         args=[f"orbis_data_licensee_{timestamp}_guo.csv",
+    #                          f"orbis_data_licensor_{timestamp}_guo.csv",
+    #                          ])
+
+    # time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
+
+    # run_in_parallel_generic(function=run_batch_search,
+    #                         args= [f"orbis_data_licensee_ish_{timestamp}.csv",
+    #                          f"orbis_data_licensor_ish_{timestamp}.csv",
+    #                          ])
     # # # # # # Step 5
     time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
