@@ -126,11 +126,10 @@ class Orbis:
         :return:
         None
         """
-        if not self.offline:
+       
+        if self.driver is not None:
             self.logout()
-            if self.driver is not None:
-                return self.driver.close()
-
+            time.sleep(5)
         return None
 
     def __enter__(self):
@@ -144,6 +143,8 @@ class Orbis:
             if environ.get("LOCAL_DEV") != "True":
                 self.chrome_options.add_argument("--headless")
             
+            self.chrome_options.add_argument("--no-sandbox")
+            self.chrome_options.add_argument("--disable-dev-shm-usage")
             self.chrome_options.add_argument("--start-maximized")
             self.chrome_options.add_argument("--window-size=1920,1080")    
             self.chrome_options.add_experimental_option('prefs', prefs)
@@ -153,6 +154,7 @@ class Orbis:
             # self.slack_client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
             time.sleep(1)
             self.login()
+            time.sleep(2)
         return self
 
     def get_financial_columns(self):
@@ -1046,6 +1048,7 @@ def run_batch_search(input_file):
         logger.debug(f"Data directory is {orbis.data_dir}")
         logger.debug(f"Input file is {path.join(orbis.data_dir, input_file)}")
         orbis.batch_search(path.join(orbis.data_dir, input_file))
+
 
 # offline_data_aggregation is used to generate data by considering GUO of companies
 # this data needs to be generated when we have new data from Orbis (refer
