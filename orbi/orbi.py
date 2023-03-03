@@ -11,9 +11,9 @@ import time
 from datetime import datetime
 from os import environ, path
 from threading import Thread
-import requests 
 
 import pandas as pd
+import requests
 import yaml
 from bs4 import BeautifulSoup
 from crawl import create_input_file_for_orbis_batch_search
@@ -247,10 +247,18 @@ class Orbis:
         time.sleep(5)
 
         logger.debug("Logging out Orbis ...")
-        response = requests.get(self.orbis_logout_url)
-        # self.driver.get(self.orbis_logout_url)
-        print(f"Response status code from logging out is: {response.status_code}")
-
+        ACCOUNT_XPATH = "/html/body/section[1]/ul/li"
+        LOGOUT_XPATH = '//*[@id="header-user-menu"]/section[1]/div[1]/div[2]/a'
+        time.sleep(2)
+        try:
+            self.driver.find_element(By.XPATH, ACCOUNT_XPATH).click()
+            time.sleep(1)
+            self.driver.find_element(By.XPATH, LOGOUT_XPATH).click()
+        except NoSuchElementException:
+            print("No logout button found")
+            print("Logging out from the web site through provided logout link...")
+            self.driver.get(self.orbis_logout_url)
+            
         time.sleep(5)
 
 
@@ -428,6 +436,15 @@ class Orbis:
             logger.debug(e)
 
 
+    def check_exists_by_xpath(self, XPATH):
+        try:
+            self.driver.find_element(By.XPATH, XPATH)
+        except NoSuchElementException:
+            return False
+        return True
+    
+    
+    
     def batch_search(self, input_file, process_name=''):
         """
         Perform a batch search on the Orbis database using the specified input file.
@@ -494,15 +511,20 @@ class Orbis:
         #             SEARCH_PROGRESS_BAR)))
         # except Exception as exp:
         #     print(f"Exception is occured while waiting for invisibility of search progress bar")
+        # SEARCH_BOX = '//*[@id="Processing"]'
+        
+        
         try:
             warning_message = self.driver.find_element(
                 By.XPATH, SEARCH_PROGRESS_BAR)
-            while warning_message.text == "Search is not finished":
+            while warning_message.text == "Search is not finished" and not self.check_exists_by_xpath(SEARCH_BOX):
                 time.sleep(5)
                 warning_message = self.driver.find_element(
                     By.XPATH, SEARCH_PROGRESS_BAR)
                 logger.debug(f"{process_name}: {warning_message.text}")
                 print(f"Search is under progress:\nMessage : {warning_message.text}")
+                
+            
             time.sleep(5)
         except Exception as e:
             logger.debug(
@@ -849,27 +871,33 @@ class Orbis:
         self.wait_until_clickable(EXCEL_BUTTON)
         self.driver.find_element(By.XPATH, EXPORT_BUTTON).click()
         logger.debug(f"{process_name} export button is clicked")
-
+        POPUP_CLOSE_BUTTON = "/html/body/section[2]/div[6]/div[1]/img"
         self.wait_until_clickable(POPUP_DOWNLOAD_BUTTON)
-        while True:
-            download_button = self.driver.find_element(
-                By.XPATH, POPUP_DOWNLOAD_BUTTON)
-            if download_button.value_of_css_property(
-                    "background-color") == "rgba(0, 20, 137, 1)":
-                # download_button.send_keys(Keys.RETURN)
-                # logger.debug(
-                #     f"{process_name} waiting for data generation to download ")
-                
-                time.sleep(0.5)
-                print(f"Data is downloaded to {self.data_dir + excel_output_file_name}.xlsx")
-                break
-            else:
-                print(f"waiting for data generation to download ... ")
-                time.sleep(2)
-        time.sleep(3)
-        # ensuring that the file exists otherwise do not continue
-        self.check_file_existence(input_file)
-
+        try:
+            while True:
+                download_button = self.driver.find_element(
+                    By.XPATH, POPUP_DOWNLOAD_BUTTON)
+                if download_button.value_of_css_property(
+                        "background-color") == "rgba(0, 20, 137, 1)":
+                    # download_button.send_keys(Keys.RETURN)
+                    # logger.debug(
+                    #     f"{process_name} waiting for data generation to download ")
+                    
+                    print(f"Data is downloaded to {self.data_dir + excel_output_file_name}.xlsx")
+                    time.sleep(2)
+                    self.driver.find_element(By.XPATH, POPUP_CLOSE_BUTTON).click()
+                    break
+                else:
+                    print(f"waiting for data generation to download ... ")
+                    time.sleep(2)
+            time.sleep(3)
+            # ensuring that the file exists otherwise do not continue
+            self.check_file_existence(input_file)
+        except Exception as e:
+            logger.debug(f"{process_name} exception : {e}")
+            print(f"Data download button failed to be clicked")
+            self.__exit__()
+            sys.exit(1)
     # create a file likewe have data.csv file
     # company name;city;country;identifier
     def generate_data_for_guo(self, orig_orbis_data, file):
@@ -1270,7 +1298,7 @@ if __name__ == "__main__":
 
     # initial checks
     if environ.get('LOCAL_DEV') == 'True':
-        environ["DATA_SOURCE"] = "sample_data.xlsx"
+        environ["DATA_SOURCE"] = "sample_data_small.xlsx"
         if not path.exists(environ.get('CONFIG_PATH')):
             # exit with an error message
             exit(
