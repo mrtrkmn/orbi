@@ -243,7 +243,7 @@ class Orbis:
         time.sleep(5)
 
         logger.debug("Logging out Orbis ...")
-        response = requests.get(self.orbis_logout_url,headers=self.headers)
+        response = requests.get(self.orbis_logout_url)
         # self.driver.get(self.orbis_logout_url)
         print(f"Response status code from logging out is: {response.status_code}")
 
