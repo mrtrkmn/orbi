@@ -480,14 +480,16 @@ class Orbis:
         self.driver.find_element(By.XPATH, APPLY_BUTTON).click()
 
         time.sleep(5)
-        WebDriverWait(
-            self.driver,
-            30 *
-            60).until(
-            EC.invisibility_of_element_located(
-                (By.XPATH,
-                 SEARCH_PROGRESS_BAR)))
-
+        # try:
+        #     WebDriverWait(
+        #         self.driver,
+        #         30 *
+        #         60).until(
+        #         EC.invisibility_of_element_located(
+        #             (By.XPATH,
+        #             SEARCH_PROGRESS_BAR)))
+        # except Exception as exp:
+        #     print(f"Exception is occured while waiting for invisibility of search progress bar")
         try:
             warning_message = self.driver.find_element(
                 By.XPATH, SEARCH_PROGRESS_BAR)
@@ -496,6 +498,7 @@ class Orbis:
                 warning_message = self.driver.find_element(
                     By.XPATH, SEARCH_PROGRESS_BAR)
                 logger.debug(f"{process_name}: {warning_message.text}")
+                print(f"Search is under progress:\nMessage : {warning_message.text}")
             time.sleep(5)
         except Exception as e:
             logger.debug(
@@ -1366,10 +1369,15 @@ if __name__ == "__main__":
     # # # # # # Step 5
     time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
+    try: 
+        aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx",f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
+    except FileNotFoundError as fne:
+        print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
 
-    aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx",f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
-    aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx",f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
-
+    try:     
+        aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx",f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
+    except FileNotFoundError as fne: 
+        print(f"File could not be found to aggregate please make sure it exists !")
     # run_in_parallel_generic(function=aggregate_data,
     #                         [(f"orbis_data_licensee_{timestamp}.xlsx",
     #                           f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
