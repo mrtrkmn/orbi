@@ -225,7 +225,9 @@ class Orbis:
         try: 
             response = self.driver.find_element(By.XPATH, ERROR_MESSAGE)
             # notify slack that logging is not successful to Orbis  database
-            print(response.text)
+            print("Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {response.text}")
+            sys.exit(0)
+            
             # self.slack_client.chat_postMessage(channel="#idp-data-c", text=f"Error on logging into Orbis ... ERR_MSG: {response.text}")
         except NoSuchElementException:
             print("No error message found")
