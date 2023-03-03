@@ -1320,7 +1320,6 @@ if __name__ == "__main__":
         run_batch_search(file_to_search)
         time.sleep(5)
         print(f"Search is done for file {file_to_search}")
-        check_file_existence(file_to_search)
 
      # # # # Step 3
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
