@@ -11,6 +11,7 @@ import time
 from datetime import datetime
 from os import environ, path
 from threading import Thread
+import requests 
 
 import pandas as pd
 import yaml
@@ -23,6 +24,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+# from slack_sdk import WebClient
+# from slack_sdk.errors import SlackApiError
 from variables import *
 
 root_path = os.path.dirname(os.path.abspath(__file__))
@@ -93,6 +97,7 @@ class Orbis:
                 "DATA_DIR") + environ.get("DATA_SOURCE")
 
         self.driver = None
+        self.headers = "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"
         self.offline = offline
         self.variables = {
             "Operating revenue (Turnover)": OP_REVENUE_SETTINGS,
@@ -135,7 +140,7 @@ class Orbis:
             prefs = {'download.default_directory': self.data_dir}
             # add user agent to avoid bot detection
             self.chrome_options.add_argument(
-                "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36")
+                self.headers)
             if environ.get("LOCAL_DEV") != "True":
                 self.chrome_options.add_argument("--headless")
             
@@ -145,6 +150,8 @@ class Orbis:
             self.driver = webdriver.Chrome(
                 executable_path=self.executable_path, options=self.chrome_options)
             logger.debug("Chrome driver started")
+            # self.slack_client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
+            time.sleep(1)
             self.login()
         return self
 
@@ -215,16 +222,12 @@ class Orbis:
         ERROR_MESSAGE = "/html/body/section[2]/div[2]/form/div[1]"
         try: 
             response = self.driver.find_element(By.XPATH, ERROR_MESSAGE)
+            # notify slack that logging is not successful to Orbis  database
             print(response.text)
+            # self.slack_client.chat_postMessage(channel="#idp-data-c", text=f"Error on logging into Orbis ... ERR_MSG: {response.text}")
         except NoSuchElementException:
             print("No error message found")
-        
-        
-        
-        
-        
-        
-        
+
 
     def logout(self):
         # logout from the web site
@@ -237,12 +240,15 @@ class Orbis:
         None
         """
 
-        time.sleep(3)
+        time.sleep(5)
 
         logger.debug("Logging out Orbis ...")
+        response = requests.get(self.orbis_logout_url,headers=self.headers)
+        # self.driver.get(self.orbis_logout_url)
+        print(f"Response status code from logging out is: {response.status_code}")
 
-        self.driver.get(self.orbis_logout_url)
         time.sleep(5)
+
 
     def scroll_to_bottom(self):
         # scroll to the bottom of the page
@@ -258,6 +264,7 @@ class Orbis:
         self.driver.execute_script(
             "document.getElementsByClassName('hierarchy-container')[0].scrollTo(0, document.getElementsByClassName('hierarchy-container')[0].scrollHeight)")
 
+
     def wait_until_clickable(self, xpath):
         # wait until the element is clickable
         """
@@ -269,14 +276,18 @@ class Orbis:
 
         :raises TimeoutException: If the element is not clickable after 30 minutes.
         """
-
-        WebDriverWait(
-            self.driver,
-            30 *
-            60).until(
-            EC.element_to_be_clickable(
+        try: 
+            WebDriverWait(
+                self.driver,
+                30 *
+                60).until(
+                EC.element_to_be_clickable(
                 (By.XPATH,
-                 xpath)))
+                    xpath)))
+        except Exception as e: 
+            print("Exception occurred in wait_until_clickable, logging out from sessions")
+            self.logout()
+
 
     def read_xlxs_file(self, file_path, sheet_name=''):
         """
@@ -294,6 +305,7 @@ class Orbis:
             df = pd.read_excel(file_path, sheet_name=sheet_name)
         return df
 
+
     def search_and_add(self, item):
         """
         Searches for the given `item` and adds it to the list of columns.
@@ -310,6 +322,7 @@ class Orbis:
         search_input.send_keys(Keys.RETURN)
         time.sleep(5)
         logger.debug(f"Searching for {item} ...")
+
 
     def check_checkboxes(self, field=''):
         """
@@ -350,6 +363,7 @@ class Orbis:
         except Exception as e:
             logger.debug(f"Exception on check_checkboxes {e}")
 
+
     # select_all_years function is used to get the operating revenue data in
     # millions for all available years
     def select_all_years(self, field='', is_checked=False):
@@ -384,6 +398,7 @@ class Orbis:
                     retry += 1
                     time.sleep(5)
 
+
     def check_processing_overlay(self, process_name):
         # this is used to wait until processing overlay is gone
         """Waits for the processing overlay to disappear.
@@ -407,6 +422,7 @@ class Orbis:
                 time.sleep(0.5)
         except Exception as e:
             logger.debug(e)
+
 
     def batch_search(self, input_file, process_name=''):
         """
