@@ -853,11 +853,14 @@ class Orbis:
             if download_button.value_of_css_property(
                     "background-color") == "rgba(0, 20, 137, 1)":
                 # download_button.send_keys(Keys.RETURN)
-                logger.debug(
-                    f"{process_name} waiting for data generation to download ")
+                # logger.debug(
+                #     f"{process_name} waiting for data generation to download ")
+                
                 time.sleep(0.5)
+                print(f"Data is downloaded to {self.data_dir + excel_output_file_name}.xlsx")
                 break
             else:
+                print(f"waiting for data generation to download ... ")
                 time.sleep(2)
         time.sleep(3)
         # ensuring that the file exists otherwise do not continue
