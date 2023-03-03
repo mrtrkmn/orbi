@@ -859,6 +859,9 @@ class Orbis:
                 break
             else:
                 time.sleep(2)
+        time.sleep(3)
+        # ensuring that the file exists otherwise do not continue
+        self.check_file_existence(input_file)
 
     # create a file likewe have data.csv file
     # company name;city;country;identifier
@@ -948,6 +951,11 @@ class Orbis:
 
         df[colunm_name] = df[colunm_name].apply(lambda x: x.strip('\n'))
         return df
+    
+    def check_file_existence(self,file_name):
+        if not path.exists(path.join(self.data_dir, file_name)):
+            print(f"File {file_name} does not exists, no continuing further !! ")
+            sys.exit(1)
 
     def prepare_data(self, df, df_orbis):
         """
@@ -1237,7 +1245,6 @@ def run_in_parallel_generic(function, args):
             else:
                 print(f"result is --->  {data}")
         
-    
 def save_screenshot(driver, file_name):
     """
     Save a screenshot of the current browser window to the specified file.
@@ -1310,6 +1317,7 @@ if __name__ == "__main__":
         run_batch_search(file_to_search)
         time.sleep(5)
         print(f"Search is done for file {file_to_search}")
+        check_file_existence(file_to_search)
 
      # # # # Step 3
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
@@ -1339,7 +1347,7 @@ if __name__ == "__main__":
 
 
     input_files_with_ish_info =   [f"orbis_data_licensee_{timestamp}_ish.csv",
-                             f"orbis_data_licensor_ish_{timestamp}_ish.csv"]
+                             f"orbis_data_licensor_{timestamp}_ish.csv"]
                              
     time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
