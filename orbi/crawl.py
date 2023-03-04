@@ -306,7 +306,7 @@ def generate_unique_id(company_name):
     Generate a unique id for the company; hash company name
     :param company_name: name of the company
     """
-    return hashlib.sha256(company_name.encode()).hexdigest()
+    return hashlib.sha256(str(company_name).encode()).hexdigest()
 # prepare_data generates the file which needs to be used in orbi.py first step
 #  source_file: provided by the user
 # output_file: csv file with the data from the SEC.gov website (columns:

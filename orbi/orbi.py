@@ -1198,7 +1198,7 @@ def generate_unique_id(company_name, n):
     """
     logger.debug(f"Generating unique id for {company_name}")
     sha256 = hashlib.sha256()
-    sha256.update(company_name.encode())
+    sha256.update(str(company_name).encode())
     return sha256.hexdigest()[:n]
 
 
