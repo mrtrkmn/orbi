@@ -95,7 +95,7 @@ jobs:
         max_attempts: 3  # 3 times retry if failed
         command: |
           ls -la /home/runner/work/orbi/orbi/
-          python /home/runner/work/orbi/orbi/orbi/orbi.py
+          python orbi/orbi.py
       env:
         ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL_ADDRESS }}
         ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
