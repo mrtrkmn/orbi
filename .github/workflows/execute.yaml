@@ -62,15 +62,18 @@ jobs:
         chmod +x chromedriver
         chromedriver --version
 
-    - name: Download data if provided 
-      if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
-      run: |
-        wget --directory-prefix=/home/runner/work/orbi/orbi/data/ ${{ github.event.inputs.data }}
-    
     - name: Get file name
+      if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
       id: get-file-name
       run: |
         echo "::set-output name=file_name::$(basename ${{ github.event.inputs.data }})"
+
+    - name: Download data if provided 
+      if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
+      run: |
+        wget ${{ github.event.inputs.data }}
+        mv ${{ steps.get-file-name.outputs.file_name }} /home/runner/work/orbi/orbi/data/
+  
 
     - name: Send Job Started Notification to Slack
       if: ${{ github.event.inputs.notify == 'true' }}

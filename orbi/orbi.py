@@ -136,7 +136,7 @@ class Orbis:
         if not self.offline:
             logger.debug("Starting chrome driver...")
             self.chrome_options = webdriver.ChromeOptions()
-            prefs = {'download.default_directory': self.data_dir}
+            prefs = {"download.default_directory": self.data_dir}
             # add user agent to avoid bot detection
             self.chrome_options.add_argument(
                 self.headers)
@@ -988,9 +988,12 @@ class Orbis:
         return df
     
     def check_file_existence(self,file_name):
-        if not path.exists(path.join(self.data_dir, file_name)):
+        full_file_path = path.join(self.data_dir, file_name)
+        if not path.exists(full_file_path):
             print(f"File {file_name} does not exists, no continuing further !! ")
             sys.exit(1)
+        else: 
+            print(f"File {file_name} exists, continuing further !! Full path is {full_file_path} ")
 
     def prepare_data(self, df, df_orbis):
         """
@@ -1298,7 +1301,7 @@ if __name__ == "__main__":
 
     # initial checks
     if environ.get('LOCAL_DEV') == 'True':
-        environ["DATA_SOURCE"] = "sample_data_small.xlsx"
+        environ["DATA_SOURCE"] = "sample_data.xlsx"
         if not path.exists(environ.get('CONFIG_PATH')):
             # exit with an error message
             exit(
