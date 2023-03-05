@@ -34,13 +34,6 @@ on:
 permissions:
   contents: read
 
-
-defaults:
-  run:
-    shell: bash
-    working-directory: orbi
-
-
 jobs:
   build: # default working directory
     runs-on: self-hosted
@@ -78,7 +71,7 @@ jobs:
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
       run: |
         wget ${{ github.event.inputs.data }}
-        mv ${{ steps.get-file-name.outputs.file_name }} ../data
+        mv ${{ steps.get-file-name.outputs.file_name }}  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data
   
 
     - name: Send Job Started Notification to Slack
@@ -100,19 +93,18 @@ jobs:
         timeout_minutes: 120 # 2 hours
         max_attempts: 3  # 3 times retry if failed
         command: |
-          ls -la ../data
           pwd
-          python orbi.py
+          python  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/orbi/orbi.py
       env:
         ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL_ADDRESS }}
         ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
         ORBIS_ACCESS_URL: ${{ secrets.ORBIS_ACCESS_URL }}
         ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_SEARCH_URL }}
         ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
-        CHROMEDRIVER_PATH: chromedriver
-        DATA_DIR: ../data
+        CHROMEDRIVER_PATH:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/chromedriver
+        DATA_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
-        LOG_DIR: ../logs/
+        LOG_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
         LOCAL_DEV: False
 
 
@@ -138,7 +130,7 @@ jobs:
     # zip the data except sample_data.xlsx
     - name: Zip data
       run: |
-        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip ../data* -x ../data/sample_data.xlsx
+        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/* -x  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/sample_data.xlsx
 
 
     - name: Upload to S3 
@@ -149,7 +141,7 @@ jobs:
         AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
-        SOURCE_DIR: ../data
+        SOURCE_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data
         DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
 
     - name: Send data to Telegram 
@@ -162,9 +154,9 @@ jobs:
       with:
         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
         path: |
-          ../data
-          ../logs/
-          !../data/sample_data.xlsx
+           /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data
+           /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
+          ! /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/sample_data.xlsx
         retention-days: 90
 
     - name:  Send Job Success Notification to Slack
