@@ -102,7 +102,7 @@ jobs:
         ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_SEARCH_URL }}
         ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
         CHROMEDRIVER_PATH:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/chromedriver
-        DATA_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data
+        DATA_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
         LOG_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
         LOCAL_DEV: False
@@ -141,7 +141,7 @@ jobs:
         AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
-        SOURCE_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data
+        SOURCE_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
         DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
 
     - name: Send data to Telegram 
@@ -154,7 +154,7 @@ jobs:
       with:
         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
         path: |
-           /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data
+           /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
            /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
            !/home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/sample_data.xlsx
         retention-days: 90
