@@ -301,12 +301,14 @@ class Crawler:
         return config
 
 
-def generate_unique_id(company_name):
+def generate_unique_id(company_name,n=25):
     """
     Generate a unique id for the company; hash company name
     :param company_name: name of the company
     """
-    return hashlib.sha256(str(company_name).encode()).hexdigest()
+    sha256 = hashlib.sha256()
+    sha256.update(str(company_name).encode())
+    return sha256.hexdigest()[:n]
 # prepare_data generates the file which needs to be used in orbi.py first step
 #  source_file: provided by the user
 # output_file: csv file with the data from the SEC.gov website (columns:
@@ -388,7 +390,7 @@ def create_input_file_for_orbis_batch_search(
             for result in results:
                 try:
                     name = result['name']
-                    own_id = generate_unique_id(name)[:25]
+                    own_id = generate_unique_id(name)
                     city = result['addresses']['business']['city']
                     country = result['addresses']['business']['stateOrCountryDescription']
                     identifier = result['cik_number']
