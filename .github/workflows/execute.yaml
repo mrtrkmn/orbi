@@ -60,7 +60,6 @@ jobs:
         curl http://chromedriver.storage.googleapis.com/$VERSION/chromedriver_$PLATFORM.zip -LOk
         unzip chromedriver_*
         chmod +x chromedriver
-        chromedriver --version
 
     - name: Download data if provided 
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
