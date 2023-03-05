@@ -156,7 +156,7 @@ jobs:
         path: |
            /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data
            /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
-          ! /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/sample_data.xlsx
+           !/home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/sample_data.xlsx
         retention-days: 90
 
     - name:  Send Job Success Notification to Slack
