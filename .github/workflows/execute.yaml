@@ -64,7 +64,9 @@ jobs:
       run: | 
         wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
         echo ${{ secrets.REMOTE_PASS }} | sudo -S apt install ./google-chrome-stable_current_amd64.deb
-
+        which chromedriver 
+        chmod +x /usr/local/bin/chromedriver
+        
     - name: Get file name
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
       id: get-file-name
@@ -105,7 +107,7 @@ jobs:
         ORBIS_ACCESS_URL: ${{ secrets.ORBIS_ACCESS_URL }}
         ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_SEARCH_URL }}
         ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
-        CHROMEDRIVER_PATH: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/chromedriver
+        CHROMEDRIVER_PATH: /usr/local/bin/chromedriver
         DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
         LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
