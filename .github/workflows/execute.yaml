@@ -101,10 +101,10 @@ jobs:
         ORBIS_ACCESS_URL: ${{ secrets.ORBIS_ACCESS_URL }}
         ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_SEARCH_URL }}
         ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
-        CHROMEDRIVER_PATH:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/chromedriver
-        DATA_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
+        CHROMEDRIVER_PATH: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/chromedriver
+        DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
-        LOG_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
+        LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
         LOCAL_DEV: False
 
 
