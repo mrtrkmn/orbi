@@ -63,7 +63,7 @@ jobs:
     - name: Install chromedriver from DEB  
       run: | 
         wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-        sudo apt install ./google-chrome-stable_current_amd64.deb
+        echo ${{ secrets.REMOTE_PASS }} | sudo -S apt install ./google-chrome-stable_current_amd64.deb
 
     - name: Get file name
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
