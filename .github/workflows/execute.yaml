@@ -44,12 +44,23 @@ env:
   LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
+  MAX_RUN_ATTEMPTS: 3  # if it is unable to successfull in this number tries, the crawler will exit with failure
+  RUN_TIMEOUT_IN_MN: 120 # If it is unable to fetch all data in 2 hours, the crawler will face with timeout
 
   # aws specific
   AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
   SOURCE_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
+
+  # slack specific
+  SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+  SLACK_USERNAME: orbi
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+  SLACK_FOOTER: '🤓 automated bot Orbi'
+  
+  # artifact specific 
+  RETENTION_PERIOD: 90. # in days 
 
 permissions:
   contents: read
@@ -94,37 +105,30 @@ jobs:
       if: ${{ github.event.inputs.notify == 'true' }}
       uses: rtCamp/action-slack-notify@v2.2.0
       env:
-        SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
         SLACK_MESSAGE: ':bell: Orbi is started crawl data from Orbis database on  Github using the file ${{ github.event.inputs.data }}  as input data.'
         SLACK_TITLE: ':bell: Orbi is working on crawling data from Orbis database on Github'
-        SLACK_USERNAME: orbi
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_FOOTER: '🤓 automated bot Orbi'
-      
+   
+   
     - name: Execute the script
       uses: nick-fields/retry@v2
       id: batch_search
       with:
-        timeout_minutes: 120 # 2 hours
-        max_attempts: 3  # 3 times retry if failed
+        timeout_minutes: ${{ env.RUN_TIMEOUT_IN_MN }} # 2 hours
+        max_attempts: ${{ env.MAX_RUN_ATTEMPTS }} # 3 times retry if failed
         command: |
           pwd
           python  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/orbi/orbi.py
       env: 
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
+
     - name: Send Job Failed Notification to Slack
       if: ${{ failure() && steps.batch_search.conclusion == 'failure' && github.event.inputs.notify == 'true' }}
       uses: rtCamp/action-slack-notify@v2.2.0
       env:
-        SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
         SLACK_MESSAGE: ':x: Failed to run batch search, please check on Github. '
         SLACK_TITLE: ':x: Batch search failed at some point, in most cases this is caused due to slowness in the network (since it causes slow rendering of the page and leads to have no element we are looking for) !'
-        SLACK_USERNAME: orbi
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_FOOTER: '🤓 automated bot Orbi'
-
 
   # get timestamp in format DD-MM-YYYY
     - name: Get timestamp
@@ -157,15 +161,11 @@ jobs:
            /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
            /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
            !/home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/sample_data.xlsx
-        retention-days: 90
+        retention-days: ${{ env.RETENTION_PERIOD }}
 
     - name:  Send Job Success Notification to Slack
       uses: rtCamp/action-slack-notify@v2.2.0
       env:
-        SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
         SLACK_MESSAGE: ':rocket: Operation is completed data link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}/ For more information check README page of the project: https://github.com/mrtrkmn/orbi'
         SLACK_TITLE: Data is ready to download append file name to the link !
-        SLACK_USERNAME: orbi
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_FOOTER: '🤓 automated bot Orbi'
