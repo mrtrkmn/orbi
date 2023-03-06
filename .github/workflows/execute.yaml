@@ -130,7 +130,7 @@ jobs:
     # zip the data except sample_data.xlsx
     - name: Zip data
       run: |
-        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/ -x  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/sample_data.xlsx
+        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/ -x  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/sample_data.xlsx
 
 
     - name: Upload to S3 
