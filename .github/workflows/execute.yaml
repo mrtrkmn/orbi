@@ -54,7 +54,7 @@ jobs:
     
     - name: Download chromedriver
       run: | 
-        wget https://chromedriver.storage.googleapis.com/108.0.5359.71/chromedriver_linux64.zip
+        wget https://chromedriver.storage.googleapis.com/110.0.5481.77/chromedriver_linux64.zip
         unzip chromedriver_linux64.zip
         echo ${{ secrets.REMOTE_PASS }} | sudo -S chmod +x chromedriver
 
