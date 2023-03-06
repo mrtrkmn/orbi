@@ -53,14 +53,18 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     
     # download chromedriver
-    - name: Download latest chromedriver
-      run: |
-        PLATFORM=linux64
-        VERSION=$(curl http://chromedriver.storage.googleapis.com/LATEST_RELEASE)
-        curl http://chromedriver.storage.googleapis.com/$VERSION/chromedriver_$PLATFORM.zip -LOk
-        unzip chromedriver_*
-        chmod +x chromedriver
-
+    # - name: Download latest chromedriver
+    #   run: |
+    #     PLATFORM=linux64
+    #     VERSION=$(curl http://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+    #     curl http://chromedriver.storage.googleapis.com/$VERSION/chromedriver_$PLATFORM.zip -LOk
+    #     unzip chromedriver_*
+    #     chmod +x chromedriver
+    - name: Install chromedriver from DEB  
+      run: | 
+        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        apt install ./google-chrome-stable_current_amd64.deb
+        
     - name: Get file name
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
       id: get-file-name
