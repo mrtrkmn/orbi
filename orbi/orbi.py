@@ -150,7 +150,7 @@ class Orbis:
             self.chrome_options.add_argument("start-maximized")
             self.chrome_options.add_argument("--window-size=1920,1080") 
             self.chrome_options.add_argument("--disable-gpu")   
-            
+            self.chrome_options.add_experimental_option("detach", True)
             self.chrome_options.add_experimental_option("prefs", preferences)
             self.driver = webdriver.Chrome(
                 executable_path=self.executable_path, options=self.chrome_options)
