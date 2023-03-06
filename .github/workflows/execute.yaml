@@ -21,7 +21,7 @@ on:
           **** ONLY XLSX FILE IS SUPPORTED ! ****
           '
         required: false
-        default: ${{ env.DEFAULT_DATA_SOURCE }}
+        default: sample_data.xlsx
       notify:
         description: 'Send notification to Slack'
         required: false
@@ -29,7 +29,7 @@ on:
 
   repository_dispatch:
     types: crawl-data
-    
+
 env:
   # orbis access specific
   ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL_ADDRESS }}
