@@ -64,9 +64,8 @@ jobs:
       run: | 
         wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
         echo ${{ secrets.REMOTE_PASS }} | sudo -S apt install ./google-chrome-stable_current_amd64.deb
-        which chromedriver 
-        chmod +x /usr/local/bin/chromedriver
-        
+        echo ${{ secrets.REMOTE_PASS }} | sudo -S chmod +x /usr/local/bin/chromedriver
+
     - name: Get file name
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
       id: get-file-name
