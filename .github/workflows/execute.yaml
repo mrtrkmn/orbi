@@ -6,11 +6,6 @@ on:
   #   branches: [ "main" ]
   # pull_request:
   #   branches: [ "main" ]
-
-env:
-  DEFAULT_DATA_SOURCE: sample_data.xlsx
-
-
   workflow_dispatch:
     inputs:
       message:
@@ -34,6 +29,28 @@ env:
 
   repository_dispatch:
     types: crawl-data
+    
+env:
+  # orbis access specific
+  ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL_ADDRESS }}
+  ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
+  ORBIS_ACCESS_URL: ${{ secrets.ORBIS_ACCESS_URL }}
+  ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_SEARCH_URL }}
+  ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
+
+  # crawler specific
+  CHROMEDRIVER_PATH: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/chromedriver
+  DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
+  DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
+  LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
+  LOCAL_DEV: False
+  DEFAULT_DATA_SOURCE: sample_data.xlsx
+
+  # aws specific
+  AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
+  SOURCE_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
 
 permissions:
   contents: read
@@ -95,18 +112,6 @@ jobs:
         command: |
           pwd
           python  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/orbi/orbi.py
-      env:
-        ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL_ADDRESS }}
-        ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
-        ORBIS_ACCESS_URL: ${{ secrets.ORBIS_ACCESS_URL }}
-        ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_SEARCH_URL }}
-        ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
-        CHROMEDRIVER_PATH: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/chromedriver
-        DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
-        DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
-        LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
-        LOCAL_DEV: False
-
 
     - name: Send Job Failed Notification to Slack
       if: ${{ failure() && steps.batch_search.conclusion == 'failure' && github.event.inputs.notify == 'true' }}
@@ -137,10 +142,6 @@ jobs:
       with:
         args: --acl public-read --follow-symlinks --delete
       env:
-        AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
-        SOURCE_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
         DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
 
     - name: Send data to Telegram 
