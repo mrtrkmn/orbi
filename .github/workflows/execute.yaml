@@ -41,7 +41,6 @@ env:
   # crawler specific
   CHROMEDRIVER_PATH: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/chromedriver
   DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
-  DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
   LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
@@ -112,7 +111,8 @@ jobs:
         command: |
           pwd
           python  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/orbi/orbi.py
-
+      env: 
+        DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
     - name: Send Job Failed Notification to Slack
       if: ${{ failure() && steps.batch_search.conclusion == 'failure' && github.event.inputs.notify == 'true' }}
       uses: rtCamp/action-slack-notify@v2.2.0
