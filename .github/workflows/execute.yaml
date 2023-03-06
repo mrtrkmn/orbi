@@ -7,6 +7,10 @@ on:
   # pull_request:
   #   branches: [ "main" ]
 
+env:
+  DEFAULT_DATA_SOURCE: sample_data.xlsx
+
+
   workflow_dispatch:
     inputs:
       message:
@@ -22,7 +26,7 @@ on:
           **** ONLY XLSX FILE IS SUPPORTED ! ****
           '
         required: false
-        default: sample_data.xlsx
+        default: ${{ env.DEFAULT_DATA_SOURCE }}
       notify:
         description: 'Send notification to Slack'
         required: false
@@ -59,7 +63,7 @@ jobs:
         echo ${{ secrets.REMOTE_PASS }} | sudo -S chmod +x chromedriver
 
     - name: Get file name
-      if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
+      if: ${{ github.event.inputs.data != '${{ env.DEFAULT_DATA_SOURCE }}' }}
       id: get-file-name
       run: |
         echo "::set-output name=file_name::$(basename ${{ github.event.inputs.data }})"
@@ -69,7 +73,6 @@ jobs:
       run: |
         wget ${{ github.event.inputs.data }}
         mv ${{ steps.get-file-name.outputs.file_name }}  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
-  
 
     - name: Send Job Started Notification to Slack
       if: ${{ github.event.inputs.notify == 'true' }}
