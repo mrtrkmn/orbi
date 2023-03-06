@@ -136,20 +136,22 @@ class Orbis:
         if not self.offline:
             logger.debug("Starting chrome driver...")
             self.chrome_options = webdriver.ChromeOptions()
-            prefs = {"download.default_directory": self.data_dir}
+            preferences = {"download.default_directory": self.data_dir ,
+                   "download.prompt_for_download": False,
+                   "directory_upgrade": True,
+                   "safebrowsing.enabled": True}
+
             # add user agent to avoid bot detection
-            self.chrome_options.add_argument(
-                self.headers)
+            self.chrome_options.add_argument(self.headers)
             if environ.get("LOCAL_DEV") != "True":
                 self.chrome_options.add_argument("--headless")
-            
             self.chrome_options.add_argument("--no-sandbox")
             self.chrome_options.add_argument("--disable-dev-shm-usage")
             self.chrome_options.add_argument("start-maximized")
             self.chrome_options.add_argument("--window-size=1920,1080") 
             self.chrome_options.add_argument("--disable-gpu")   
             
-            self.chrome_options.add_experimental_option('prefs', prefs)
+            self.chrome_options.add_experimental_option("prefs", preferences)
             self.driver = webdriver.Chrome(
                 executable_path=self.executable_path, options=self.chrome_options)
             logger.debug("Chrome driver started")
