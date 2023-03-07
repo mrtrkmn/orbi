@@ -222,7 +222,7 @@ class Crawler:
         Generate a pandas dataframe from the excel file
         :param file_path: path to the excel file
         """
-        df = pd.read_excel(file_path)
+        df = pd.read_excel(file_path, engine='openpyxl')
         return df
 
     # check if the state code belongs to the US

@@ -1233,7 +1233,7 @@ def post_process_data(excel_file):
         return
 
     logger.debug(f"post process data for {excel_file}")
-    df = pd.read_excel(excel_file, sheet_name='Sheet1')
+    df = pd.read_excel(excel_file, sheet_name='Sheet1', engine='openpyxl')
     df = df[df['Orbis ID number'].notna()]
     # drop Unnamed: 0 column and duplicate columns
     df = df.drop(columns=['Unnamed: 0'])
