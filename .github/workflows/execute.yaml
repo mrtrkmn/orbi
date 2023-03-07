@@ -95,6 +95,10 @@ jobs:
       run: |
         echo "::set-output name=file_name::$(basename ${{ github.event.inputs.data }})"
 
+    - name: Clean up previously added files 
+      run: |
+        rm -rf *.xlsx
+
     - name: Download data if provided 
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
       run: |
@@ -157,7 +161,7 @@ jobs:
       with:
         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
         path: |
-           /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
+           /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/
            /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
            !/home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/sample_data.xlsx
         retention-days: ${{ env.RETENTION_PERIOD }}
