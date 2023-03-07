@@ -45,7 +45,7 @@ env:
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
   MAX_RUN_ATTEMPTS: 3  # if it is unable to successfull in this number tries, the crawler will exit with failure
-  RUN_TIMEOUT_IN_MN: 120 # If it is unable to fetch all data in 2 hours, the crawler will face with timeout
+  RUN_TIMEOUT_IN_MN: 240 # If it is unable to fetch all data in 4 hours, the crawler will face with timeout
 
   # # aws specific
   # AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
