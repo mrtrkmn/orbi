@@ -99,7 +99,6 @@ jobs:
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
       run: |
         wget ${{ github.event.inputs.data }}
-        mv ${{ steps.get-file-name.outputs.file_name }}  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/
 
     - name: Send Job Started Notification to Slack
       if: ${{ github.event.inputs.notify == 'true' }}
