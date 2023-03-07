@@ -1332,14 +1332,14 @@ if __name__ == "__main__":
                              ]
 
     create_input_file_for_orbis_batch_search(
-        environ.get("DATA_SOURCE"), 
-        f"orbis_data_licensee_{timestamp}.csv",
+        path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+        path.join(environ.get("DATA_DIR"), f"orbis_data_licensee_{timestamp}.csv"),
         is_licensee=True)
 
     # generates csv file for licensor
     create_input_file_for_orbis_batch_search(
-        environ.get("DATA_SOURCE"),
-        f"orbis_data_licensor_{timestamp}.csv",
+        path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+        path.join(environ.get("DATA_DIR"), f"orbis_data_licensor_{timestamp}.csv"),
         is_licensee=False)
 
     time.sleep(4)  # wait for 4 seconds for data to be saved in data folder

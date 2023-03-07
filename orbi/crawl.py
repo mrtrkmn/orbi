@@ -333,15 +333,7 @@ def create_input_file_for_orbis_batch_search(
     with Crawler() as crawler:
         results = []
         # get
-        output_file = os.path.join(
-            os.path.dirname(
-                os.path.abspath(f"{output_file}")),
-            output_file)
-        # read the given licensee file
-        source_file = os.path.join(
-            os.path.dirname(
-                os.path.abspath(f"{source_file}")),
-            source_file)
+    
         df = crawler.read_xlxs_file(source_file)
         # get two columns
         df = df[cols]
