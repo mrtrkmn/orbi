@@ -99,7 +99,7 @@ jobs:
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
       run: |
         wget ${{ github.event.inputs.data }}
-        mv ${{ steps.get-file-name.outputs.file_name }}  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
+        mv ${{ steps.get-file-name.outputs.file_name }}  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/
 
     - name: Send Job Started Notification to Slack
       if: ${{ github.event.inputs.notify == 'true' }}
@@ -118,7 +118,7 @@ jobs:
         max_attempts: ${{ env.MAX_RUN_ATTEMPTS }} # 3 times retry if failed
         command: |
           pwd
-          python  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/orbi/orbi.py
+          python orbi/orbi.py
       env: 
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
 
