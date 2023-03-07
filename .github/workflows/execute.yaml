@@ -40,18 +40,18 @@ env:
 
   # crawler specific
   CHROMEDRIVER_PATH: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/chromedriver
-  DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
+  DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/
   LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
   MAX_RUN_ATTEMPTS: 3  # if it is unable to successfull in this number tries, the crawler will exit with failure
   RUN_TIMEOUT_IN_MN: 120 # If it is unable to fetch all data in 2 hours, the crawler will face with timeout
 
-  # aws specific
-  AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
-  SOURCE_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
+  # # aws specific
+  # AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
+  # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
+  # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
+  # SOURCE_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/
 
   # slack specific
   SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
@@ -139,14 +139,14 @@ jobs:
     # zip the data except sample_data.xlsx
     - name: Zip data
       run: |
-        zip -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/
+        zip -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip '/home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/*.xlsx'
 
-    - name: Upload to S3 
-      uses: jakejarvis/s3-sync-action@master
-      with:
-        args: --acl public-read --follow-symlinks --delete
-      env:
-        DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
+    # - name: Upload to S3 
+    #   uses: jakejarvis/s3-sync-action@master
+    #   with:
+    #     args: --acl public-read --follow-symlinks --delete
+    #   env:
+    #     DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
 
     - name: Send data to Telegram 
       run: |
