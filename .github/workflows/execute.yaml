@@ -107,7 +107,7 @@ jobs:
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
       run: |
         wget ${{ github.event.inputs.data }}
-        mv  ${{ github.event.inputs.data }} ${{ env.DATA_DIR }}
+        mv  ${{ steps.get-file-name.outputs.file_name }} ${{ env.DATA_DIR }}
 
     - name: Send Job Started Notification to Slack
       if: ${{ github.event.inputs.notify == 'true' }}
