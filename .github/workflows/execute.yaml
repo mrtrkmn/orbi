@@ -39,9 +39,9 @@ env:
   ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
 
   # crawler specific
-  CHROMEDRIVER_PATH: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/chromedriver
-  DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
-  LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
+  CHROMEDRIVER_PATH: /home
+  DATA_DIR: /home/runner/work/orbi/orbi/data/
+  LOG_DIR: /home/runner/work/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
   MAX_RUN_ATTEMPTS: 3  # if it is unable to successfull in this number tries, the crawler will exit with failure
@@ -51,7 +51,7 @@ env:
   # AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
   # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
   # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
-  # SOURCE_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/
+  # SOURCE_DIR:  /home/runner/work/orbi/orbi/
 
   # slack specific
   SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
@@ -60,20 +60,16 @@ env:
   SLACK_FOOTER: '🤓 automated bot Orbi'
   
   # artifact specific 
-  RETENTION_PERIOD: 90. # in days 
+  RETENTION_PERIOD: 90 # in days 
 
 permissions:
   contents: read
 
 jobs:
   build: # default working directory
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Remove everything 
-      run: 
-        rm -rf * 
-
     - uses: actions/checkout@v3
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
@@ -87,11 +83,13 @@ jobs:
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     
-    - name: Download chromedriver
-      run: | 
-        wget https://chromedriver.storage.googleapis.com/110.0.5481.77/chromedriver_linux64.zip
-        unzip chromedriver_linux64.zip
-        echo ${{ secrets.REMOTE_PASS }} | sudo -S chmod +x chromedriver
+    - name: Download latest chromedriver
+      run: |
+        PLATFORM=linux64
+        VERSION=$(curl http://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+        curl http://chromedriver.storage.googleapis.com/$VERSION/chromedriver_$PLATFORM.zip -LOk
+        unzip chromedriver_*
+        chmod +x chromedriver
 
     - name: Get file name
       if: ${{ github.event.inputs.data != '${{ env.DEFAULT_DATA_SOURCE }}' }}
