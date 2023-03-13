@@ -40,7 +40,7 @@ env:
 
   # crawler specific
   CHROMEDRIVER_PATH: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/chromedriver
-  DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data
+  DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
   LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
