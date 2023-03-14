@@ -85,7 +85,7 @@ jobs:
     
     - name: Download latest chromedriver
       run: |
-        curl https://chromedriver.storage.googleapis.com/111.0.5563.64/chromedriver_linux64.zip
+        curl http://chromedriver.storage.googleapis.com/111.0.5563.64/chromedriver_linux64.zip -LOk
         unzip chromedriver_*
         chmod +x chromedriver
 
