@@ -124,6 +124,8 @@ jobs:
         max_attempts: ${{ env.MAX_RUN_ATTEMPTS }} # 3 times retry if failed
         command: |
           pwd
+          ls -la ./
+          ls -la ./data
           python orbi/orbi.py
       env: 
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
