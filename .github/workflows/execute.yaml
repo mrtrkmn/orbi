@@ -40,7 +40,7 @@ env:
 
   # crawler specific
   CHROMEDRIVER_PATH: /home/runner/work/orbi/orbi/chromedriver
-  DATA_DIR: /home/runner/work/orbi/orbi/data/
+  DATA_DIR: /home/runner/work/orbi/orbi/
   LOG_DIR: /home/runner/work/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
