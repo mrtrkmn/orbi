@@ -93,8 +93,8 @@ class Orbis:
             self.email_address = environ.get("ORBIS_EMAIL_ADDRESS")
             self.password = environ.get("ORBIS_PASSWORD")
             self.data_dir = environ.get("DATA_DIR")
-            self.license_data = environ.get(
-                "DATA_DIR") + environ.get("DATA_SOURCE")
+            self.data_source = environ.get("DATA_SOURCE")
+            self.license_data = self.data_dir + self.data_source
 
         self.driver = None
         self.headers = "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"
