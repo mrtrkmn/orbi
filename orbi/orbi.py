@@ -139,7 +139,7 @@ class Orbis:
             print("-" * 50)
             print(f"DATA_DIR is:  {self.data_dir}")
             print("-" * 50)
-            preferences = {"download.default_directory": "/home/runner/work/orbi/orbi/data/"}
+            preferences = {"download.default_directory": self.data_dir}
 
             # add user agent to avoid bot detection
             self.chrome_options.add_experimental_option("prefs", preferences)
