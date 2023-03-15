@@ -250,23 +250,30 @@ class Orbis:
         None
         """
 
-        time.sleep(5)
-
+     
         logger.debug("Logging out Orbis ...")
         ACCOUNT_XPATH = "/html/body/section[1]/ul/li"
         LOGOUT_XPATH = '//*[@id="header-user-menu"]/section[1]/div[1]/div[2]/a'
         time.sleep(2)
-        try:
-            self.driver.find_element(By.XPATH, ACCOUNT_XPATH).click()
-            time.sleep(1)
-            self.driver.find_element(By.XPATH, LOGOUT_XPATH).click()
+        
+        try: 
+            account_path = self.driver.find_element(By.XPATH, ACCOUNT_XPATH)
+            account_path.click()
         except NoSuchElementException:
-            print("No logout button found")
-            print("Logging out from the web site through provided logout link...")
+            print(f"No account path {ACCOUNT_XPATH} found")
             self.driver.get(self.orbis_logout_url)
+            time.sleep(5)
+            exit(0)
+        
+        try: 
+            logout_path = self.driver.find_element(By.XPATH, LOGOUT_XPATH)
+            logout_path.click()
+        except NoSuchElementException:
+            print(f"No logout path {LOGOUT_XPATH} found")
+            self.driver.get(self.orbis_logout_url)
+            time.sleep(5)
+            exit(0)
             
-        time.sleep(5)
-
 
     def scroll_to_bottom(self):
         # scroll to the bottom of the page
