@@ -66,7 +66,7 @@ permissions:
 
 jobs:
   build: # default working directory
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
