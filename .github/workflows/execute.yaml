@@ -39,7 +39,6 @@ env:
   ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
 
   # crawler specific
-  CHROMEDRIVER_PATH: /home/runner/work/orbi/orbi/chromedriver
   DATA_DIR: /home/runner/work/orbi/orbi/data/
   LOG_DIR: /home/runner/work/orbi/orbi/logs/
   LOCAL_DEV: False
@@ -82,12 +81,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    
-    - name: Download latest chromedriver
-      run: |
-        curl http://chromedriver.storage.googleapis.com/110.0.5481.77/chromedriver_linux64.zip -LOk
-        unzip chromedriver_*
-        chmod +x chromedriver
 
     - name: Get file name
       if: ${{ github.event.inputs.data != '${{ env.DEFAULT_DATA_SOURCE }}' }}
