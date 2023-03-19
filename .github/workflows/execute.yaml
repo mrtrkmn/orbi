@@ -66,7 +66,7 @@ permissions:
 
 jobs:
   build: # default working directory
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
     - uses: actions/checkout@v3
@@ -87,10 +87,6 @@ jobs:
       id: get-file-name
       run: |
         echo "::set-output name=file_name::$(basename ${{ github.event.inputs.data }})"
-
-    - name: Clean up previously added files 
-      run: |
-        rm -rf *.xlsx
 
     - name: Download data if provided 
       if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
@@ -114,9 +110,6 @@ jobs:
         timeout_minutes: ${{ env.RUN_TIMEOUT_IN_MN }} # 2 hours
         max_attempts: ${{ env.MAX_RUN_ATTEMPTS }} # 3 times retry if failed
         command: |
-          pwd
-          ls -la ./
-          ls -la ./data
           python orbi/orbi.py
       env: 
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
@@ -138,14 +131,14 @@ jobs:
     # zip the data except sample_data.xlsx
     - name: Zip data
       run: |
-        zip  -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip '${{ env.DATA_DIR }}' /home/runner/work/orbi/orbi/  -x '${{ env.DATA_DIR }}sample_data.xlsx' -x /home/runner/work/orbi/orbi/config/.gitkeep -x /home/runner/work/orbi/orbi/data/.gitkeep
+        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip '${{ env.DATA_DIR }}*' -x '${{ env.DATA_DIR }}sample_data.xlsx'
 
-    # - name: Upload to S3 
-    #   uses: jakejarvis/s3-sync-action@master
-    #   with:
-    #     args: --acl public-read --follow-symlinks --delete
-    #   env:
-    #     DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
+    - name: Upload to S3 
+      uses: jakejarvis/s3-sync-action@master
+      with:
+        args: --acl public-read --follow-symlinks --delete
+      env:
+        DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
 
     - name: Send data to Telegram 
       run: |
