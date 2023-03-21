@@ -25,7 +25,7 @@ sys.path.append(root_path)
 
 # class to crawl the IPO website for the patent-related data
 class Crawler:
-    
+
     """
     Crawler class to crawl the IPO website for the patent-related data
     CIK numbers are fetched from SEC.gov.
@@ -34,7 +34,7 @@ class Crawler:
     def __init__(self):
         """
         Initialize the crawler
-        
+
         :param ipo_data: dictionary of the IPO data
         :param ipo_url: url of the IPO website
         :param sec_cik_numbers: dictionary of the CIK numbers {"company_name": "cik_number"}
@@ -44,6 +44,7 @@ class Crawler:
         # set of companies and cik_numbers such as {"company_name":
         # "cik_number"}
         self.sec_cik_numbers = {}
+
     # crawl the IPO website for the patent-related data
 
     def find_publication(self, publication_number):
@@ -52,7 +53,7 @@ class Crawler:
 
         :param publication_number: publication number of the IPO
         """
-        
+
         # get the html content of the page
         url = f"{self.ipo_url}{publication_number}"
 
@@ -79,8 +80,7 @@ class Crawler:
         # find the first row
         for row in rows:
             # find the first column
-            header = row.find_all("td",
-                                  {"class": "CaseDataItemHeader"})[0].text
+            header = row.find_all("td", {"class": "CaseDataItemHeader"})[0].text
             value = row.find_all("td", {"class": "CaseDataItemValue"})[0].text
             self.ipo_data[header] = value
 
@@ -110,7 +110,7 @@ class Crawler:
         """
         Return all the publication details from the dictionary saved in the class
         """
-        
+
         return self.ipo_data
 
     def get_data_from_sec_gov(self, cik_number):
@@ -126,8 +126,7 @@ class Crawler:
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
-
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
         }
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
@@ -140,18 +139,17 @@ class Crawler:
     def get_data_from_sec_gov_in_parallel(self, url, company_name, results):
         # get the json data from the SEC.gov website
         # https://data.sec.gov/submissions/CIK##########.json
-        
+
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
-
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
         }
         json_data = {}
 
         if url == "":
-            json_data['name'] = company_name
-            json_data['cik_number'] = ""
+            json_data["name"] = company_name
+            json_data["cik_number"] = ""
             print(f"No CIK number to look up for : {company_name}")
         else:
             cik_number = url.split(".json")[0].split("CIK")[1]
@@ -161,23 +159,20 @@ class Crawler:
                 json_data = response.json()
             else:
                 raise Exception(f"Failed to get JSON data: {response.text}")
-            json_data['cik_number'] = cik_number
+            json_data["cik_number"] = cik_number
 
         results.append(json_data)
 
     def lookup_cik(self, company_name):
-        
         """
         Lookup the CIK number of the company on the SEC.gov website
         :param company_name: name of the company
         """
-        
+
         # get the html content of the page
         # https://www.sec.gov/edgar/searchedgar/cik
         url = f"https://www.sec.gov/cgi-bin/cik_lookup"
-        params = {
-            "company": company_name,
-            "MIME Type": "application/x-www-form-urlencode"}
+        params = {"company": company_name, "MIME Type": "application/x-www-form-urlencode"}
         response = requests.post(url, data=params)
 
         if response.status_code == 200:
@@ -222,7 +217,7 @@ class Crawler:
         Generate a pandas dataframe from the excel file
         :param file_path: path to the excel file
         """
-        df = pd.read_excel(file_path)
+        df = pd.read_excel(file_path, engine="openpyxl")
         return df
 
     # check if the state code belongs to the US
@@ -281,13 +276,13 @@ class Crawler:
             "WA",
             "WV",
             "WI",
-            "WY"]
+            "WY",
+        ]
         if state_code in states:
             return True
         return False
 
     def read_config(self, path):
-        
         """
         Read the config file
         :param path: path to the config file
@@ -301,29 +296,31 @@ class Crawler:
         return config
 
 
-def generate_unique_id(company_name):
+def generate_unique_id(company_name, n=25):
     """
     Generate a unique id for the company; hash company name
     :param company_name: name of the company
     """
-    return hashlib.sha256(company_name.encode()).hexdigest()
+    sha256 = hashlib.sha256()
+    sha256.update(str(company_name).encode())
+    return sha256.hexdigest()[:n]
+
+
 # prepare_data generates the file which needs to be used in orbi.py first step
 #  source_file: provided by the user
 # output_file: csv file with the data from the SEC.gov website (columns:
 # company name, city, country, identifier)
 
 
-def create_input_file_for_orbis_batch_search(
-        source_file, output_file, is_licensee=False):
-    
+def create_input_file_for_orbis_batch_search(source_file, output_file, is_licensee=False):
     """
     Create the input file for the Orbis batch search; CSV file with the data from the SEC.gov website
-    
+
     :param source_file: provided by the user
     :param output_file: csv file with the data from the SEC.gov website (columns: company name, city, country, identifier)
     :param is_licensee: boolean value to indicate if the source file is for licensee or licensor
     """
-    
+
     if is_licensee:
         cols = ["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]
     else:
@@ -331,24 +328,16 @@ def create_input_file_for_orbis_batch_search(
     with Crawler() as crawler:
         results = []
         # get
-        output_file = os.path.join(
-            os.path.dirname(
-                os.path.abspath(f"data/{output_file}")),
-            output_file)
-        # read the given licensee file
-        source_file = os.path.join(
-            os.path.dirname(
-                os.path.abspath(f"data/{source_file}")),
-            source_file)
+
         df = crawler.read_xlxs_file(source_file)
         # get two columns
         df = df[cols]
-        df = df.replace(r'\n', ' ', regex=True)
+        df = df.replace(r"\n", " ", regex=True)
         # create file on data folder
         columns = ["company name", "city", "country", "identifier", "own id"]
         # Set the maximum number of requests per second
 
-        max_requests_per_second = 10     # defined by SEC.gov
+        max_requests_per_second = 10  # defined by SEC.gov
         company_info = {}
 
         for index, row in df.iterrows():
@@ -360,19 +349,15 @@ def create_input_file_for_orbis_batch_search(
                 cik_number = row[1]
             except IndexError as e:
                 raise Exception(f"Index error: {e}")
-            if (crawler.check_cik_number_format(cik_number)):
+            if crawler.check_cik_number_format(cik_number):
                 company_info[company_name] = f"https://data.sec.gov/submissions/CIK{cik_number}.json"
             else:
                 company_info[company_name] = ""
 
         threads = [
-            Thread(
-                target=crawler.get_data_from_sec_gov_in_parallel,
-                args=(
-                    url,
-                    company_name,
-                    results)) for company_name,
-            url in company_info.items()]
+            Thread(target=crawler.get_data_from_sec_gov_in_parallel, args=(url, company_name, results))
+            for company_name, url in company_info.items()
+        ]
 
         for thread in threads:
             thread.start()
@@ -382,28 +367,28 @@ def create_input_file_for_orbis_batch_search(
             thread.join()
 
         with open(output_file, "w") as f:
-            w = csv.writer(f, delimiter=';')
+            w = csv.writer(f, delimiter=";")
             w.writerow(columns)
 
             for result in results:
                 try:
-                    name = result['name']
-                    own_id = generate_unique_id(name)[:25]
-                    city = result['addresses']['business']['city']
-                    country = result['addresses']['business']['stateOrCountryDescription']
-                    identifier = result['cik_number']
+                    name = result["name"]
+                    own_id = generate_unique_id(name)
+                    city = result["addresses"]["business"]["city"]
+                    country = result["addresses"]["business"]["stateOrCountryDescription"]
+                    identifier = result["cik_number"]
                     if crawler.is_usa(country):
                         country = "United States of America"
                     # cik_number = result["cikNumber"]
                     w.writerow([name, city, country, identifier, own_id])
                 except KeyError as e:
                     print(f"Failed to find the key: {e} for {result['name']}")
-                    if result['cik_number'] == "":
-                        w.writerow([result['name'], "", "", ""])
-                    if result['name'] != "" and result['cik_number'] != "":
-                        w.writerow(
-                            [result['name'], "", "", result['cik_number']])
-                        
+                    if result["cik_number"] == "":
+                        w.writerow([result["name"], "", "", ""])
+                    if result["name"] != "" and result["cik_number"] != "":
+                        w.writerow([result["name"], "", "", result["cik_number"]])
+
+
 # In case of running only crawler part
 # ----------------------------------------------------------------------------------------------------------------------------
 # if __name__ == "__main__":
@@ -420,4 +405,4 @@ def create_input_file_for_orbis_batch_search(
 #     # print(crawler.get_data_from_sec_gov(cik_number))
 #     # print(crawler.get_data_from_sec_gov_in_parallel(cik_number))
 #     create_input_file_for_orbis_batch_search("sample_data.xlsx", f"orbis_data_{timestamp}.csv")
-#-------------------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------
