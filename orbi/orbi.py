@@ -144,7 +144,7 @@ class Orbis:
                 self.chrome_options.add_argument("--headless=new")
             # self.chrome_options.add_argument("--no-sandbox")
             # self.chrome_options.add_argument("--disable-dev-shm-usage")
-            # 
+            #
             # self.chrome_options.add_argument("--window-size=1920,1080")
             # self.chrome_options.add_argument("--disable-gpu")
 
@@ -1595,7 +1595,7 @@ if __name__ == "__main__":
     time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
     try:
-        aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx",f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
+        aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
     except FileNotFoundError as fne:
         print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
 
@@ -1603,22 +1603,27 @@ if __name__ == "__main__":
     #     aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx",f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
     # except FileNotFoundError as fne:
     #     print(f"File could not be found to aggregate please make sure it exists !")
-    run_in_parallel_generic(function=aggregate_data,
-                            args = [(f"orbis_data_licensee_{timestamp}.xlsx",
-                              f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
-                             (f"orbis_data_licensor_{timestamp}.xlsx",
-                              f"orbis_aggregated_data_licensor_{timestamp}.xlsx")])
+    run_in_parallel_generic(
+        function=aggregate_data,
+        args=[
+            (f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
+            (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
+        ],
+    )
 
-    run_in_parallel_generic(function=post_process_data,
-                            args=[f"orbis_aggregated_data_{timestamp}.xlsx",
-                                f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
-                                f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
-                                f"orbis_aggregated_data_{timestamp}_guo.xlsx",
-                                f"orbis_data_guo_{timestamp}.xlsx",
-                                f"orbis_data_licensee_{timestamp}_ish.xlsx",
-                                f"orbis_data_licensor_{timestamp}_ish.xlsx",
-                                f"orbis_data_licensee_{timestamp}.xlsx",
-                                f"orbis_data_licensee_{timestamp}_guo.xlsx",
-                                f"orbis_data_licensor_{timestamp}.xlsx",
-                                f"orbis_data_licensor_{timestamp}_guo.xlsx",
-                               ])
+    run_in_parallel_generic(
+        function=post_process_data,
+        args=[
+            f"orbis_aggregated_data_{timestamp}.xlsx",
+            f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
+            f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
+            f"orbis_aggregated_data_{timestamp}_guo.xlsx",
+            f"orbis_data_guo_{timestamp}.xlsx",
+            f"orbis_data_licensee_{timestamp}_ish.xlsx",
+            f"orbis_data_licensor_{timestamp}_ish.xlsx",
+            f"orbis_data_licensee_{timestamp}.xlsx",
+            f"orbis_data_licensee_{timestamp}_guo.xlsx",
+            f"orbis_data_licensor_{timestamp}.xlsx",
+            f"orbis_data_licensor_{timestamp}_guo.xlsx",
+        ],
+    )
