@@ -1377,10 +1377,10 @@ def post_process_data(excel_file):
 
     if not path.exists(excel_file):
         logger.debug(f"{excel_file} does not exist")
-        return
+        pass
 
     logger.debug(f"post process data for {excel_file}")
-    df = pd.read_excel(excel_file, sheet_name="Sheet1", engine="openpyxl")
+    df = pd.read_excel(excel_file, sheet_name="Results", engine="openpyxl")
     df = df[df["Orbis ID number"].notna()]
     # drop Unnamed: 0 column and duplicate columns
     df = df.drop(columns=["Unnamed: 0"])
@@ -1594,31 +1594,31 @@ if __name__ == "__main__":
     # # # # # # Step 5
     time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
-    # try:
-    #     aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx",f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
-    # except FileNotFoundError as fne:
-    #     print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
+    try:
+        aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx",f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
+    except FileNotFoundError as fne:
+        print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
 
     # try:
     #     aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx",f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
     # except FileNotFoundError as fne:
     #     print(f"File could not be found to aggregate please make sure it exists !")
-    # # run_in_parallel_generic(function=aggregate_data,
-    # #                         [(f"orbis_data_licensee_{timestamp}.xlsx",
-    # #                           f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
-    # #                          (f"orbis_data_licensor_{timestamp}.xlsx",
-    # #                           f"orbis_aggregated_data_licensor_{timestamp}.xlsx")])
+    run_in_parallel_generic(function=aggregate_data,
+                            args = [(f"orbis_data_licensee_{timestamp}.xlsx",
+                              f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
+                             (f"orbis_data_licensor_{timestamp}.xlsx",
+                              f"orbis_aggregated_data_licensor_{timestamp}.xlsx")])
 
-    # run_in_parallel_generic(function=post_process_data,
-    #                         args=[f"orbis_aggregated_data_{timestamp}.xlsx",
-    #                             f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
-    #                             f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
-    #                             f"orbis_aggregated_data_guo_{timestamp}.xlsx",
-    #                             f"orbis_data_guo_{timestamp}.xlsx",
-    #                             f"orbis_data_licensee_{timestamp}_ish.xlsx",
-    #                             f"orbis_data_licensor_{timestamp}_ish.xlsx",
-    #                             f"orbis_data_licensee_{timestamp}.xlsx",
-    #                             f"orbis_data_licensee_{timestamp}_guo.xlsx",
-    #                             f"orbis_data_licensor_{timestamp}.xlsx",
-    #                             f"orbis_data_licensor_{timestamp}_guo.xlsx",
-    #                             f"orbis_data_{timestamp}.xlsx"])
+    run_in_parallel_generic(function=post_process_data,
+                            args=[f"orbis_aggregated_data_{timestamp}.xlsx",
+                                f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
+                                f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
+                                f"orbis_aggregated_data_{timestamp}_guo.xlsx",
+                                f"orbis_data_guo_{timestamp}.xlsx",
+                                f"orbis_data_licensee_{timestamp}_ish.xlsx",
+                                f"orbis_data_licensor_{timestamp}_ish.xlsx",
+                                f"orbis_data_licensee_{timestamp}.xlsx",
+                                f"orbis_data_licensee_{timestamp}_guo.xlsx",
+                                f"orbis_data_licensor_{timestamp}.xlsx",
+                                f"orbis_data_licensor_{timestamp}_guo.xlsx",
+                               ])
