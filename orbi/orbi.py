@@ -24,6 +24,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver import ActionChains 
 
 # from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
@@ -105,8 +106,8 @@ class Orbis:
             "Sales": SALES_SETTINGS,
             "Gross profit": GROSS_PROFIT,
             "Operating P/L [=EBIT]": OPERATING_PL_SETTINS,
-            "P/L before tax (Key financials & employees)": PL_BEFORE_TAX_SETTINGS,
-            "P/L for period [=Net income] (Key financials & employees)": PL_FOR_PERIOD_SETTINGS,
+            "P/L before tax": PL_BEFORE_TAX_SETTINGS,
+            "P/L for period [=Net income]": PL_FOR_PERIOD_SETTINGS,
             "Cash flow": CASH_FLOW_SETTINGS,
             "Total assets": TOTAL_ASSETS_SETTINGS,
             "Number of employees": NUMBER_OF_EMPLOYEES_SETTINGS,
@@ -463,37 +464,48 @@ class Orbis:
         time.sleep(5)
         print("Changes are applied to the batch search after ; seperator is set")
 
+    def check_progress_text(self):
+        try: 
+            progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
+            print(f"Message : {progress_text.text}")
+        except Exception as e:
+            print(f"Exception on check progress text {e}")
+            pass 
+
+    def check_search_progress_bar(self, process_name=""):
+        warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
+        while warning_message.text == "Search is not finished":
+            time.sleep(5)
+            warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
+            logger.debug(f"{process_name}: {warning_message.text}")
+
+            self.check_progress_text()
+
+
     def wait_until_data_is_processed(self, process_name=""):
         CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
-
+        
         try:
-            warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
-            while warning_message.text == "Search is not finished":
-                time.sleep(5)
-                warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
-                logger.debug(f"{process_name}: {warning_message.text}")
-                try: 
-                    progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
-                    print(f"Search is under progress:\nMessage : {progress_text.text}")
-                except Exception as e:
-                    pass 
-
-                SEARCHING_POP_UP = '/html/body/section[2]/div[3]/div/form/div[1]/div[2]'
-
-                try:
-                    pop_up_window = self.driver.find_element(By.XPATH, SEARCHING_POP_UP)
-                except Exception as e:
-                    try: 
-                        continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
-                        continue_search_button.send_keys(Keys.RETURN)
-                        time.sleep(2)
-                        print(f"Continue search button is clicked")
-                    except Exception as e:
-                        print(f"Continue search button is not found. Continuing with the next step...")
-                        pass 
+            self.check_search_progress_bar()
             time.sleep(10)
         except Exception as e:
             logger.debug(f"{process_name}: search is not finished: stale element exception {e}")
+            
+            SEARCHING_POP_UP = '/html/body/section[2]/div[3]/div/form/div[1]/div[2]'
+            try:
+                pop_up_window = self.driver.find_element(By.XPATH, SEARCHING_POP_UP)
+            except Exception as e:
+                try: 
+                    continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
+                    action = ActionChains(self.driver)
+                    action.click(on_element=continue_search_button).perform()
+                    time.sleep(5)
+                    print(f"Continue search button is clicked")
+                    self.check_search_progress_bar()
+                except Exception as e:
+                    print(f"Continue search button is not found. Continuing with the next step...")
+                    pass 
+
         print(f"{process_name}: search is finished, continuing with the next step")
 
     def view_search_results(self):
