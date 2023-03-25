@@ -8,7 +8,7 @@ import os
 import pathlib
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from os import environ, path
 from threading import Thread
 
@@ -105,8 +105,8 @@ class Orbis:
             "Sales": SALES_SETTINGS,
             "Gross profit": GROSS_PROFIT,
             "Operating P/L [=EBIT]": OPERATING_PL_SETTINS,
-            "P/L before tax": PL_BEFORE_TAX_SETTINGS,
-            "P/L for period [=Net income]": PL_FOR_PERIOD_SETTINGS,
+            "P/L before tax (Key financials & employees)": PL_BEFORE_TAX_SETTINGS,
+            "P/L for period [=Net income] (Key financials & employees)": PL_FOR_PERIOD_SETTINGS,
             "Cash flow": CASH_FLOW_SETTINGS,
             "Total assets": TOTAL_ASSETS_SETTINGS,
             "Number of employees": NUMBER_OF_EMPLOYEES_SETTINGS,
@@ -142,11 +142,10 @@ class Orbis:
             print("-" * 50)
             if environ.get("LOCAL_DEV") != "True":
                 self.chrome_options.add_argument("--headless=new")
-            # self.chrome_options.add_argument("--no-sandbox")
-            # self.chrome_options.add_argument("--disable-dev-shm-usage")
-            #
+
+            self.chrome_options.add_argument("--disable-dev-shm-usage")
             # self.chrome_options.add_argument("--window-size=1920,1080")
-            # self.chrome_options.add_argument("--disable-gpu")
+            self.chrome_options.add_argument("--disable-gpu")
 
             prefs = {"download.default_directory": self.data_dir}
             # add user agent to avoid bot detection
@@ -465,16 +464,7 @@ class Orbis:
         print("Changes are applied to the batch search after ; seperator is set")
 
     def wait_until_data_is_processed(self, process_name=""):
-        # try:
-        #     WebDriverWait(self.driver, 30 * 60).until(
-        #         EC.invisibility_of_element_located((By.XPATH, SEARCH_PROGRESS_BAR))
-        #     )
-        # except Exception as exp:
-        #     print(f"Exception is occured while waiting for invisibility of search progress bar")
-
-        # SEARCH_BOX = '//*[@id="Processing"]'
         CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
-        PROGRESS_POP_UP_WINDOWS = '//*[@id="Processing"]'
 
         try:
             warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
@@ -482,17 +472,25 @@ class Orbis:
                 time.sleep(5)
                 warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
                 logger.debug(f"{process_name}: {warning_message.text}")
-                print(f"Search is under progress:\nMessage : {warning_message.text}")
+                try: 
+                    progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
+                    print(f"Search is under progress:\nMessage : {progress_text.text}")
+                except Exception as e:
+                    pass 
+
+                SEARCHING_POP_UP = '/html/body/section[2]/div[3]/div/form/div[1]/div[2]'
 
                 try:
-                    pop_up_window = self.driver.find_element(By.XPATH, PROGRESS_POP_UP_WINDOWS)
-                    pop_up_window_display_menu = pop_up_window.value_of_css_property("display")
-                    if pop_up_window_display_menu != "block":
+                    pop_up_window = self.driver.find_element(By.XPATH, SEARCHING_POP_UP)
+                except Exception as e:
+                    try: 
                         continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
                         continue_search_button.send_keys(Keys.RETURN)
-                except Exception as e:
-                    print(f"Continue search button is not found {e}")
-
+                        time.sleep(2)
+                        print(f"Continue search button is clicked")
+                    except Exception as e:
+                        print(f"Continue search button is not found. Continuing with the next step...")
+                        pass 
             time.sleep(10)
         except Exception as e:
             logger.debug(f"{process_name}: search is not finished: stale element exception {e}")
@@ -1185,6 +1183,8 @@ class Orbis:
         related_data["Financial Period"] = related_data["Agreement Date"].dt.year - 1
         related_data = related_data.rename(columns={"Licensee CIK 1_cleaned": "CIK"})
         related_data["CIK"] = related_data["CIK"].astype(str)
+        
+        
         df_orbis = df_orbis.rename(columns={"Other company ID number": "CIK"})
         df_orbis["CIK"] = df_orbis["CIK"].astype(str)
         df_merged = df_orbis.merge(related_data, on="CIK")
@@ -1328,7 +1328,7 @@ def aggregate_data(orbis_file, aggregated_output_file):
             return
 
         df_licensee_data = orbis.read_xlxs_file(orbis.license_data, sheet_name="")
-        df_orbis_data = orbis.read_xlxs_file(orbis_file, sheet_name="")
+        df_orbis_data = orbis.read_xlxs_file(orbis_file, sheet_name="Results")
         df_licensee = orbis.strip_new_lines(df_licensee_data)
         df_result = orbis.prepare_data(df_licensee, df_orbis_data)
         orbis.to_xlsx(df_result, aggregate_output_file)
@@ -1467,7 +1467,7 @@ def get_data_dir_from_config():
 if __name__ == "__main__":
     # initial checks
     if environ.get("LOCAL_DEV") == "True":
-        environ["DATA_SOURCE"] = "sample_data.xlsx"
+        environ["DATA_SOURCE"] = "sample_data_big.xlsx"
         environ["DATA_DIR"] = get_data_dir_from_config()["data"]["path"]
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
@@ -1594,36 +1594,36 @@ if __name__ == "__main__":
     # # # # # # Step 5
     time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
-    try:
-        aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
-    except FileNotFoundError as fne:
-        print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
+    # try:
+    #     aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
+    # except FileNotFoundError as fne:
+    #     print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
 
     # try:
     #     aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx",f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
     # except FileNotFoundError as fne:
     #     print(f"File could not be found to aggregate please make sure it exists !")
-    run_in_parallel_generic(
-        function=aggregate_data,
-        args=[
-            (f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
-            (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
-        ],
-    )
+    # run_in_parallel_generic(
+    #     function=aggregate_data,
+    #     args=[
+    #         (f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
+    #         (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
+    #     ],
+    # )
 
-    run_in_parallel_generic(
-        function=post_process_data,
-        args=[
-            f"orbis_aggregated_data_{timestamp}.xlsx",
-            f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
-            f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
-            f"orbis_aggregated_data_{timestamp}_guo.xlsx",
-            f"orbis_data_guo_{timestamp}.xlsx",
-            f"orbis_data_licensee_{timestamp}_ish.xlsx",
-            f"orbis_data_licensor_{timestamp}_ish.xlsx",
-            f"orbis_data_licensee_{timestamp}.xlsx",
-            f"orbis_data_licensee_{timestamp}_guo.xlsx",
-            f"orbis_data_licensor_{timestamp}.xlsx",
-            f"orbis_data_licensor_{timestamp}_guo.xlsx",
-        ],
-    )
+    # run_in_parallel_generic(
+    #     function=post_process_data,
+    #     args=[
+    #         f"orbis_aggregated_data_{timestamp}.xlsx",
+    #         f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
+    #         f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
+    #         f"orbis_aggregated_data_{timestamp}_guo.xlsx",
+    #         f"orbis_data_guo_{timestamp}.xlsx",
+    #         f"orbis_data_licensee_{timestamp}_ish.xlsx",
+    #         f"orbis_data_licensor_{timestamp}_ish.xlsx",
+    #         f"orbis_data_licensee_{timestamp}.xlsx",
+    #         f"orbis_data_licensee_{timestamp}_guo.xlsx",
+    #         f"orbis_data_licensor_{timestamp}.xlsx",
+    #         f"orbis_data_licensor_{timestamp}_guo.xlsx",
+    #     ],
+    # )
