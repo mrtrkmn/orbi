@@ -425,6 +425,11 @@ class Orbis:
             logger.debug(e)
 
     def check_exists_by_xpath(self, XPATH):
+        """
+        Checks if an element exists on the page.
+        :param XPATH: The xpath of the element to check for.
+        """
+
         try:
             self.driver.find_element(By.XPATH, XPATH)
         except NoSuchElementException:
@@ -432,6 +437,11 @@ class Orbis:
         return True
 
     def upload_csv_file_to_orbis(self, file_path):
+        """
+        Uploads a csv file to Orbis for batch search.
+        :param file_path: The path to the csv file to be uploaded.
+        """
+
         self.wait_until_clickable(DRAG_DROP_BUTTON)
         self.driver.find_element(By.XPATH, DRAG_DROP_BUTTON).click()
 
@@ -444,6 +454,11 @@ class Orbis:
         print(f"File {file_path} is uploaded to Orbis for batch search")
 
     def select_field_seperator(self, separator, process_name=""):
+        """
+        In the batch search page, selects the field seperator to be used for the csv file.
+        :param separator: The xpath of the field seperator to be selected.
+        :param process_name: The name of the process being performed.
+        """
         self.wait_until_clickable(separator)
 
         self.driver.find_element(By.XPATH, separator).clear()
@@ -458,6 +473,10 @@ class Orbis:
         print(f"{process_name} field seperator is set to ;")
 
     def apply_changes(self):
+        """
+        Clicks the apply button in the batch search page.
+        """
+
         self.wait_until_clickable(APPLY_BUTTON)
         try:
             apply_button = self.driver.find_element(By.XPATH, APPLY_BUTTON)
@@ -476,6 +495,10 @@ class Orbis:
             pass
 
     def check_search_progress_bar(self, process_name=""):
+        """
+        Checks the search progress bar to see if the search is finished.
+        :param process_name: The name of the process being performed.
+        """
         warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
         while warning_message.text == "Search is not finished":
             time.sleep(5)
@@ -485,6 +508,11 @@ class Orbis:
             self.check_progress_text()
 
     def wait_until_data_is_processed(self, process_name=""):
+        """
+        Waits until the data is processed. This is used to wait until the search is finished.
+        :param process_name: The name of the process being performed.
+        """
+
         CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
 
         try:
@@ -511,6 +539,10 @@ class Orbis:
         print(f"{process_name}: search is finished, continuing with the next step")
 
     def view_search_results(self):
+        """
+        Clicks the view results button in the batch search page when the search is finished.
+        """
+
         self.wait_until_clickable(VIEW_RESULTS_BUTTON)
         view_result_sub_url = self.driver.find_element(By.XPATH, VIEW_RESULTS_BUTTON)
         view_result_sub_url.send_keys(Keys.RETURN)
@@ -518,6 +550,11 @@ class Orbis:
         print("Search results are displayed / View Results button is clicked")
 
     def add_remove_additional_columns(self, process_name=""):
+        """
+        Opens new page to add or remove additional columns in the search results.
+        :param process_name: The name of the process being performed.
+        """
+
         try:
             self.wait_until_clickable(ADD_REMOVE_COLUMNS_VIEW)
             self.driver.find_element(By.XPATH, ADD_REMOVE_COLUMNS_VIEW).click()
@@ -532,6 +569,11 @@ class Orbis:
         print(f"{process_name} Add Remove Columns view is opened")
 
     def add_contact_info(self, process_name=""):
+        """
+        A step in the add remove additional columns page to add contact information to the search results.
+        :param process_name: The name of the process being performed.
+        """
+
         try:
             self.wait_until_clickable(CONTACT_INFORMATION)
             self.driver.find_element(By.XPATH, CONTACT_INFORMATION).click()
@@ -543,6 +585,10 @@ class Orbis:
         print(f"{process_name} Contact Information is added to the search results")
 
     def clear_search_input(self):
+        """
+        Clears the search input in the add remove additional columns page.
+        """
+
         self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
         try:
             search_input = self.driver.find_element(By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
@@ -553,6 +599,11 @@ class Orbis:
         print("Search input is cleared")
 
     def search_field(self, field, process_name=""):
+        """
+        Searches the given field in the add remove additional columns page and adds it.
+        :param field: The field to be searched.
+        """
+
         self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
 
         try:
@@ -567,6 +618,11 @@ class Orbis:
         print(f"{process_name} {field} is searched")
 
     def add_city_info(self, process_name=""):
+        """
+        A step in the add remove additional columns page to add city information to the search results.
+        :param process_name: The name of the process being performed.
+        """
+
         self.search_field("City", process_name)
         try:
             # add city
@@ -584,6 +640,11 @@ class Orbis:
         print(f"{process_name} city is added")
 
     def add_country_info(self, process_name=""):
+        """
+        A step in the add remove additional columns page to add country information to the search results.
+        :param process_name: The name of the process being performed.
+        """
+
         self.search_field("Country", process_name)
         try:
             self.wait_until_clickable(COUNTRY_COLUMN)
@@ -596,6 +657,11 @@ class Orbis:
         print(f"{process_name} country is added")
 
     def add_delisting_note(self, process_name=""):
+        """
+        A step in the add remove additional columns page to add delisting note information to the search results.
+        :param process_name: The name of the process being performed.
+        """
+
         self.search_field("Delisting Note", process_name)
 
         try:
@@ -612,6 +678,11 @@ class Orbis:
         print(f"{process_name} delisting note is added")
 
     def add_other_company_id(self, process_name=""):
+        """
+        A step in the add remove additional columns page to add other company id information to the search results.
+        :param process_name: The name of the process being performed.
+        """
+
         self.search_field("Other Company ID", process_name)
         try:
             self.wait_until_clickable(CIK_NUMBER_VIEW)
@@ -624,6 +695,10 @@ class Orbis:
         print(f"{process_name} other company id is added")
 
     def add_identification_number(self, process_name=""):
+        """
+        A step in the add remove additional columns page to add identification number information to the search results.
+        :param process_name: The name of the process being performed.
+        """
         try:
             self.wait_until_clickable(IDENTIFICATION_NUMBER_VIEW)
             self.driver.find_element(By.XPATH, IDENTIFICATION_NUMBER_VIEW).click()
@@ -634,6 +709,11 @@ class Orbis:
         print(f"{process_name} identification number is added")
 
     def click_pop_up_save_button(self, process_name):
+        """
+        Saves the changes made in the add remove additional columns page.
+        :param process_name: The name of the process being performed.
+        """
+
         try:
             self.wait_until_clickable(POPUP_SAVE_BUTTON)
             self.driver.find_element(By.XPATH, POPUP_SAVE_BUTTON).click()
@@ -644,6 +724,11 @@ class Orbis:
         print(f"{process_name} popup save button is clicked")
 
     def add_us_sic_code(self, process_name):
+        """
+        A step in batch search process to add us sic code to the report
+        :param process_name: The name of the process being performed.
+        """
+
         self.search_field("US SIC, secondary code(s)", process_name)
         try:
             self.wait_until_clickable(US_SIC_SECONDARY_CODES)
@@ -656,6 +741,11 @@ class Orbis:
         print(f"{process_name} us sic secondary codes is added")
 
     def add_op_revenue(self):
+        """
+        A step in batch search process to add op revenue to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(OP_REVENUE_OK_BUTTON)
             self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()
@@ -665,6 +755,11 @@ class Orbis:
         print("op revenue is added")
 
     def add_desc_history_info(self, process_name=""):
+        """
+        A step in batch search process to add description history to the report
+        :param process_name:
+        """
+
         self.search_field("Description History", process_name)
         try:
             self.wait_until_clickable(DESCRIPTION_HISTORY)
@@ -676,6 +771,11 @@ class Orbis:
         print(f"{process_name} description history is added")
 
     def add_history_info(self, process_name=""):
+        """
+        A step in batch search process to add history to the report
+        :param process_name:
+        """
+
         self.search_field("History", process_name)
         try:
             self.wait_until_clickable(HISTORY)
@@ -687,6 +787,11 @@ class Orbis:
         print(f"{process_name} history is added")
 
     def add_bvd_id(self, process_name=""):
+        """
+        A step in batch search process to add bvd id number to the report
+        :param process_name:
+        """
+
         self.search_field("BVD ID number", process_name)
         try:
             self.wait_until_clickable(BVD_ID_NUMBER_ADD)
@@ -699,6 +804,11 @@ class Orbis:
         self.clear_search_input()
 
     def add_orbis_id_number(self, process_name=""):
+        """
+        A step in batch search process to add orbis id number to the report
+        :param process_name:
+        """
+
         self.search_field("Orbis ID number", process_name)
         try:
             self.wait_until_clickable(ORBIS_ID_NUMBER_ADD)
@@ -711,6 +821,11 @@ class Orbis:
         print(f"{process_name} orbis id number is added")
 
     def add_ownership_info(self, process_name=""):
+        """
+        A step in batch search process to add ownership data to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(OWNERSHIP_COLUMN)
             self.driver.find_element(By.XPATH, OWNERSHIP_COLUMN).click()
@@ -721,6 +836,11 @@ class Orbis:
         print(f"{process_name} ownership data is added")
 
     def add_shareholders_info(self, process_name=""):
+        """
+        A step in batch search process to add shareholders data to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(SHAREHOLDERS_COLUMN)
             self.driver.find_element(By.XPATH, SHAREHOLDERS_COLUMN).click()
@@ -731,6 +851,11 @@ class Orbis:
         print(f"{process_name} shareholders data is added")
 
     def add_guo_owner_info(self, process_name=""):
+        """
+        A step in batch search process to add global ultimate owner data to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(GUO_COLUMN)
             self.driver.find_element(By.XPATH, GUO_COLUMN).click()
@@ -741,6 +866,11 @@ class Orbis:
         print(f"{process_name} guo data is added")
 
     def add_guo_name_info(self, process_name=""):
+        """
+        A step in batch search process to add global ultimate owner name to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(GUO_NAME_INFO)
             self.driver.find_element(By.XPATH, GUO_NAME_INFO).click()
@@ -751,6 +881,11 @@ class Orbis:
         print(f"{process_name} global ultimate owner name is added")
 
     def add_immediate_parent_company_name(self, process_name=""):
+        """
+        A step in batch search process to add immediate parent company name to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(IMMEDIATE_PARENT_COMPANY_NAME)
             self.driver.find_element(By.XPATH, IMMEDIATE_PARENT_COMPANY_NAME).click()
@@ -761,6 +896,11 @@ class Orbis:
         print(f"{process_name} immediate parent company name is added")
 
     def add_ish_name(self, process_name=""):
+        """
+        A step in batch search process to add ish name to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(ISH_NAME)
             self.driver.find_element(By.XPATH, ISH_NAME).click()
@@ -771,6 +911,11 @@ class Orbis:
         print(f"{process_name} ish name is added")
 
     def check_page_for_errors(self, process_name=""):
+        """
+        Checks if page is loaded correctly. If not, refreshes the page and checks again.
+        :param process_name:
+        """
+
         print("Cheking page for errors")
         attempts = 0
         max_attempts = 10
@@ -790,6 +935,11 @@ class Orbis:
         print("Cheking page for errors finished")
 
     def add_non_financial_items(self, process_name=""):
+        """
+        Search on non-financial items and add them to the end result through add/remove column option in Orbis.
+        :param process_name:
+        """
+
         print(f"{process_name} adding non financial items")
         non_financial_items = list(set(self.variables.keys()) - set(self.get_financial_columns()))
         is_checked = False
@@ -827,6 +977,9 @@ class Orbis:
         print(f"{process_name} all items are added: {self.variables.keys()}")
 
     def update_name_of_output_file(self, output_file_name, process_name=""):
+        """
+        Updates the name of the output file when exporting the data as an excel file.
+        """
         self.wait_until_clickable(EXCEL_EXPORT_NAME_FIELD)
         try:
             excel_filename_input = self.driver.find_element(By.XPATH, EXCEL_EXPORT_NAME_FIELD)
@@ -839,6 +992,10 @@ class Orbis:
         print(f"{process_name} excel file name is entered")
 
     def click_export_button(self, process_name=""):
+        """
+        Clicks the export button to export the data as an excel file.
+        """
+
         self.wait_until_clickable(EXPORT_BUTTON)
         try:
             self.driver.find_element(By.XPATH, EXPORT_BUTTON).click()
@@ -848,6 +1005,10 @@ class Orbis:
         print(f"{process_name} export button is clicked")
 
     def select_million_units(self):
+        """
+        Selects million units from the dropdown menu.
+        """
+
         time.sleep(7)
         try:
             self.wait_until_clickable(MILLION_UNITS)
@@ -858,6 +1019,10 @@ class Orbis:
         print("million units is selected")
 
     def click_dropdown_button(self):
+        """
+        Clicks the dropdown button to select the items to be exported.
+        """
+
         time.sleep(3)
         # click apply from dropdown
         try:
@@ -870,6 +1035,11 @@ class Orbis:
         print("dropdown apply button is clicked")
 
     def click_excel_button(self, process_name):
+        """
+        A step in batch search process. Clicks the excel button to download the data.
+        :param process_name: name of the process
+        """
+
         time.sleep(2)
         try:
             self.wait_until_clickable(EXCEL_BUTTON)
@@ -881,6 +1051,14 @@ class Orbis:
         print(f"{process_name} excel button is clicked")
 
     def wait_for_data_to_be_downloaded(self, excel_output_file_name, process_name=""):
+        """
+        At the end of the batch search, the data needs to be downloaded. This function waits for the data to be downloaded.
+
+        :param excel_output_file_name: name of the excel file to be downloaded
+        :param process_name: name of the process
+
+        """
+
         POPUP_CLOSE_BUTTON = "/html/body/section[2]/div[6]/div[1]/img"
         self.wait_until_clickable(POPUP_DOWNLOAD_BUTTON)
         try:
