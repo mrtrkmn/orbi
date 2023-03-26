@@ -92,7 +92,7 @@ class Orbis:
         else:
             self.orbis_access_url = environ.get("ORBIS_ACCESS_URL")
             self.send_data_on_completion = environ.get("SEND_DATA_ON_COMPLETION")
-            self.slack_channel = environ.get("SLACK_CHANNEL")
+            self.slack_channel = environ.get("SLACK_DATA_CHANNEL")
             self.orbis_batch_search_url = environ.get("ORBIS_BATCH_SEARCH_URL")
             self.orbis_logout_url = environ.get("ORBIS_LOGOUT_URL")
             self.email_address = environ.get("ORBIS_EMAIL_ADDRESS")
