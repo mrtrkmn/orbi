@@ -19,12 +19,13 @@ from bs4 import BeautifulSoup
 from crawl import create_input_file_for_orbis_batch_search
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver import ActionChains 
+from slack_sdk import WebClient
 
 # from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
@@ -90,6 +91,8 @@ class Orbis:
             environ["DATA_DIR"] = self.data_dir  # only for local dev and data_dir
         else:
             self.orbis_access_url = environ.get("ORBIS_ACCESS_URL")
+            self.send_data_on_completion = environ.get("SEND_DATA_ON_COMPLETION")
+            self.slack_channel = environ.get("SLACK_CHANNEL")
             self.orbis_batch_search_url = environ.get("ORBIS_BATCH_SEARCH_URL")
             self.orbis_logout_url = environ.get("ORBIS_LOGOUT_URL")
             self.email_address = environ.get("ORBIS_EMAIL_ADDRESS")
@@ -912,6 +915,26 @@ class Orbis:
             print(f"Data download button failed to be clicked")
             self.__exit__()
             sys.exit(1)
+            
+    def send_file_to_slack(self, file_path, channel, message):
+        """
+        Send a file to a Slack channel.
+
+        :param file_path (str): The path to the file to send.
+        :param channel (str): The channel to send the file to.
+        :param message (str): The message to send with the file.
+
+        :return:
+        None
+        """
+        logger.debug(f"Sending file {file_path} to Slack channel {channel}")
+        slack_client = WebClient(token=environ.get("SLACK_TOKEN"))
+        slack_client.files_upload(
+            channels=self.slack_channel,
+            file=file_path,
+            initial_comment=message,
+        )
+
 
     def batch_search(self, input_file, process_name=""):
         """
@@ -954,27 +977,6 @@ class Orbis:
 
         # when search is finished, click on the search results button
         self.view_search_results()
-
-        # this is used to wait until processing overlay is gone
-
-        # try:
-        #     main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
-        #     main_content_style = main_content_div.value_of_css_property(
-        #         'max-width')
-
-        #     while main_content_style != "none":
-        #         main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
-        #         main_content_style = main_content_div.value_of_css_property(
-        #             'max-width')
-        #         logger.debug(
-        #             f"{process_name}main content style is {main_content_style}")
-        #         time.sleep(0.5)
-        # except Exception as e:
-        #     logger.debug(e)
-
-        # wait until the processing overlay is gone
-
-        # check whether the processing overlay is gone
 
         PROCESSING_DIV = "//div[@class='processing-overlay']"
 
@@ -1088,7 +1090,13 @@ class Orbis:
         self.click_export_button(process_name)
 
         self.wait_for_data_to_be_downloaded(excel_output_file_name, process_name)
-
+        
+        time.sleep(2)
+        
+        if self.send_data_on_completion:
+            message = f"Search for {input_file} is complete. Output of the batch search on orbis is attached."
+            self.send_file_to_slack(path.join(self.data_dir, f"{excel_output_file_name}.xlsx"), self.slack_channel, message)
+        
     # create a file likewe have data.csv file
     # company name;city;country;identifier
     def generate_data_for_guo(self, orig_orbis_data, file):
