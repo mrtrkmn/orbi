@@ -468,12 +468,12 @@ class Orbis:
         print("Changes are applied to the batch search after ; seperator is set")
 
     def check_progress_text(self):
-        try: 
+        try:
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
             print(f"Message : {progress_text.text}")
         except Exception as e:
             print(f"Exception on check progress text {e}")
-            pass 
+            pass
 
     def check_search_progress_bar(self, process_name=""):
         warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
@@ -484,21 +484,20 @@ class Orbis:
 
             self.check_progress_text()
 
-
     def wait_until_data_is_processed(self, process_name=""):
         CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
-        
+
         try:
             self.check_search_progress_bar()
             time.sleep(10)
         except Exception as e:
             logger.debug(f"{process_name}: search is not finished: stale element exception {e}")
-            
-            SEARCHING_POP_UP = '/html/body/section[2]/div[3]/div/form/div[1]/div[2]'
+
+            SEARCHING_POP_UP = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]"
             try:
                 pop_up_window = self.driver.find_element(By.XPATH, SEARCHING_POP_UP)
             except Exception as e:
-                try: 
+                try:
                     continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
                     action = ActionChains(self.driver)
                     action.click(on_element=continue_search_button).perform()
@@ -507,7 +506,7 @@ class Orbis:
                     self.check_search_progress_bar()
                 except Exception as e:
                     print(f"Continue search button is not found. Continuing with the next step...")
-                    pass 
+                    pass
 
         print(f"{process_name}: search is finished, continuing with the next step")
 
@@ -915,7 +914,7 @@ class Orbis:
             print(f"Data download button failed to be clicked")
             self.__exit__()
             sys.exit(1)
-            
+
     def send_file_to_slack(self, file_path, channel, message):
         """
         Send a file to a Slack channel.
@@ -934,7 +933,6 @@ class Orbis:
             file=file_path,
             initial_comment=message,
         )
-
 
     def batch_search(self, input_file, process_name=""):
         """
@@ -1090,13 +1088,15 @@ class Orbis:
         self.click_export_button(process_name)
 
         self.wait_for_data_to_be_downloaded(excel_output_file_name, process_name)
-        
+
         time.sleep(2)
-        
-        if self.send_data_on_completion:
+
+        if self.send_data_on_completion.lower() == "true":
             message = f"Search for {input_file} is complete. Output of the batch search on orbis is attached."
-            self.send_file_to_slack(path.join(self.data_dir, f"{excel_output_file_name}.xlsx"), self.slack_channel, message)
-        
+            self.send_file_to_slack(
+                path.join(self.data_dir, f"{excel_output_file_name}.xlsx"), self.slack_channel, message
+            )
+
     # create a file likewe have data.csv file
     # company name;city;country;identifier
     def generate_data_for_guo(self, orig_orbis_data, file):
@@ -1203,8 +1203,7 @@ class Orbis:
         related_data["Financial Period"] = related_data["Agreement Date"].dt.year - 1
         related_data = related_data.rename(columns={"Licensee CIK 1_cleaned": "CIK"})
         related_data["CIK"] = related_data["CIK"].astype(str)
-        
-        
+
         df_orbis = df_orbis.rename(columns={"Other company ID number": "CIK"})
         df_orbis["CIK"] = df_orbis["CIK"].astype(str)
         df_merged = df_orbis.merge(related_data, on="CIK")

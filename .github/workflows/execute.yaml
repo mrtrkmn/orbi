@@ -120,6 +120,7 @@ jobs:
           python orbi/orbi.py
       env: 
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
+        SEND_DATA_ON_COMPLETION: ${{ github.event.inputs.send_data_on_completion }}
 
     - name: Send Job Failed Notification to Slack
       if: ${{ failure() && steps.batch_search.conclusion == 'failure' && github.event.inputs.notify == 'true' }}
@@ -151,7 +152,7 @@ jobs:
     - name: Send data to slack channel 
       if: ${{ success() && github.event.inputs.notify == 'true' }}
       run: |
-        python utils/utils.py --file_path  orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip is attached.'
+        python utils/utils.py --file_path orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip is attached.'
       continue-on-error: true
 
     - name: Upload data to artifact 
