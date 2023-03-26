@@ -22,6 +22,12 @@ on:
           '
         required: false
         default: sample_data.xlsx
+
+      send_data_on_completion:
+        description: 'To receive data on search completion, set this to true, otherwise all data will be zipped and sent to slack if slack notify is set to true.'
+        required: false
+        default: 'False'
+
       notify:
         description: 'Send notification to Slack'
         required: false
@@ -54,10 +60,11 @@ env:
 
   # slack specific
   SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+  SLACK_DATA_CHANNEL: ${{ secrets.SLACK_DATA_CHANNEL }}
   SLACK_USERNAME: orbi
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
   SLACK_FOOTER: '🤓 automated bot Orbi'
-  
+  SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
   # artifact specific 
   RETENTION_PERIOD: 90 # in days 
 
@@ -141,6 +148,12 @@ jobs:
     #   env:
     #     DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
 
+    - name: Send data to slack channel 
+      if: ${{ success() && github.event.inputs.notify == 'true' }}
+      run: |
+        python utils/utils.py --file_path  orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip is attached.'
+      continue-on-error: true
+
     - name: Upload data to artifact 
       uses: actions/upload-artifact@v3
       with:
@@ -150,7 +163,6 @@ jobs:
            ${{ env.LOG_DIR }}
            !'${{ env.DATA_DIR }}sample_data.xlsx'
         retention-days: ${{ env.RETENTION_PERIOD }}
-
 
     - name: Send data to Telegram 
       run: |
