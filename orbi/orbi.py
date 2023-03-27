@@ -2,7 +2,6 @@ import concurrent.futures
 import csv
 import hashlib
 import logging
-import multiprocessing
 import multiprocessing.pool
 import os
 import pathlib
@@ -13,9 +12,7 @@ from os import environ, path
 from threading import Thread
 
 import pandas as pd
-import requests
 import yaml
-from bs4 import BeautifulSoup
 from crawl import create_input_file_for_orbis_batch_search
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
@@ -24,7 +21,7 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import Select, WebDriverWait
 from slack_sdk import WebClient
 
 # from slack_sdk import WebClient
@@ -490,9 +487,15 @@ class Orbis:
         time.sleep(5)
         print("Changes are applied to the batch search after ; seperator is set")
 
-    def check_progress_text(self):
+    def check_progress_text(self, message):
+        CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
         try:
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
+            if progress_text.text == "" and message == "Search is not finished":
+                continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
+                action = ActionChains(self.driver)
+                action.click(on_element=continue_search_button).perform()
+                time.sleep(0.5)
             print(f"Message : {progress_text.text}")
         except Exception as e:
             print(f"Exception on check progress text {e}")
@@ -507,9 +510,7 @@ class Orbis:
         while warning_message.text == "Search is not finished":
             time.sleep(5)
             warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
-            logger.debug(f"{process_name}: {warning_message.text}")
-
-            self.check_progress_text()
+            self.check_progress_text(warning_message.text)
 
     def wait_until_data_is_processed(self, process_name=""):
         """
@@ -682,7 +683,7 @@ class Orbis:
         print(f"{process_name} delisting note is added")
 
     def select_only_first_value_from_popup(self, field):
-        try: 
+        try:
             time.sleep(1)
             # selects first value from the pop up
             POPUP_SELECT_VALUE = '//*[@id="ClassicOption"]/div/div[1]/div/div/ul/li[2]/label'
@@ -701,11 +702,10 @@ class Orbis:
         self.search_field(field, process_name)
         try:
             self.wait_until_clickable(CIK_NUMBER_VIEW)
-            
-            
+
             self.driver.find_element(By.XPATH, CIK_NUMBER_VIEW).click()
             self.select_only_first_value_from_popup(field)
-                
+
             logger.debug(f"{process_name} cik number is added")
         except Exception as e:
             print(e)
@@ -739,8 +739,8 @@ class Orbis:
             logger.debug(f"{process_name} popup save button is clicked")
         except Exception as e:
             print(e)
-            pass 
-        
+            pass
+
         time.sleep(0.5)
         print(f"{process_name} popup save button is clicked")
 
@@ -755,7 +755,7 @@ class Orbis:
             self.wait_until_clickable(US_SIC_SECONDARY_CODES)
             self.driver.find_element(By.XPATH, US_SIC_SECONDARY_CODES).click()
             self.select_only_first_value_from_popup(field)
-            
+
             time.sleep(0.5)
         except Exception as e:
             print(e)
@@ -1135,6 +1135,81 @@ class Orbis:
             initial_comment=message,
         )
 
+    def set_number_of_rows_in_view(self):
+        NUMBER_OF_ROWS_DROP_DOWN = '//*[@id="pageSize"]'
+
+        try:
+            self.wait_until_clickable(NUMBER_OF_ROWS_DROP_DOWN)
+            # set data-default-value to 100
+            drop = Select(self.driver.find_element(By.XPATH, NUMBER_OF_ROWS_DROP_DOWN))
+            drop.select_by_visible_text("50")
+        except Exception as e:
+            print("Not possible to set 100 in the page size dropdown")
+            pass
+
+    def find_no_matched_companies(self):
+        COMPANIES_TABLE = '//*[@id="main-content"]/div/form/table/tbody'
+        try:
+            companies_table = self.driver.find_element(By.XPATH, COMPANIES_TABLE)
+            companies = companies_table.find_elements(By.TAG_NAME, "tr")
+        except Exception as e:
+            print("Not possible to find no matched companies")
+            return
+
+        with open(path.join(self.data_dir, "not_matched_companies.txt"), "a") as f:
+            for company in companies:
+                company_text = company.text
+                if "\n" in company_text:
+                    print(f"company text [{company_text}] is splitting by new line")
+
+                    raw_company_info = company_text.split("\n")
+                    print(f"raw company info is {raw_company_info}")
+                    print(f"raw company info last element length is {len(raw_company_info[:-1])}")
+                    if (
+                        len(raw_company_info[-1]) != 1 or len(raw_company_info) == 1
+                    ):  # expecting to have a one letter A, B, C, D, E, ....
+                        f.write(raw_company_info[0])
+                        f.write("\n")
+            #   company_name, city, country, identifier, score = company_text.split("\n")
+
+    def go_to_page(self, current_page):
+        INPUT_FIELD_VALUE = "/html/body/section[2]/div[3]/div/form/div[2]/ul/li[2]/input"
+        try:
+            self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).clear()
+            self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(str(current_page))
+            self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(Keys.RETURN)
+        except Exception as e:
+            print("Setting up input field value to 1 failed")
+            pass
+
+    def iterate_over_pages(self):
+        # <input type="text" min="1" max="7" step="1" data-action="navigate" value="2" title="Number of page" data-type="int" data-validate="true" style="width:27.70551px">
+        # set input field value to 1
+        time.sleep(2)
+        current_page = 1
+        self.set_number_of_rows_in_view()
+        time.sleep(5)
+        self.go_to_page(current_page)
+
+        TOTAL_PAGE_XPATH = '//*[@id="main-content"]/div/form/div[2]/ul/li[2]/input'
+        try:
+            input_field = self.driver.find_element(By.XPATH, TOTAL_PAGE_XPATH)
+            max_value = input_field.get_attribute("max")
+            current_value = input_field.get_attribute("value")
+            if int(current_value) != current_page:
+                self.go_to_page(current_page)
+        except Exception as e:
+            print("Not possible to find total page")
+            print("Exception: ", e)
+            pass
+
+        while current_page != int(max_value):
+            self.find_no_matched_companies()
+            time.sleep(5)
+            current_page += 1
+            self.go_to_page(current_page)
+            time.sleep(5)
+
     def batch_search(self, input_file, process_name=""):
         """
         Perform a batch search on the Orbis database using the specified input file.
@@ -1174,6 +1249,8 @@ class Orbis:
         # wait until data is processed
         self.wait_until_data_is_processed(process_name)
 
+        self.iterate_over_pages()
+
         # when search is finished, click on the search results button
         self.view_search_results()
 
@@ -1189,6 +1266,8 @@ class Orbis:
                 time.sleep(0.5)
         except Exception as e:
             print(f"{process_name} had an exception: {e} ")
+
+        # todo: here take out companies which are not found in the search results
 
         self.add_remove_additional_columns(process_name)
 
@@ -1266,11 +1345,6 @@ class Orbis:
         self.check_page_for_errors(process_name)
 
         self.add_non_financial_items(process_name)
-
-        # apply changes button
-        # apply changes button
-
-        # apply changes button 
 
         self.wait_until_clickable(APPLY_CHANGES_BUTTON)
         self.driver.find_element(By.XPATH, APPLY_CHANGES_BUTTON).click()
