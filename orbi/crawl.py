@@ -335,7 +335,7 @@ def create_input_file_for_orbis_batch_search(source_file, output_file, is_licens
         df = df[cols]
         df = df.replace(r"\n", " ", regex=True)
         # create file on data folder
-        columns = ["company name", "city", "country", "identifier", "own id"]
+        columns = ["company name", "city", "country", "identifier"]
         # Set the maximum number of requests per second
 
         max_requests_per_second = 10  # defined by SEC.gov
@@ -374,14 +374,14 @@ def create_input_file_for_orbis_batch_search(source_file, output_file, is_licens
             for result in results:
                 try:
                     name = result["name"]
-                    own_id = generate_unique_id(name)
+                    # own_id = generate_unique_id(name)
                     city = result["addresses"]["business"]["city"]
                     country = result["addresses"]["business"]["stateOrCountryDescription"]
                     identifier = result["cik_number"]
                     if crawler.is_usa(country):
                         country = "United States of America"
                     # cik_number = result["cikNumber"]
-                    w.writerow([name, city, country, identifier, own_id])
+                    w.writerow([name, city, country, identifier])
                 except KeyError as e:
                     print(f"Failed to find the key: {e} for {result['name']}")
                     if result["cik_number"] == "":

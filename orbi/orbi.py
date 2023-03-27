@@ -86,6 +86,9 @@ class Orbis:
             self.email_address = config["orbis"]["email"]
             self.data_dir = config["data"]["path"]
             self.password = config["orbis"]["password"]
+            self.send_data_on_completion = config["slack"]["send_on_demand"]
+            self.slack_channel = config["slack"]["channel"]
+            self.slack_token = config["slack"]["token"]
             self.data_source = config["data"]["source"]
             self.license_data = path.join(self.data_dir, self.data_source)
             environ["DATA_DIR"] = self.data_dir  # only for local dev and data_dir
@@ -93,6 +96,7 @@ class Orbis:
             self.orbis_access_url = environ.get("ORBIS_ACCESS_URL")
             self.send_data_on_completion = environ.get("SEND_DATA_ON_COMPLETION")
             self.slack_channel = environ.get("SLACK_DATA_CHANNEL")
+            self.slack_token = environ.get("SLACK_TOKEN")
             self.orbis_batch_search_url = environ.get("ORBIS_BATCH_SEARCH_URL")
             self.orbis_logout_url = environ.get("ORBIS_LOGOUT_URL")
             self.email_address = environ.get("ORBIS_EMAIL_ADDRESS")
@@ -677,16 +681,31 @@ class Orbis:
         #     print(e)
         print(f"{process_name} delisting note is added")
 
+    def select_only_first_value_from_popup(self, field):
+        try: 
+            time.sleep(1)
+            # selects first value from the pop up
+            POPUP_SELECT_VALUE = '//*[@id="ClassicOption"]/div/div[1]/div/div/ul/li[2]/label'
+            self.wait_until_clickable(POPUP_SELECT_VALUE)
+            self.driver.find_element(By.XPATH, POPUP_SELECT_VALUE).click()
+        except Exception as e:
+            print(f"No pop up value is seen for {field} field")
+
     def add_other_company_id(self, process_name=""):
         """
         A step in the add remove additional columns page to add other company id information to the search results.
         :param process_name: The name of the process being performed.
         """
+        field = "Other Company ID"
 
-        self.search_field("Other Company ID", process_name)
+        self.search_field(field, process_name)
         try:
             self.wait_until_clickable(CIK_NUMBER_VIEW)
+            
+            
             self.driver.find_element(By.XPATH, CIK_NUMBER_VIEW).click()
+            self.select_only_first_value_from_popup(field)
+                
             logger.debug(f"{process_name} cik number is added")
         except Exception as e:
             print(e)
@@ -720,6 +739,8 @@ class Orbis:
             logger.debug(f"{process_name} popup save button is clicked")
         except Exception as e:
             print(e)
+            pass 
+        
         time.sleep(0.5)
         print(f"{process_name} popup save button is clicked")
 
@@ -728,11 +749,13 @@ class Orbis:
         A step in batch search process to add us sic code to the report
         :param process_name: The name of the process being performed.
         """
-
-        self.search_field("US SIC, secondary code(s)", process_name)
+        field = "US SIC, secondary code(s)"
+        self.search_field(field, process_name)
         try:
             self.wait_until_clickable(US_SIC_SECONDARY_CODES)
             self.driver.find_element(By.XPATH, US_SIC_SECONDARY_CODES).click()
+            self.select_only_first_value_from_popup(field)
+            
             time.sleep(0.5)
         except Exception as e:
             print(e)
@@ -1105,7 +1128,7 @@ class Orbis:
         None
         """
         logger.debug(f"Sending file {file_path} to Slack channel {channel}")
-        slack_client = WebClient(token=environ.get("SLACK_TOKEN"))
+        slack_client = WebClient(token=self.slack_token)
         slack_client.files_upload(
             channels=self.slack_channel,
             file=file_path,
@@ -1245,11 +1268,14 @@ class Orbis:
         self.add_non_financial_items(process_name)
 
         # apply changes button
+        # apply changes button
+
+        # apply changes button 
 
         self.wait_until_clickable(APPLY_CHANGES_BUTTON)
         self.driver.find_element(By.XPATH, APPLY_CHANGES_BUTTON).click()
 
-        time.sleep(3)
+        time.sleep(8)
 
         # currency select unit
         # self.wait_until_clickable(CURRENY_DROPDOWN)
@@ -1664,7 +1690,7 @@ def get_data_dir_from_config():
 if __name__ == "__main__":
     # initial checks
     if environ.get("LOCAL_DEV") == "True":
-        environ["DATA_SOURCE"] = "sample_data_big.xlsx"
+        environ["DATA_SOURCE"] = "sample_data.xlsx"
         environ["DATA_DIR"] = get_data_dir_from_config()["data"]["path"]
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
