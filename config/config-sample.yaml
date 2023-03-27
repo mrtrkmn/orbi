@@ -13,3 +13,9 @@ data:
   file: "< >" #  [OPTIONAL] program is generating this file automatically
   orbis: "< > " # [OPTIONAL] Program is generating this file automatically
   source: "< >" # [REQUIRED] Contains license information 
+
+slack:
+  notify: 'False'
+  send_on_demand: 'False'
+  channel: 'orbis-data'
+  token: '<hidden-token-received-from-slack-app>'
