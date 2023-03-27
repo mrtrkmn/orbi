@@ -163,6 +163,19 @@ The workflow is subject to change in time.
 --- 
 <img src="https://user-images.githubusercontent.com/13614433/213180207-3855244f-29f9-42c5-ab7f-9655f0c78479.png"  width="750" height="300">
 
+## Batch Search Flow Chart 
+
+The following flow chart shows the process of batch search done by Orbi.
+
+<details>
+<summary>Flowchart of the batch search functionality of Orbi.</summary>
+<pre>
+<img src="https://user-images.githubusercontent.com/13614433/227824562-0610cf9f-cd36-45df-b999-966e7d0a5cdd.png">
+</pre>
+</details>
+
+
+
 
 
 
