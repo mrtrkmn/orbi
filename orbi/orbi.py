@@ -487,30 +487,73 @@ class Orbis:
         time.sleep(5)
         print("Changes are applied to the batch search after ; seperator is set")
 
-    def check_progress_text(self, message):
-        CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
+    def click_continue_search(self):
+        
+        try: 
+            CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
+            continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
+            action = ActionChains(self.driver)
+            action.click(on_element=continue_search_button).perform()
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"Exception on clicking continue search {e}")
+            self.driver.refresh()
+            pass
+
+    def check_progress_text(self, is_search_continuing, d):
         try:
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
-            if progress_text.text == "" and message == "Search is not finished":
-                continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
-                action = ActionChains(self.driver)
-                action.click(on_element=continue_search_button).perform()
-                time.sleep(0.5)
+        except Exception as e:
+            print(f"Exception on finding progress text {e}")
+            time.sleep(2)
+            self.click_continue_search()
+        try:
+            if progress_text.text == "" and is_search_continuing:
+                print("Search is continuing, clicking continue search button")
+                self.click_continue_search()
+
+            if progress_text.text in d:
+                d[progress_text.text] += 1
+            else:
+                d[progress_text.text] = 1
+
+            if d[progress_text.text] > 5:
+                print("Seems search is stuck, refreshing the page")
+                self.driver.refresh()
+                time.sleep(3)
+                self.click_continue_search()
+                try:
+                    del d[progress_text.text]
+                except Exception as e:
+                    print(f"Exception on deleting progress text {e}")
+
             print(f"Message : {progress_text.text}")
         except Exception as e:
             print(f"Exception on check progress text {e}")
             pass
 
-    def check_search_progress_bar(self, process_name=""):
+    def check_search_progress_bar(self):
         """
         Checks the search progress bar to see if the search is finished.
         :param process_name: The name of the process being performed.
         """
-        warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
-        while warning_message.text == "Search is not finished":
+        search_status = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
+        CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
+        try:
+            continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
+            is_search_in_progress = continue_search_button.is_displayed()
+        except Exception as e:
+            is_search_in_progress = False
+            print(f"Exception on check search progress bar {e}")
+
+        d = {}
+
+        while search_status.text == "Search is not finished":
             time.sleep(5)
-            warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
-            self.check_progress_text(warning_message.text)
+            search_status = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
+            self.check_progress_text(self.is_search_continuing(), d)
+            if search_status.text != "Search is not finished" and is_search_in_progress:
+                self.click_continue_search()
 
     def wait_until_data_is_processed(self, process_name=""):
         """
@@ -518,23 +561,16 @@ class Orbis:
         :param process_name: The name of the process being performed.
         """
 
-        CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
-
         try:
             self.check_search_progress_bar()
             time.sleep(10)
         except Exception as e:
             logger.debug(f"{process_name}: search is not finished: stale element exception {e}")
-
             SEARCHING_POP_UP = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]"
             try:
                 pop_up_window = self.driver.find_element(By.XPATH, SEARCHING_POP_UP)
             except Exception as e:
                 try:
-                    continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
-                    action = ActionChains(self.driver)
-                    action.click(on_element=continue_search_button).perform()
-                    time.sleep(5)
                     print(f"Continue search button is clicked")
                     self.check_search_progress_bar()
                 except Exception as e:
@@ -1182,6 +1218,21 @@ class Orbis:
             print("Setting up input field value to 1 failed")
             pass
 
+    def is_search_continuing(self):
+        warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
+        CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
+        try:
+            continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
+            is_search_in_progress = continue_search_button.is_displayed()
+        except Exception as e:
+            is_search_in_progress = False
+            print(f"Exception on check search progress bar {e}")
+
+        if warning_message.text != "Search is not finished":
+            return is_search_in_progress
+        else:
+            return False
+
     def iterate_over_pages(self):
         # <input type="text" min="1" max="7" step="1" data-action="navigate" value="2" title="Number of page" data-type="int" data-validate="true" style="width:27.70551px">
         # set input field value to 1
@@ -1249,7 +1300,8 @@ class Orbis:
         # wait until data is processed
         self.wait_until_data_is_processed(process_name)
 
-        self.iterate_over_pages()
+        if not self.is_search_continuing():
+            self.iterate_over_pages()
 
         # when search is finished, click on the search results button
         self.view_search_results()
@@ -1764,7 +1816,7 @@ def get_data_dir_from_config():
 if __name__ == "__main__":
     # initial checks
     if environ.get("LOCAL_DEV") == "True":
-        environ["DATA_SOURCE"] = "sample_data.xlsx"
+        environ["DATA_SOURCE"] = "sample_data_big.xlsx"
         environ["DATA_DIR"] = get_data_dir_from_config()["data"]["path"]
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
