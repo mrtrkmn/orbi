@@ -488,8 +488,7 @@ class Orbis:
         print("Changes are applied to the batch search after ; seperator is set")
 
     def click_continue_search(self):
-        
-        try: 
+        try:
             CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
             continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
             action = ActionChains(self.driver)
@@ -508,7 +507,10 @@ class Orbis:
             time.sleep(2)
             self.click_continue_search()
         try:
-            if progress_text.text == "" and is_search_continuing:
+            if progress_text.text == "":
+                print("Progress text is empty, clicking continue search button")
+                self.click_continue_search()
+            if not is_search_continuing:
                 print("Search is continuing, clicking continue search button")
                 self.click_continue_search()
 
@@ -552,7 +554,7 @@ class Orbis:
             time.sleep(5)
             search_status = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
             self.check_progress_text(self.is_search_continuing(), d)
-            if search_status.text != "Search is not finished" and is_search_in_progress:
+            if search_status.text != "Search is not finished" and self.is_search_continuing():
                 self.click_continue_search()
 
     def wait_until_data_is_processed(self, process_name=""):
@@ -1219,7 +1221,6 @@ class Orbis:
             pass
 
     def is_search_continuing(self):
-        warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
         CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
         try:
             continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
@@ -1228,10 +1229,7 @@ class Orbis:
             is_search_in_progress = False
             print(f"Exception on check search progress bar {e}")
 
-        if warning_message.text != "Search is not finished":
-            return is_search_in_progress
-        else:
-            return False
+        return is_search_in_progress
 
     def iterate_over_pages(self):
         # <input type="text" min="1" max="7" step="1" data-action="navigate" value="2" title="Number of page" data-type="int" data-validate="true" style="width:27.70551px">
