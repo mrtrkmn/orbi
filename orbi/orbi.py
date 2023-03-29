@@ -488,16 +488,17 @@ class Orbis:
         print("Changes are applied to the batch search after ; seperator is set")
 
     def click_continue_search(self):
+        CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
+        self.driver.refresh()
+        time.sleep(5)
         try:
-            CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
             continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
             action = ActionChains(self.driver)
             action.click(on_element=continue_search_button).perform()
             time.sleep(0.5)
         except Exception as e:
             print(f"Exception on clicking continue search {e}")
-            self.driver.refresh()
-            pass
+            self.click_continue_search()
 
     def check_progress_text(self, is_search_continuing, d):
         try:
@@ -521,9 +522,9 @@ class Orbis:
 
             if d[progress_text.text] > 5:
                 print("Seems search is stuck, refreshing the page")
-                self.driver.refresh()
                 time.sleep(3)
                 self.click_continue_search()
+
                 try:
                     del d[progress_text.text]
                 except Exception as e:
