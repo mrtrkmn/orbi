@@ -92,3 +92,5 @@ SEARCHING_POP_UP = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]"
 WARNING_MESSAGE_HEADER = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]"
 
 NOT_MATCHED_COMPANIES_FILE_NAME = "not_matched_companies.txt"
+
+NOT_MATCHED_COMPANIES_FILE_NAME = "not_matched_companies.txt"
