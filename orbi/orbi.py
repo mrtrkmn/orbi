@@ -1,20 +1,14 @@
 import ast
 import concurrent.futures
-import csv
 import hashlib
 import logging
-import multiprocessing.pool
-import os
 import pathlib
-import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from os import environ, path
-from threading import Thread
 
 import pandas as pd
 import yaml
-from crawl import create_input_file_for_orbis_batch_search
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import ActionChains
@@ -33,7 +27,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 
-
 # initialize logger
 
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -41,7 +34,6 @@ timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 # log_file = pathlib.Path(getenv("LOG_DIR")).joinpath(rf'{timestamp}_orbis.log')
 # get current working directory
 log_file = pathlib.Path.cwd().joinpath(rf"logs/{timestamp}_orbis.log")
-
 
 logging.basicConfig(
     filename=log_file,
@@ -1247,16 +1239,24 @@ class Orbis:
             print("Not possible to find no matched companies")
             return
 
-        with open(path.join(self.data_dir, "not_matched_companies.txt"), "a") as f:
+        with open(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), "a") as f:
             for company in companies:
                 try:
                     matched_score = company.find_element(By.ID, "matchedScore")
                 except Exception as e:
                     td_values = company.find_elements(By.CLASS_NAME, "td")
                     for td in td_values:
+                        if td.get_attribute("data-id") == "Name":
+                            try:
+                                f.write(td.text)
+                                f.write("\n")
+                            except Exception as e:
+                                print(e)
+
                         company_name = td.find_element(By.CLASS_NAME, "name").text
                         f.write(company_name)
                         f.write("\n")
+
                     continue
                 if matched_score.text == "" or matched_score is None:
                     f.write(company.text)
@@ -1898,7 +1898,7 @@ if __name__ == "__main__":
         environ["DATA_DIR"] = get_data_dir_from_config()["data"]["path"]
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
-            exit(f"Config file {path.abspath(environ.get('CONFIG_PATH')) } does not exist")
+            exit(f"Config file {path.abspath(environ.get('CONFIG_PATH'))} does not exist")
 
     # start to work
 
