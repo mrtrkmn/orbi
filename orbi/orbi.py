@@ -1244,16 +1244,23 @@ class Orbis:
         )
 
     def set_number_of_rows_in_view(self):
+        """
+        Sets the number of rows in view to number_of_rows in the dropdown menu according to number of inputs. 
+        """
         try:
             self.wait_until_clickable(NUMBER_OF_ROWS_DROP_DOWN)
             # set data-default-value to 100
             drop = Select(self.driver.find_element(By.XPATH, NUMBER_OF_ROWS_DROP_DOWN))
+            # todo: make this part dynamic
             drop.select_by_visible_text("10")
         except Exception as e:
             print("Not possible to set 100 in the page size dropdown")
             pass
 
-    def find_no_matched_companies(self, file_name):
+    def find_no_matched_companies(self):
+        """
+        Finds all companies which does not have any score found on Orbis
+        """
         try:
             companies_table = self.driver.find_element(By.XPATH, COMPANIES_TABLE)
             companies = companies_table.find_elements(By.TAG_NAME, "tr")
@@ -1285,6 +1292,10 @@ class Orbis:
                     f.write("\n")
 
     def go_to_page(self, current_page):
+        """
+        Iterates over pages in the search result 
+        :param current_page: current page number
+        """
         try:
             self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).clear()
             self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(str(current_page))
@@ -1294,6 +1305,9 @@ class Orbis:
             pass
 
     def is_search_continuing(self):
+        """
+        Checks if the search is still in progress or not
+        """
         try:
             continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
             is_search_in_progress = continue_search_button.is_displayed()
@@ -1306,6 +1320,10 @@ class Orbis:
     def iterate_over_pages(self, file_name):
         # <input type="text" min="1" max="7" step="1" data-action="navigate" value="2" title="Number of page" data-type="int" data-validate="true" style="width:27.70551px">
         # set input field value to 1
+        """
+        Iterates over pages in the search result to fetch companies which does not have any score found on Orbis
+        """
+
         time.sleep(2)
         current_page = 1
         self.set_number_of_rows_in_view()
@@ -1325,14 +1343,14 @@ class Orbis:
         with open(path.join(self.data_dir, "not_matched_companies.txt"), "a") as f:
             f.write(f"List of companies not matched in {file_name}: \n")
             f.write("-------------------------------------------- \n")
-        self.find_no_matched_companies(file_name)
+        self.find_no_matched_companies()
 
         while current_page != int(max_value):
             time.sleep(5)
             current_page += 1
             self.go_to_page(current_page)
             time.sleep(5)
-            self.find_no_matched_companies(file_name)
+            self.find_no_matched_companies()
 
     def batch_search(self, input_file, process_name=""):
         """
@@ -1577,6 +1595,9 @@ class Orbis:
         return df
 
     def check_file_existence(self, file_name):
+        """
+        Checks if the file exists in the data directory.
+        """
         full_file_path = path.join(self.data_dir, file_name)
         if not path.exists(full_file_path):
             print(f"File {file_name} does not exists, no continuing further !! ")
