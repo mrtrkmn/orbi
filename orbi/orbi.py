@@ -502,7 +502,8 @@ class Orbis:
     def refresh_page_at_stuck(self):
         try:
             time.sleep(5)
-            self.driver.refresh()
+            self.driver.execute_script("window.location.reload()")
+            time.sleep(5)
         except Exception as e:
             print(f"Exception on refreshing page {e}")
 
@@ -512,8 +513,8 @@ class Orbis:
         except Exception as e:
             print(f"Exception on finding progress text {e}")
             self.refresh_page_at_stuck()
-            time.sleep(5)
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
+            self.check_search_progress_bar()
 
         if len(progress_text.text.strip()) < 1:
             self.click_continue_search()
@@ -526,11 +527,10 @@ class Orbis:
         if d[progress_text.text] > 10:
             print("Seems search is stuck, refreshing the page")
             ## execute js script
-            if not self.check_continue_later_button():
-                print("clicking Continue later button")
-                self.driver.execute_script("document.getElementById('batchMatch').click()")
-            time.sleep(7)
+            self.driver.execute_script("window.location.reload()")
+            time.sleep(10)
             d[progress_text.text] = 0
+            self.check_search_progress_bar()
 
         print(f"Message : {progress_text.text}")
 
@@ -592,15 +592,28 @@ class Orbis:
 
         try:
             search_status = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
+            is_search_status_displayed = search_status.is_displayed()
+            print(f"is_search_status_displayed: {is_search_status_displayed}")
         except Exception as e:
             self.driver.refresh()
             time.sleep(5)
+            pass
+
+        if not is_search_status_displayed and self.check_warning_message_header():
+            print("search is not finished yet, clicking continue search button")
+            self.click_continue_search()
+            time.sleep(7)
+            self.check_search_progress_bar()
+
         is_total_count_reached = self.count_total_search()
+        print(f"is_total_count_reached: {is_total_count_reached}")
         # waiting for the search to be finished
         while is_total_count_reached:
             time.sleep(5)
             self.check_progress_text(self.count__entity_occurence)
             is_total_count_reached = self.count_total_search()
+
+        print(f"search is finished, continuing with the next step")
 
     def wait_until_data_is_processed(self, process_name=""):
         """
@@ -619,8 +632,7 @@ class Orbis:
             except Exception as e:
                 print(f"Refresh page as search is not finished")
                 self.refresh_page_at_stuck()
-
-        print(f"{process_name}: search is finished, continuing with the next step")
+                self.check_search_progress_bar()
 
     def view_search_results(self):
         """
@@ -1221,7 +1233,7 @@ class Orbis:
             self.wait_until_clickable(NUMBER_OF_ROWS_DROP_DOWN)
             # set data-default-value to 100
             drop = Select(self.driver.find_element(By.XPATH, NUMBER_OF_ROWS_DROP_DOWN))
-            drop.select_by_visible_text("50")
+            drop.select_by_visible_text("10")
         except Exception as e:
             print("Not possible to set 100 in the page size dropdown")
             pass
@@ -1236,24 +1248,19 @@ class Orbis:
             return
 
         with open(path.join(self.data_dir, "not_matched_companies.txt"), "a") as f:
-            f.write(f"List of companies not matched in {file_name}: \n")
-            f.write("-------------------------------------------- \n")
             for company in companies:
-                company_text = company.text
-                if "\n" in company_text:
-                    print(f"company text [{company_text}] is splitting by new line")
-
-                    raw_company_info = company_text.split("\n")
-                    print(f"raw company info is {raw_company_info}")
-                    print(f"raw company info last element length is {len(raw_company_info[:-1])}")
-                    if (
-                        len(raw_company_info[-1]) != 1 or len(raw_company_info) == 1
-                    ):  # expecting to have a one letter A, B, C, D, E, ....
-                        f.write(raw_company_info[0])
+                try:
+                    matched_score = company.find_element(By.ID, "matchedScore")
+                except Exception as e:
+                    td_values = company.find_elements(By.CLASS_NAME, "td")
+                    for td in td_values:
+                        company_name = td.find_element(By.CLASS_NAME, "name").text
+                        f.write(company_name)
                         f.write("\n")
-            f.write("-------------------------------------------- \n")
-            #   company_name, city, country, identifier, score = company_text.split("\n")
-            #   f.write(company_name)
+                    continue
+                if matched_score.text == "" or matched_score is None:
+                    f.write(company.text)
+                    f.write("\n")
 
     def go_to_page(self, current_page):
         INPUT_FIELD_VALUE = "/html/body/section[2]/div[3]/div/form/div[2]/ul/li[2]/input"
@@ -1296,12 +1303,17 @@ class Orbis:
             print("Not possible to find total page")
             print("Exception: ", e)
 
+        with open(path.join(self.data_dir, "not_matched_companies.txt"), "a") as f:
+            f.write(f"List of companies not matched in {file_name}: \n")
+            f.write("-------------------------------------------- \n")
+        self.find_no_matched_companies(file_name)
+
         while current_page != int(max_value):
-            self.find_no_matched_companies(file_name)
             time.sleep(5)
             current_page += 1
             self.go_to_page(current_page)
             time.sleep(5)
+            self.find_no_matched_companies(file_name)
 
     def batch_search(self, input_file, process_name=""):
         """
@@ -1342,7 +1354,7 @@ class Orbis:
         # wait until data is processed
         self.wait_until_data_is_processed(process_name)
 
-        if not self.is_search_continuing() and not self.check_continue_later_button():
+        if not self.count_total_search():
             self.iterate_over_pages(file_name=input_file)
 
         # when search is finished, click on the search results button
