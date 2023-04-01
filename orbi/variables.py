@@ -78,3 +78,5 @@ APPLY_CHANGES_BUTTON = '//*[@id="main-content"]/div/div[3]/form/div/input[2]'
 EXCEL_BUTTON = "/html/body/section[2]/div[1]/div[2]/div[2]/div[2]/ul/li[3]/a"
 EXPORT_BUTTON = "/html/body/section[2]/div[5]/form/div[2]/a[2]"
 POPUP_DOWNLOAD_BUTTON = "/html/body/section[2]/div[6]/div[3]/a"
+
+NOT_MATCHED_COMPANIES_FILE_NAME = "not_matched_companies.txt"
