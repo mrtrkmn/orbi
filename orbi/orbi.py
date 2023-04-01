@@ -1,19 +1,14 @@
+import ast
 import concurrent.futures
-import csv
 import hashlib
 import logging
-import multiprocessing.pool
-import os
 import pathlib
-import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from os import environ, path
-from threading import Thread
 
 import pandas as pd
 import yaml
-from crawl import create_input_file_for_orbis_batch_search
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import ActionChains
@@ -32,7 +27,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 
-
 # initialize logger
 
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -40,7 +34,6 @@ timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 # log_file = pathlib.Path(getenv("LOG_DIR")).joinpath(rf'{timestamp}_orbis.log')
 # get current working directory
 log_file = pathlib.Path.cwd().joinpath(rf"logs/{timestamp}_orbis.log")
-
 
 logging.basicConfig(
     filename=log_file,
@@ -118,6 +111,7 @@ class Orbis:
             "Trade description (English)": TRADE_DESC,
             "BvD sectors": BVD_SECTORS,
         }
+        self.count__entity_occurence = {}
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
@@ -149,7 +143,7 @@ class Orbis:
                 self.chrome_options.add_argument("--headless=new")
 
             self.chrome_options.add_argument("--disable-dev-shm-usage")
-            # self.chrome_options.add_argument("--window-size=1920,1080")
+            self.chrome_options.add_argument("--window-size=1920,1080")
             self.chrome_options.add_argument("--disable-gpu")
 
             prefs = {"download.default_directory": self.data_dir}
@@ -488,74 +482,153 @@ class Orbis:
         print("Changes are applied to the batch search after ; seperator is set")
 
     def click_continue_search(self):
+        CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
         try:
-            CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
             continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
             action = ActionChains(self.driver)
             action.click(on_element=continue_search_button).perform()
             time.sleep(0.5)
         except Exception as e:
             print(f"Exception on clicking continue search {e}")
-            self.driver.refresh()
-            pass
 
-    def check_progress_text(self, is_search_continuing, d):
+    def refresh_page_at_stuck(self):
+        """
+        Refreshes the page if the search is stuck, by Javascript method. 
+        """
+
+        try:
+            time.sleep(5)
+            self.driver.execute_script("window.location.reload()")
+            time.sleep(5)
+        except Exception as e:
+            print(f"Exception on refreshing page {e}")
+
+    def check_progress_text(self, d):
+        """
+        Checks the progress text in the batch search page and refreshes the page if the search is stuck.
+        Additionally, it calls check_search_progress_bar() method to check the progress bar.
+        :param d: A dictionary to keep count of the progress text. 
+
+        """
+
         try:
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
         except Exception as e:
             print(f"Exception on finding progress text {e}")
-            time.sleep(2)
+            self.refresh_page_at_stuck()
+            progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
+            self.check_search_progress_bar()
+
+        if len(progress_text.text.strip()) < 1:
             self.click_continue_search()
+
+        if progress_text.text in d:
+            d[progress_text.text] += 1
+        else:
+            d[progress_text.text] = 1
+
+        if d[progress_text.text] > 10:
+            print("Seems search is stuck, refreshing the page")
+            ## execute js script
+            self.driver.execute_script("window.location.reload()")
+            time.sleep(10)
+            d[progress_text.text] = 0
+            self.check_search_progress_bar()
+
+        print(f"Message : {progress_text.text}")
+
+    def check_continue_later_button(self):
+        """
+        Checks if the continue later button is present in the batch search page.
+        If the pop up window is not present, then this method returns False.
+        """
+        
         try:
-            if progress_text.text == "":
-                print("Progress text is empty, clicking continue search button")
-                self.click_continue_search()
-            if not is_search_continuing:
-                print("Search is continuing, clicking continue search button")
-                self.click_continue_search()
-
-            if progress_text.text in d:
-                d[progress_text.text] += 1
-            else:
-                d[progress_text.text] = 1
-
-            if d[progress_text.text] > 5:
-                print("Seems search is stuck, refreshing the page")
-                self.driver.refresh()
-                time.sleep(3)
-                self.click_continue_search()
-                try:
-                    del d[progress_text.text]
-                except Exception as e:
-                    print(f"Exception on deleting progress text {e}")
-
-            print(f"Message : {progress_text.text}")
+            self.driver.find_element(By.XPATH, CONTINUE_LATER_BUTTON)
+            return True
         except Exception as e:
-            print(f"Exception on check progress text {e}")
-            pass
+            print(f"Exception on finding continue later button {e}")
+            return False
+
+    def count_total_search(self):
+        """
+        This method counts the total number of searches performed in the batch search page.
+        This check enable us to know if the search is over or not, important !
+        """ 
+        # get parameters from batch widget
+        batch_search_info = self.driver.find_element(By.XPATH, BATCH_WIDGET_XPATH)
+        all_search_result_data = batch_search_info.get_attribute("data-parameters")
+        # convert string to dictionary
+        all_search_result_data = ast.literal_eval(all_search_result_data)
+        current_item_number = all_search_result_data["current"]
+        total_matched_count = all_search_result_data["totalMatchedCount"]
+        total_unmatched_count = all_search_result_data["totalUnMatchedCount"]
+        total_count = all_search_result_data["totalCount"]
+        print(
+            f"Info about batch search: current item number: {current_item_number}, total matched count: {total_matched_count}, total unmatched count: {total_unmatched_count}, total count: {total_count}"
+        )
+
+        if current_item_number + 1 != total_count:
+            print("Search is not finished yet")
+            if not self.check_continue_later_button():
+                print("clicking Continue later button")
+                # refresh page with js
+                self.driver.execute_script("window.location.reload();")
+            time.sleep(10)
+            return True
+        else:
+            return False
+
+    def check_warning_message_header(self):
+        """
+        Checks warning message header to see if the search is finished.
+        Returns False if the warning message header is not present.
+
+        (Warning message is not present when the search is finished.)
+        """
+
+        try:
+            warning_message_info = self.driver.find_element(By.XPATH, WARNING_MESSAGE_HEADER)
+            is_search_going_on = warning_message_info.is_displayed()
+            return is_search_going_on
+        except Exception as e:
+            print(f"Exception on finding warning message header {e}")
+            return False
 
     def check_search_progress_bar(self):
         """
         Checks the search progress bar to see if the search is finished.
         :param process_name: The name of the process being performed.
         """
-        search_status = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
-        CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
-        try:
-            continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
-            is_search_in_progress = continue_search_button.is_displayed()
-        except Exception as e:
-            is_search_in_progress = False
-            print(f"Exception on check search progress bar {e}")
-
-        d = {}
-
-        while search_status.text == "Search is not finished":
+        if self.check_warning_message_header() and not self.check_continue_later_button():
             time.sleep(5)
+            # self.click_continue_search()
+            self.driver.execute_script("document.getElementById('batchMatch').click()")
+
+        try:
             search_status = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
-            self.check_progress_text(self.is_search_continuing(), d)
-            if search_status.text != "Search is not finished" and self.is_search_continuing():
-                self.click_continue_search()
+            is_search_status_displayed = search_status.is_displayed()
+            print(f"is_search_status_displayed: {is_search_status_displayed}")
+        except Exception as e:
+            self.driver.refresh()
+            time.sleep(5)
+            pass
+
+        if not is_search_status_displayed and self.check_warning_message_header():
+            print("search is not finished yet, clicking continue search button")
+            self.click_continue_search()
+            time.sleep(7)
+            self.check_search_progress_bar()
+
+        is_total_count_reached = self.count_total_search()
+        print(f"is_total_count_reached: {is_total_count_reached}")
+        # waiting for the search to be finished
+        while is_total_count_reached:
+            time.sleep(5)
+            self.check_progress_text(self.count__entity_occurence)
+            is_total_count_reached = self.count_total_search()
+
+        print(f"search is finished, continuing with the next step")
 
     def wait_until_data_is_processed(self, process_name=""):
         """
@@ -568,18 +641,13 @@ class Orbis:
             time.sleep(10)
         except Exception as e:
             logger.debug(f"{process_name}: search is not finished: stale element exception {e}")
-            SEARCHING_POP_UP = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]"
+            
             try:
                 pop_up_window = self.driver.find_element(By.XPATH, SEARCHING_POP_UP)
             except Exception as e:
-                try:
-                    print(f"Continue search button is clicked")
-                    self.check_search_progress_bar()
-                except Exception as e:
-                    print(f"Continue search button is not found. Continuing with the next step...")
-                    pass
-
-        print(f"{process_name}: search is finished, continuing with the next step")
+                print(f"Refresh page as search is not finished")
+                self.refresh_page_at_stuck()
+                self.check_search_progress_bar()
 
     def view_search_results(self):
         """
@@ -721,10 +789,13 @@ class Orbis:
         print(f"{process_name} delisting note is added")
 
     def select_only_first_value_from_popup(self, field):
+        """
+        Selects only the first value from the pop up.
+        :param field: The field for which the pop up is opened.
+        """
         try:
             time.sleep(1)
             # selects first value from the pop up
-            POPUP_SELECT_VALUE = '//*[@id="ClassicOption"]/div/div[1]/div/div/ul/li[2]/label'
             self.wait_until_clickable(POPUP_SELECT_VALUE)
             self.driver.find_element(By.XPATH, POPUP_SELECT_VALUE).click()
         except Exception as e:
@@ -1120,7 +1191,6 @@ class Orbis:
 
         """
 
-        POPUP_CLOSE_BUTTON = "/html/body/section[2]/div[6]/div[1]/img"
         self.wait_until_clickable(POPUP_DOWNLOAD_BUTTON)
         try:
             while True:
@@ -1174,19 +1244,23 @@ class Orbis:
         )
 
     def set_number_of_rows_in_view(self):
-        NUMBER_OF_ROWS_DROP_DOWN = '//*[@id="pageSize"]'
-
+        """
+        Sets the number of rows in view to number_of_rows in the dropdown menu according to number of inputs. 
+        """
         try:
             self.wait_until_clickable(NUMBER_OF_ROWS_DROP_DOWN)
             # set data-default-value to 100
             drop = Select(self.driver.find_element(By.XPATH, NUMBER_OF_ROWS_DROP_DOWN))
-            drop.select_by_visible_text("50")
+            # todo: make this part dynamic
+            drop.select_by_visible_text("10")
         except Exception as e:
             print("Not possible to set 100 in the page size dropdown")
             pass
 
     def find_no_matched_companies(self):
-        COMPANIES_TABLE = '//*[@id="main-content"]/div/form/table/tbody'
+        """
+        Finds all companies which does not have any score found on Orbis
+        """
         try:
             companies_table = self.driver.find_element(By.XPATH, COMPANIES_TABLE)
             companies = companies_table.find_elements(By.TAG_NAME, "tr")
@@ -1194,24 +1268,34 @@ class Orbis:
             print("Not possible to find no matched companies")
             return
 
-        with open(path.join(self.data_dir, "not_matched_companies.txt"), "a") as f:
+        with open(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), "a") as f:
             for company in companies:
-                company_text = company.text
-                if "\n" in company_text:
-                    print(f"company text [{company_text}] is splitting by new line")
+                try:
+                    matched_score = company.find_element(By.ID, "matchedScore")
+                except Exception as e:
+                    td_values = company.find_elements(By.CLASS_NAME, "td")
+                    for td in td_values:
+                        if td.get_attribute("data-id") == "Name":
+                            try:
+                                f.write(td.text)
+                                f.write("\n")
+                            except Exception as e:
+                                print(e)
 
-                    raw_company_info = company_text.split("\n")
-                    print(f"raw company info is {raw_company_info}")
-                    print(f"raw company info last element length is {len(raw_company_info[:-1])}")
-                    if (
-                        len(raw_company_info[-1]) != 1 or len(raw_company_info) == 1
-                    ):  # expecting to have a one letter A, B, C, D, E, ....
-                        f.write(raw_company_info[0])
+                        company_name = td.find_element(By.CLASS_NAME, "name").text
+                        f.write(company_name)
                         f.write("\n")
-            #   company_name, city, country, identifier, score = company_text.split("\n")
+
+                    continue
+                if matched_score.text == "" or matched_score is None:
+                    f.write(company.text)
+                    f.write("\n")
 
     def go_to_page(self, current_page):
-        INPUT_FIELD_VALUE = "/html/body/section[2]/div[3]/div/form/div[2]/ul/li[2]/input"
+        """
+        Iterates over pages in the search result 
+        :param current_page: current page number
+        """
         try:
             self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).clear()
             self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(str(current_page))
@@ -1221,7 +1305,9 @@ class Orbis:
             pass
 
     def is_search_continuing(self):
-        CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
+        """
+        Checks if the search is still in progress or not
+        """
         try:
             continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
             is_search_in_progress = continue_search_button.is_displayed()
@@ -1231,16 +1317,19 @@ class Orbis:
 
         return is_search_in_progress
 
-    def iterate_over_pages(self):
+    def iterate_over_pages(self, file_name):
         # <input type="text" min="1" max="7" step="1" data-action="navigate" value="2" title="Number of page" data-type="int" data-validate="true" style="width:27.70551px">
         # set input field value to 1
+        """
+        Iterates over pages in the search result to fetch companies which does not have any score found on Orbis
+        """
+
         time.sleep(2)
         current_page = 1
         self.set_number_of_rows_in_view()
         time.sleep(5)
         self.go_to_page(current_page)
 
-        TOTAL_PAGE_XPATH = '//*[@id="main-content"]/div/form/div[2]/ul/li[2]/input'
         try:
             input_field = self.driver.find_element(By.XPATH, TOTAL_PAGE_XPATH)
             max_value = input_field.get_attribute("max")
@@ -1250,14 +1339,18 @@ class Orbis:
         except Exception as e:
             print("Not possible to find total page")
             print("Exception: ", e)
-            pass
+
+        with open(path.join(self.data_dir, "not_matched_companies.txt"), "a") as f:
+            f.write(f"List of companies not matched in {file_name}: \n")
+            f.write("-------------------------------------------- \n")
+        self.find_no_matched_companies()
 
         while current_page != int(max_value):
-            self.find_no_matched_companies()
             time.sleep(5)
             current_page += 1
             self.go_to_page(current_page)
             time.sleep(5)
+            self.find_no_matched_companies()
 
     def batch_search(self, input_file, process_name=""):
         """
@@ -1298,13 +1391,14 @@ class Orbis:
         # wait until data is processed
         self.wait_until_data_is_processed(process_name)
 
-        if not self.is_search_continuing():
-            self.iterate_over_pages()
+        if not self.count_total_search():
+            self.iterate_over_pages(file_name=input_file)
 
         # when search is finished, click on the search results button
-        self.view_search_results()
-
-        PROCESSING_DIV = "//div[@class='processing-overlay']"
+        if not self.count_total_search():
+            self.view_search_results()
+        else: 
+            self.check_search_progress_bar()
 
         try:
             processing_div_main = self.driver.find_element(By.XPATH, PROCESSING_DIV)
@@ -1501,6 +1595,9 @@ class Orbis:
         return df
 
     def check_file_existence(self, file_name):
+        """
+        Checks if the file exists in the data directory.
+        """
         full_file_path = path.join(self.data_dir, file_name)
         if not path.exists(full_file_path):
             print(f"File {file_name} does not exists, no continuing further !! ")
@@ -1796,6 +1893,30 @@ def save_screenshot(driver, file_name):
     logger.debug(f"Screenshot saved to {file_name}.png")
 
 
+def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee):
+    df = pd.read_excel(excel_file, engine="openpyxl")
+    if is_licensee:
+        df = df.drop_duplicates(subset=["Licensee 1_cleaned"])
+        df = df[["Licensee 1_cleaned"]]
+        df.rename(columns={"Licensee 1_cleaned": "Company name"}, inplace=True)
+    else:
+        df = df.drop_duplicates(subset=["Licensor 1_cleaned"])
+        df = df[["Licensor 1_cleaned"]]
+        df.rename(columns={"Licensor 1_cleaned": "Company name"}, inplace=True)
+
+    # remove string quotes from any column
+
+    # df["identifier"] = df["identifier"].str.replace(r"\D", "")
+    # for col in df.columns:
+    #     df[col] = df[col].str.replace('"', "")
+    df = df.apply(lambda x: x.str.strip())
+    # remove string quotes from any column
+    df = df.apply(lambda x: x.str.replace('"', ""))
+    # remove new line characters from any column
+    df = df.apply(lambda x: x.str.replace(r"\r", ""))
+    df.to_csv(output_csv_file, sep=";", index=False)
+
+
 def get_data_dir_from_config():
     """
     Get the data directory from the config file.
@@ -1818,7 +1939,7 @@ if __name__ == "__main__":
         environ["DATA_DIR"] = get_data_dir_from_config()["data"]["path"]
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
-            exit(f"Config file {path.abspath(environ.get('CONFIG_PATH')) } does not exist")
+            exit(f"Config file {path.abspath(environ.get('CONFIG_PATH'))} does not exist")
 
     # start to work
 
@@ -1848,7 +1969,7 @@ if __name__ == "__main__":
     if os.path.exists(path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name)):
         print(f"Licensee file exists: {orbis_data_licensee_file_name}. Skipping to re-create it.")
     else:
-        create_input_file_for_orbis_batch_search(
+        extract_company_data_from_raw_excel(
             path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
             path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
             is_licensee=True,
@@ -1860,7 +1981,7 @@ if __name__ == "__main__":
         print(f"Licensor file exists: {orbis_data_licensor_file_name}. Skipping to re-create it.")
     else:
         # generates csv file for licensor
-        create_input_file_for_orbis_batch_search(
+        extract_company_data_from_raw_excel(
             path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
             path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
             is_licensee=False,
