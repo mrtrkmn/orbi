@@ -22,10 +22,16 @@ on:
           '
         required: false
         default: sample_data.xlsx
+
+      send_data_on_completion:
+        description: 'To receive data on search completion, set this to true, otherwise all data will be zipped and sent to slack if slack notify is set to true.'
+        required: false
+        default: 'False'
+
       notify:
         description: 'Send notification to Slack'
         required: false
-        default: 'true'
+        default: 'True'
 
   repository_dispatch:
     types: crawl-data
@@ -40,7 +46,7 @@ env:
 
   # crawler specific
   DATA_DIR: /home/runner/work/orbi/orbi/data/
-  LOG_DIR: /home/runner/work/orbi/orbi/logs/
+  LOG_DIR:/home/runner/work/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
   MAX_RUN_ATTEMPTS: 3  # if it is unable to successfull in this number tries, the crawler will exit with failure
@@ -50,14 +56,15 @@ env:
   # AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
   # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
   # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
-  # SOURCE_DIR:  /home/runner/work/orbi/orbi/
+  # SOURCE_DIR: /home/runner/work/orbi/orbi/
 
   # slack specific
   SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+  SLACK_DATA_CHANNEL: ${{ secrets.SLACK_DATA_CHANNEL }}
   SLACK_USERNAME: orbi
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
   SLACK_FOOTER: '🤓 automated bot Orbi'
-  
+  SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
   # artifact specific 
   RETENTION_PERIOD: 90 # in days 
 
@@ -113,6 +120,7 @@ jobs:
           python orbi/orbi.py
       env: 
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
+        SEND_DATA_ON_COMPLETION: ${{ github.event.inputs.send_data_on_completion }}
 
     - name: Send Job Failed Notification to Slack
       if: ${{ failure() && steps.batch_search.conclusion == 'failure' && github.event.inputs.notify == 'true' }}
@@ -141,10 +149,11 @@ jobs:
     #   env:
     #     DEST_DIR: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
 
-    - name: Send data to Telegram 
+    - name: Send data to slack channel 
+      if: ${{ success() && github.event.inputs.notify == 'true' }}
       run: |
-        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
-        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F text="Data is ready ! Link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}" https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
+        python utils/utils.py --file_path orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip is attached.'
+      continue-on-error: true
 
     - name: Upload data to artifact 
       uses: actions/upload-artifact@v3
@@ -156,11 +165,19 @@ jobs:
            !'${{ env.DATA_DIR }}sample_data.xlsx'
         retention-days: ${{ env.RETENTION_PERIOD }}
 
+    - name: Send data to Telegram 
+      run: |
+        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F text="Data is ready ! Link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}" https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
+      continue-on-error: true
+
     - name:  Send Job Success Notification to Slack
+      if: ${{ success() && github.event.inputs.notify == 'true' }}
       uses: rtCamp/action-slack-notify@v2.2.0
       env:
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-        SLACK_MESSAGE: ':rocket: Operation is completed data link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}/ For more information check README page of the project: https://github.com/mrtrkmn/orbi'
+        SLACK_MESSAGE: ':rocket: Data is available to download from artifacts: link to artifacts: htttps://github.com/mrtrkmn/orbi/actions/runs/${{ github.run_id }}'
+        # SLACK_MESSAGE: ':rocket: Operation is completed data link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}/ For more information check README page of the project: https://github.com/mrtrkmn/orbi'
         SLACK_TITLE: Data is ready to download append file name to the link !
         SLACK_USERNAME: orbi
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}

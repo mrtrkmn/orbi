@@ -1,29 +1,23 @@
+import ast
 import concurrent.futures
-import csv
 import hashlib
 import logging
-import multiprocessing
-import multiprocessing.pool
-import os
 import pathlib
-import sys
 import time
 from datetime import datetime
 from os import environ, path
-from threading import Thread
 
 import pandas as pd
-import requests
 import yaml
-from bs4 import BeautifulSoup
-from crawl import create_input_file_for_orbis_batch_search
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import Select, WebDriverWait
+from slack_sdk import WebClient
 
 # from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
@@ -33,7 +27,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 
-
 # initialize logger
 
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -41,7 +34,6 @@ timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 # log_file = pathlib.Path(getenv("LOG_DIR")).joinpath(rf'{timestamp}_orbis.log')
 # get current working directory
 log_file = pathlib.Path.cwd().joinpath(rf"logs/{timestamp}_orbis.log")
-
 
 logging.basicConfig(
     filename=log_file,
@@ -84,11 +76,17 @@ class Orbis:
             self.email_address = config["orbis"]["email"]
             self.data_dir = config["data"]["path"]
             self.password = config["orbis"]["password"]
+            self.send_data_on_completion = config["slack"]["send_on_demand"]
+            self.slack_channel = config["slack"]["channel"]
+            self.slack_token = config["slack"]["token"]
             self.data_source = config["data"]["source"]
             self.license_data = path.join(self.data_dir, self.data_source)
             environ["DATA_DIR"] = self.data_dir  # only for local dev and data_dir
         else:
             self.orbis_access_url = environ.get("ORBIS_ACCESS_URL")
+            self.send_data_on_completion = environ.get("SEND_DATA_ON_COMPLETION")
+            self.slack_channel = environ.get("SLACK_DATA_CHANNEL")
+            self.slack_token = environ.get("SLACK_TOKEN")
             self.orbis_batch_search_url = environ.get("ORBIS_BATCH_SEARCH_URL")
             self.orbis_logout_url = environ.get("ORBIS_LOGOUT_URL")
             self.email_address = environ.get("ORBIS_EMAIL_ADDRESS")
@@ -113,6 +111,7 @@ class Orbis:
             "Trade description (English)": TRADE_DESC,
             "BvD sectors": BVD_SECTORS,
         }
+        self.count__entity_occurence = {}
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
@@ -142,11 +141,10 @@ class Orbis:
             print("-" * 50)
             if environ.get("LOCAL_DEV") != "True":
                 self.chrome_options.add_argument("--headless=new")
-            # self.chrome_options.add_argument("--no-sandbox")
-            # self.chrome_options.add_argument("--disable-dev-shm-usage")
-            # 
-            # self.chrome_options.add_argument("--window-size=1920,1080")
-            # self.chrome_options.add_argument("--disable-gpu")
+
+            self.chrome_options.add_argument("--disable-dev-shm-usage")
+            self.chrome_options.add_argument("--window-size=1920,1080")
+            self.chrome_options.add_argument("--disable-gpu")
 
             prefs = {"download.default_directory": self.data_dir}
             # add user agent to avoid bot detection
@@ -422,6 +420,11 @@ class Orbis:
             logger.debug(e)
 
     def check_exists_by_xpath(self, XPATH):
+        """
+        Checks if an element exists on the page.
+        :param XPATH: The xpath of the element to check for.
+        """
+
         try:
             self.driver.find_element(By.XPATH, XPATH)
         except NoSuchElementException:
@@ -429,6 +432,11 @@ class Orbis:
         return True
 
     def upload_csv_file_to_orbis(self, file_path):
+        """
+        Uploads a csv file to Orbis for batch search.
+        :param file_path: The path to the csv file to be uploaded.
+        """
+
         self.wait_until_clickable(DRAG_DROP_BUTTON)
         self.driver.find_element(By.XPATH, DRAG_DROP_BUTTON).click()
 
@@ -441,6 +449,11 @@ class Orbis:
         print(f"File {file_path} is uploaded to Orbis for batch search")
 
     def select_field_seperator(self, separator, process_name=""):
+        """
+        In the batch search page, selects the field seperator to be used for the csv file.
+        :param separator: The xpath of the field seperator to be selected.
+        :param process_name: The name of the process being performed.
+        """
         self.wait_until_clickable(separator)
 
         self.driver.find_element(By.XPATH, separator).clear()
@@ -455,6 +468,10 @@ class Orbis:
         print(f"{process_name} field seperator is set to ;")
 
     def apply_changes(self):
+        """
+        Clicks the apply button in the batch search page.
+        """
+
         self.wait_until_clickable(APPLY_BUTTON)
         try:
             apply_button = self.driver.find_element(By.XPATH, APPLY_BUTTON)
@@ -464,41 +481,179 @@ class Orbis:
         time.sleep(5)
         print("Changes are applied to the batch search after ; seperator is set")
 
-    def wait_until_data_is_processed(self, process_name=""):
-        # try:
-        #     WebDriverWait(self.driver, 30 * 60).until(
-        #         EC.invisibility_of_element_located((By.XPATH, SEARCH_PROGRESS_BAR))
-        #     )
-        # except Exception as exp:
-        #     print(f"Exception is occured while waiting for invisibility of search progress bar")
-
-        # SEARCH_BOX = '//*[@id="Processing"]'
+    def click_continue_search(self):
         CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
-        PROGRESS_POP_UP_WINDOWS = '//*[@id="Processing"]'
+        try:
+            continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
+            action = ActionChains(self.driver)
+            action.click(on_element=continue_search_button).perform()
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"Exception on clicking continue search {e}")
+
+    def refresh_page_at_stuck(self):
+        """
+        Refreshes the page if the search is stuck, by Javascript method. 
+        """
 
         try:
-            warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
-            while warning_message.text == "Search is not finished":
-                time.sleep(5)
-                warning_message = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
-                logger.debug(f"{process_name}: {warning_message.text}")
-                print(f"Search is under progress:\nMessage : {warning_message.text}")
+            time.sleep(5)
+            self.driver.execute_script("window.location.reload()")
+            time.sleep(5)
+        except Exception as e:
+            print(f"Exception on refreshing page {e}")
 
-                try:
-                    pop_up_window = self.driver.find_element(By.XPATH, PROGRESS_POP_UP_WINDOWS)
-                    pop_up_window_display_menu = pop_up_window.value_of_css_property("display")
-                    if pop_up_window_display_menu != "block":
-                        continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
-                        continue_search_button.send_keys(Keys.RETURN)
-                except Exception as e:
-                    print(f"Continue search button is not found {e}")
+    def check_progress_text(self, d):
+        """
+        Checks the progress text in the batch search page and refreshes the page if the search is stuck.
+        Additionally, it calls check_search_progress_bar() method to check the progress bar.
+        :param d: A dictionary to keep count of the progress text. 
 
+        """
+
+        try:
+            progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
+        except Exception as e:
+            print(f"Exception on finding progress text {e}")
+            self.refresh_page_at_stuck()
+            progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
+            self.check_search_progress_bar()
+
+        if len(progress_text.text.strip()) < 1:
+            self.click_continue_search()
+
+        if progress_text.text in d:
+            d[progress_text.text] += 1
+        else:
+            d[progress_text.text] = 1
+
+        if d[progress_text.text] > 10:
+            print("Seems search is stuck, refreshing the page")
+            ## execute js script
+            self.driver.execute_script("window.location.reload()")
+            time.sleep(10)
+            d[progress_text.text] = 0
+            self.check_search_progress_bar()
+
+        print(f"Message : {progress_text.text}")
+
+    def check_continue_later_button(self):
+        """
+        Checks if the continue later button is present in the batch search page.
+        If the pop up window is not present, then this method returns False.
+        """
+        
+        try:
+            self.driver.find_element(By.XPATH, CONTINUE_LATER_BUTTON)
+            return True
+        except Exception as e:
+            print(f"Exception on finding continue later button {e}")
+            return False
+
+    def count_total_search(self):
+        """
+        This method counts the total number of searches performed in the batch search page.
+        This check enable us to know if the search is over or not, important !
+        """ 
+        # get parameters from batch widget
+        batch_search_info = self.driver.find_element(By.XPATH, BATCH_WIDGET_XPATH)
+        all_search_result_data = batch_search_info.get_attribute("data-parameters")
+        # convert string to dictionary
+        all_search_result_data = ast.literal_eval(all_search_result_data)
+        current_item_number = all_search_result_data["current"]
+        total_matched_count = all_search_result_data["totalMatchedCount"]
+        total_unmatched_count = all_search_result_data["totalUnMatchedCount"]
+        total_count = all_search_result_data["totalCount"]
+        print(
+            f"Info about batch search: current item number: {current_item_number}, total matched count: {total_matched_count}, total unmatched count: {total_unmatched_count}, total count: {total_count}"
+        )
+
+        if current_item_number + 1 != total_count:
+            print("Search is not finished yet")
+            if not self.check_continue_later_button():
+                print("clicking Continue later button")
+                # refresh page with js
+                self.driver.execute_script("window.location.reload();")
+            time.sleep(10)
+            return True
+        else:
+            return False
+
+    def check_warning_message_header(self):
+        """
+        Checks warning message header to see if the search is finished.
+        Returns False if the warning message header is not present.
+
+        (Warning message is not present when the search is finished.)
+        """
+
+        try:
+            warning_message_info = self.driver.find_element(By.XPATH, WARNING_MESSAGE_HEADER)
+            is_search_going_on = warning_message_info.is_displayed()
+            return is_search_going_on
+        except Exception as e:
+            print(f"Exception on finding warning message header {e}")
+            return False
+
+    def check_search_progress_bar(self):
+        """
+        Checks the search progress bar to see if the search is finished.
+        :param process_name: The name of the process being performed.
+        """
+        if self.check_warning_message_header() and not self.check_continue_later_button():
+            time.sleep(5)
+            # self.click_continue_search()
+            self.driver.execute_script("document.getElementById('batchMatch').click()")
+
+        try:
+            search_status = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
+            is_search_status_displayed = search_status.is_displayed()
+            print(f"is_search_status_displayed: {is_search_status_displayed}")
+        except Exception as e:
+            self.driver.refresh()
+            time.sleep(5)
+            pass
+
+        if not is_search_status_displayed and self.check_warning_message_header():
+            print("search is not finished yet, clicking continue search button")
+            self.click_continue_search()
+            time.sleep(7)
+            self.check_search_progress_bar()
+
+        is_total_count_reached = self.count_total_search()
+        print(f"is_total_count_reached: {is_total_count_reached}")
+        # waiting for the search to be finished
+        while is_total_count_reached:
+            time.sleep(5)
+            self.check_progress_text(self.count__entity_occurence)
+            is_total_count_reached = self.count_total_search()
+
+        print(f"search is finished, continuing with the next step")
+
+    def wait_until_data_is_processed(self, process_name=""):
+        """
+        Waits until the data is processed. This is used to wait until the search is finished.
+        :param process_name: The name of the process being performed.
+        """
+
+        try:
+            self.check_search_progress_bar()
             time.sleep(10)
         except Exception as e:
             logger.debug(f"{process_name}: search is not finished: stale element exception {e}")
-        print(f"{process_name}: search is finished, continuing with the next step")
+            
+            try:
+                pop_up_window = self.driver.find_element(By.XPATH, SEARCHING_POP_UP)
+            except Exception as e:
+                print(f"Refresh page as search is not finished")
+                self.refresh_page_at_stuck()
+                self.check_search_progress_bar()
 
     def view_search_results(self):
+        """
+        Clicks the view results button in the batch search page when the search is finished.
+        """
+
         self.wait_until_clickable(VIEW_RESULTS_BUTTON)
         view_result_sub_url = self.driver.find_element(By.XPATH, VIEW_RESULTS_BUTTON)
         view_result_sub_url.send_keys(Keys.RETURN)
@@ -506,6 +661,11 @@ class Orbis:
         print("Search results are displayed / View Results button is clicked")
 
     def add_remove_additional_columns(self, process_name=""):
+        """
+        Opens new page to add or remove additional columns in the search results.
+        :param process_name: The name of the process being performed.
+        """
+
         try:
             self.wait_until_clickable(ADD_REMOVE_COLUMNS_VIEW)
             self.driver.find_element(By.XPATH, ADD_REMOVE_COLUMNS_VIEW).click()
@@ -520,6 +680,11 @@ class Orbis:
         print(f"{process_name} Add Remove Columns view is opened")
 
     def add_contact_info(self, process_name=""):
+        """
+        A step in the add remove additional columns page to add contact information to the search results.
+        :param process_name: The name of the process being performed.
+        """
+
         try:
             self.wait_until_clickable(CONTACT_INFORMATION)
             self.driver.find_element(By.XPATH, CONTACT_INFORMATION).click()
@@ -531,6 +696,10 @@ class Orbis:
         print(f"{process_name} Contact Information is added to the search results")
 
     def clear_search_input(self):
+        """
+        Clears the search input in the add remove additional columns page.
+        """
+
         self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
         try:
             search_input = self.driver.find_element(By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS)
@@ -541,6 +710,11 @@ class Orbis:
         print("Search input is cleared")
 
     def search_field(self, field, process_name=""):
+        """
+        Searches the given field in the add remove additional columns page and adds it.
+        :param field: The field to be searched.
+        """
+
         self.wait_until_clickable(SEARCH_INPUT_ADD_RM_COLUMNS)
 
         try:
@@ -555,6 +729,11 @@ class Orbis:
         print(f"{process_name} {field} is searched")
 
     def add_city_info(self, process_name=""):
+        """
+        A step in the add remove additional columns page to add city information to the search results.
+        :param process_name: The name of the process being performed.
+        """
+
         self.search_field("City", process_name)
         try:
             # add city
@@ -572,6 +751,11 @@ class Orbis:
         print(f"{process_name} city is added")
 
     def add_country_info(self, process_name=""):
+        """
+        A step in the add remove additional columns page to add country information to the search results.
+        :param process_name: The name of the process being performed.
+        """
+
         self.search_field("Country", process_name)
         try:
             self.wait_until_clickable(COUNTRY_COLUMN)
@@ -584,6 +768,11 @@ class Orbis:
         print(f"{process_name} country is added")
 
     def add_delisting_note(self, process_name=""):
+        """
+        A step in the add remove additional columns page to add delisting note information to the search results.
+        :param process_name: The name of the process being performed.
+        """
+
         self.search_field("Delisting Note", process_name)
 
         try:
@@ -599,11 +788,33 @@ class Orbis:
         #     print(e)
         print(f"{process_name} delisting note is added")
 
+    def select_only_first_value_from_popup(self, field):
+        """
+        Selects only the first value from the pop up.
+        :param field: The field for which the pop up is opened.
+        """
+        try:
+            time.sleep(1)
+            # selects first value from the pop up
+            self.wait_until_clickable(POPUP_SELECT_VALUE)
+            self.driver.find_element(By.XPATH, POPUP_SELECT_VALUE).click()
+        except Exception as e:
+            print(f"No pop up value is seen for {field} field")
+
     def add_other_company_id(self, process_name=""):
-        self.search_field("Other Company ID", process_name)
+        """
+        A step in the add remove additional columns page to add other company id information to the search results.
+        :param process_name: The name of the process being performed.
+        """
+        field = "Other Company ID"
+
+        self.search_field(field, process_name)
         try:
             self.wait_until_clickable(CIK_NUMBER_VIEW)
+
             self.driver.find_element(By.XPATH, CIK_NUMBER_VIEW).click()
+            self.select_only_first_value_from_popup(field)
+
             logger.debug(f"{process_name} cik number is added")
         except Exception as e:
             print(e)
@@ -612,6 +823,10 @@ class Orbis:
         print(f"{process_name} other company id is added")
 
     def add_identification_number(self, process_name=""):
+        """
+        A step in the add remove additional columns page to add identification number information to the search results.
+        :param process_name: The name of the process being performed.
+        """
         try:
             self.wait_until_clickable(IDENTIFICATION_NUMBER_VIEW)
             self.driver.find_element(By.XPATH, IDENTIFICATION_NUMBER_VIEW).click()
@@ -622,20 +837,34 @@ class Orbis:
         print(f"{process_name} identification number is added")
 
     def click_pop_up_save_button(self, process_name):
+        """
+        Saves the changes made in the add remove additional columns page.
+        :param process_name: The name of the process being performed.
+        """
+
         try:
             self.wait_until_clickable(POPUP_SAVE_BUTTON)
             self.driver.find_element(By.XPATH, POPUP_SAVE_BUTTON).click()
             logger.debug(f"{process_name} popup save button is clicked")
         except Exception as e:
             print(e)
+            pass
+
         time.sleep(0.5)
         print(f"{process_name} popup save button is clicked")
 
     def add_us_sic_code(self, process_name):
-        self.search_field("US SIC, secondary code(s)", process_name)
+        """
+        A step in batch search process to add us sic code to the report
+        :param process_name: The name of the process being performed.
+        """
+        field = "US SIC, secondary code(s)"
+        self.search_field(field, process_name)
         try:
             self.wait_until_clickable(US_SIC_SECONDARY_CODES)
             self.driver.find_element(By.XPATH, US_SIC_SECONDARY_CODES).click()
+            self.select_only_first_value_from_popup(field)
+
             time.sleep(0.5)
         except Exception as e:
             print(e)
@@ -644,6 +873,11 @@ class Orbis:
         print(f"{process_name} us sic secondary codes is added")
 
     def add_op_revenue(self):
+        """
+        A step in batch search process to add op revenue to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(OP_REVENUE_OK_BUTTON)
             self.driver.find_element(By.XPATH, OP_REVENUE_OK_BUTTON).click()
@@ -653,6 +887,11 @@ class Orbis:
         print("op revenue is added")
 
     def add_desc_history_info(self, process_name=""):
+        """
+        A step in batch search process to add description history to the report
+        :param process_name:
+        """
+
         self.search_field("Description History", process_name)
         try:
             self.wait_until_clickable(DESCRIPTION_HISTORY)
@@ -664,6 +903,11 @@ class Orbis:
         print(f"{process_name} description history is added")
 
     def add_history_info(self, process_name=""):
+        """
+        A step in batch search process to add history to the report
+        :param process_name:
+        """
+
         self.search_field("History", process_name)
         try:
             self.wait_until_clickable(HISTORY)
@@ -675,6 +919,11 @@ class Orbis:
         print(f"{process_name} history is added")
 
     def add_bvd_id(self, process_name=""):
+        """
+        A step in batch search process to add bvd id number to the report
+        :param process_name:
+        """
+
         self.search_field("BVD ID number", process_name)
         try:
             self.wait_until_clickable(BVD_ID_NUMBER_ADD)
@@ -687,6 +936,11 @@ class Orbis:
         self.clear_search_input()
 
     def add_orbis_id_number(self, process_name=""):
+        """
+        A step in batch search process to add orbis id number to the report
+        :param process_name:
+        """
+
         self.search_field("Orbis ID number", process_name)
         try:
             self.wait_until_clickable(ORBIS_ID_NUMBER_ADD)
@@ -699,6 +953,11 @@ class Orbis:
         print(f"{process_name} orbis id number is added")
 
     def add_ownership_info(self, process_name=""):
+        """
+        A step in batch search process to add ownership data to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(OWNERSHIP_COLUMN)
             self.driver.find_element(By.XPATH, OWNERSHIP_COLUMN).click()
@@ -709,6 +968,11 @@ class Orbis:
         print(f"{process_name} ownership data is added")
 
     def add_shareholders_info(self, process_name=""):
+        """
+        A step in batch search process to add shareholders data to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(SHAREHOLDERS_COLUMN)
             self.driver.find_element(By.XPATH, SHAREHOLDERS_COLUMN).click()
@@ -719,6 +983,11 @@ class Orbis:
         print(f"{process_name} shareholders data is added")
 
     def add_guo_owner_info(self, process_name=""):
+        """
+        A step in batch search process to add global ultimate owner data to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(GUO_COLUMN)
             self.driver.find_element(By.XPATH, GUO_COLUMN).click()
@@ -729,6 +998,11 @@ class Orbis:
         print(f"{process_name} guo data is added")
 
     def add_guo_name_info(self, process_name=""):
+        """
+        A step in batch search process to add global ultimate owner name to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(GUO_NAME_INFO)
             self.driver.find_element(By.XPATH, GUO_NAME_INFO).click()
@@ -739,6 +1013,11 @@ class Orbis:
         print(f"{process_name} global ultimate owner name is added")
 
     def add_immediate_parent_company_name(self, process_name=""):
+        """
+        A step in batch search process to add immediate parent company name to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(IMMEDIATE_PARENT_COMPANY_NAME)
             self.driver.find_element(By.XPATH, IMMEDIATE_PARENT_COMPANY_NAME).click()
@@ -749,6 +1028,11 @@ class Orbis:
         print(f"{process_name} immediate parent company name is added")
 
     def add_ish_name(self, process_name=""):
+        """
+        A step in batch search process to add ish name to the report
+        :param process_name:
+        """
+
         try:
             self.wait_until_clickable(ISH_NAME)
             self.driver.find_element(By.XPATH, ISH_NAME).click()
@@ -759,6 +1043,11 @@ class Orbis:
         print(f"{process_name} ish name is added")
 
     def check_page_for_errors(self, process_name=""):
+        """
+        Checks if page is loaded correctly. If not, refreshes the page and checks again.
+        :param process_name:
+        """
+
         print("Cheking page for errors")
         attempts = 0
         max_attempts = 10
@@ -778,6 +1067,11 @@ class Orbis:
         print("Cheking page for errors finished")
 
     def add_non_financial_items(self, process_name=""):
+        """
+        Search on non-financial items and add them to the end result through add/remove column option in Orbis.
+        :param process_name:
+        """
+
         print(f"{process_name} adding non financial items")
         non_financial_items = list(set(self.variables.keys()) - set(self.get_financial_columns()))
         is_checked = False
@@ -815,6 +1109,9 @@ class Orbis:
         print(f"{process_name} all items are added: {self.variables.keys()}")
 
     def update_name_of_output_file(self, output_file_name, process_name=""):
+        """
+        Updates the name of the output file when exporting the data as an excel file.
+        """
         self.wait_until_clickable(EXCEL_EXPORT_NAME_FIELD)
         try:
             excel_filename_input = self.driver.find_element(By.XPATH, EXCEL_EXPORT_NAME_FIELD)
@@ -827,6 +1124,10 @@ class Orbis:
         print(f"{process_name} excel file name is entered")
 
     def click_export_button(self, process_name=""):
+        """
+        Clicks the export button to export the data as an excel file.
+        """
+
         self.wait_until_clickable(EXPORT_BUTTON)
         try:
             self.driver.find_element(By.XPATH, EXPORT_BUTTON).click()
@@ -836,6 +1137,10 @@ class Orbis:
         print(f"{process_name} export button is clicked")
 
     def select_million_units(self):
+        """
+        Selects million units from the dropdown menu.
+        """
+
         time.sleep(7)
         try:
             self.wait_until_clickable(MILLION_UNITS)
@@ -846,6 +1151,10 @@ class Orbis:
         print("million units is selected")
 
     def click_dropdown_button(self):
+        """
+        Clicks the dropdown button to select the items to be exported.
+        """
+
         time.sleep(3)
         # click apply from dropdown
         try:
@@ -858,6 +1167,11 @@ class Orbis:
         print("dropdown apply button is clicked")
 
     def click_excel_button(self, process_name):
+        """
+        A step in batch search process. Clicks the excel button to download the data.
+        :param process_name: name of the process
+        """
+
         time.sleep(2)
         try:
             self.wait_until_clickable(EXCEL_BUTTON)
@@ -869,7 +1183,14 @@ class Orbis:
         print(f"{process_name} excel button is clicked")
 
     def wait_for_data_to_be_downloaded(self, excel_output_file_name, process_name=""):
-        POPUP_CLOSE_BUTTON = "/html/body/section[2]/div[6]/div[1]/img"
+        """
+        At the end of the batch search, the data needs to be downloaded. This function waits for the data to be downloaded.
+
+        :param excel_output_file_name: name of the excel file to be downloaded
+        :param process_name: name of the process
+
+        """
+
         self.wait_until_clickable(POPUP_DOWNLOAD_BUTTON)
         try:
             while True:
@@ -902,6 +1223,134 @@ class Orbis:
             print(f"Data download button failed to be clicked")
             self.__exit__()
             sys.exit(1)
+
+    def send_file_to_slack(self, file_path, channel, message):
+        """
+        Send a file to a Slack channel.
+
+        :param file_path (str): The path to the file to send.
+        :param channel (str): The channel to send the file to.
+        :param message (str): The message to send with the file.
+
+        :return:
+        None
+        """
+        logger.debug(f"Sending file {file_path} to Slack channel {channel}")
+        slack_client = WebClient(token=self.slack_token)
+        slack_client.files_upload(
+            channels=self.slack_channel,
+            file=file_path,
+            initial_comment=message,
+        )
+
+    def set_number_of_rows_in_view(self):
+        """
+        Sets the number of rows in view to number_of_rows in the dropdown menu according to number of inputs. 
+        """
+        try:
+            self.wait_until_clickable(NUMBER_OF_ROWS_DROP_DOWN)
+            # set data-default-value to 100
+            drop = Select(self.driver.find_element(By.XPATH, NUMBER_OF_ROWS_DROP_DOWN))
+            # todo: make this part dynamic
+            drop.select_by_visible_text("10")
+        except Exception as e:
+            print("Not possible to set 100 in the page size dropdown")
+            pass
+
+    def find_no_matched_companies(self):
+        """
+        Finds all companies which does not have any score found on Orbis
+        """
+        try:
+            companies_table = self.driver.find_element(By.XPATH, COMPANIES_TABLE)
+            companies = companies_table.find_elements(By.TAG_NAME, "tr")
+        except Exception as e:
+            print("Not possible to find no matched companies")
+            return
+
+        with open(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), "a") as f:
+            for company in companies:
+                try:
+                    matched_score = company.find_element(By.ID, "matchedScore")
+                except Exception as e:
+                    td_values = company.find_elements(By.CLASS_NAME, "td")
+                    for td in td_values:
+                        if td.get_attribute("data-id") == "Name":
+                            try:
+                                f.write(td.text)
+                                f.write("\n")
+                            except Exception as e:
+                                print(e)
+
+                        company_name = td.find_element(By.CLASS_NAME, "name").text
+                        f.write(company_name)
+                        f.write("\n")
+
+                    continue
+                if matched_score.text == "" or matched_score is None:
+                    f.write(company.text)
+                    f.write("\n")
+
+    def go_to_page(self, current_page):
+        """
+        Iterates over pages in the search result 
+        :param current_page: current page number
+        """
+        try:
+            self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).clear()
+            self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(str(current_page))
+            self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(Keys.RETURN)
+        except Exception as e:
+            print("Setting up input field value to 1 failed")
+            pass
+
+    def is_search_continuing(self):
+        """
+        Checks if the search is still in progress or not
+        """
+        try:
+            continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
+            is_search_in_progress = continue_search_button.is_displayed()
+        except Exception as e:
+            is_search_in_progress = False
+            print(f"Exception on check search progress bar {e}")
+
+        return is_search_in_progress
+
+    def iterate_over_pages(self, file_name):
+        # <input type="text" min="1" max="7" step="1" data-action="navigate" value="2" title="Number of page" data-type="int" data-validate="true" style="width:27.70551px">
+        # set input field value to 1
+        """
+        Iterates over pages in the search result to fetch companies which does not have any score found on Orbis
+        """
+
+        time.sleep(2)
+        current_page = 1
+        self.set_number_of_rows_in_view()
+        time.sleep(5)
+        self.go_to_page(current_page)
+
+        try:
+            input_field = self.driver.find_element(By.XPATH, TOTAL_PAGE_XPATH)
+            max_value = input_field.get_attribute("max")
+            current_value = input_field.get_attribute("value")
+            if int(current_value) != current_page:
+                self.go_to_page(current_page)
+        except Exception as e:
+            print("Not possible to find total page")
+            print("Exception: ", e)
+
+        with open(path.join(self.data_dir, "not_matched_companies.txt"), "a") as f:
+            f.write(f"List of companies not matched in {file_name}: \n")
+            f.write("-------------------------------------------- \n")
+        self.find_no_matched_companies()
+
+        while current_page != int(max_value):
+            time.sleep(5)
+            current_page += 1
+            self.go_to_page(current_page)
+            time.sleep(5)
+            self.find_no_matched_companies()
 
     def batch_search(self, input_file, process_name=""):
         """
@@ -942,31 +1391,14 @@ class Orbis:
         # wait until data is processed
         self.wait_until_data_is_processed(process_name)
 
+        if not self.count_total_search():
+            self.iterate_over_pages(file_name=input_file)
+
         # when search is finished, click on the search results button
-        self.view_search_results()
-
-        # this is used to wait until processing overlay is gone
-
-        # try:
-        #     main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
-        #     main_content_style = main_content_div.value_of_css_property(
-        #         'max-width')
-
-        #     while main_content_style != "none":
-        #         main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
-        #         main_content_style = main_content_div.value_of_css_property(
-        #             'max-width')
-        #         logger.debug(
-        #             f"{process_name}main content style is {main_content_style}")
-        #         time.sleep(0.5)
-        # except Exception as e:
-        #     logger.debug(e)
-
-        # wait until the processing overlay is gone
-
-        # check whether the processing overlay is gone
-
-        PROCESSING_DIV = "//div[@class='processing-overlay']"
+        if not self.count_total_search():
+            self.view_search_results()
+        else: 
+            self.check_search_progress_bar()
 
         try:
             processing_div_main = self.driver.find_element(By.XPATH, PROCESSING_DIV)
@@ -978,6 +1410,8 @@ class Orbis:
                 time.sleep(0.5)
         except Exception as e:
             print(f"{process_name} had an exception: {e} ")
+
+        # todo: here take out companies which are not found in the search results
 
         self.add_remove_additional_columns(process_name)
 
@@ -1056,12 +1490,10 @@ class Orbis:
 
         self.add_non_financial_items(process_name)
 
-        # apply changes button
-
         self.wait_until_clickable(APPLY_CHANGES_BUTTON)
         self.driver.find_element(By.XPATH, APPLY_CHANGES_BUTTON).click()
 
-        time.sleep(3)
+        time.sleep(8)
 
         # currency select unit
         # self.wait_until_clickable(CURRENY_DROPDOWN)
@@ -1078,6 +1510,14 @@ class Orbis:
         self.click_export_button(process_name)
 
         self.wait_for_data_to_be_downloaded(excel_output_file_name, process_name)
+
+        time.sleep(2)
+
+        if self.send_data_on_completion.lower() == "true":
+            message = f"Search for {input_file} is complete. Output of the batch search on orbis is attached."
+            self.send_file_to_slack(
+                path.join(self.data_dir, f"{excel_output_file_name}.xlsx"), self.slack_channel, message
+            )
 
     # create a file likewe have data.csv file
     # company name;city;country;identifier
@@ -1155,6 +1595,9 @@ class Orbis:
         return df
 
     def check_file_existence(self, file_name):
+        """
+        Checks if the file exists in the data directory.
+        """
         full_file_path = path.join(self.data_dir, file_name)
         if not path.exists(full_file_path):
             print(f"File {file_name} does not exists, no continuing further !! ")
@@ -1185,6 +1628,7 @@ class Orbis:
         related_data["Financial Period"] = related_data["Agreement Date"].dt.year - 1
         related_data = related_data.rename(columns={"Licensee CIK 1_cleaned": "CIK"})
         related_data["CIK"] = related_data["CIK"].astype(str)
+
         df_orbis = df_orbis.rename(columns={"Other company ID number": "CIK"})
         df_orbis["CIK"] = df_orbis["CIK"].astype(str)
         df_merged = df_orbis.merge(related_data, on="CIK")
@@ -1328,7 +1772,7 @@ def aggregate_data(orbis_file, aggregated_output_file):
             return
 
         df_licensee_data = orbis.read_xlxs_file(orbis.license_data, sheet_name="")
-        df_orbis_data = orbis.read_xlxs_file(orbis_file, sheet_name="")
+        df_orbis_data = orbis.read_xlxs_file(orbis_file, sheet_name="Results")
         df_licensee = orbis.strip_new_lines(df_licensee_data)
         df_result = orbis.prepare_data(df_licensee, df_orbis_data)
         orbis.to_xlsx(df_result, aggregate_output_file)
@@ -1377,10 +1821,10 @@ def post_process_data(excel_file):
 
     if not path.exists(excel_file):
         logger.debug(f"{excel_file} does not exist")
-        return
+        pass
 
     logger.debug(f"post process data for {excel_file}")
-    df = pd.read_excel(excel_file, sheet_name="Sheet1", engine="openpyxl")
+    df = pd.read_excel(excel_file, sheet_name="Results", engine="openpyxl")
     df = df[df["Orbis ID number"].notna()]
     # drop Unnamed: 0 column and duplicate columns
     df = df.drop(columns=["Unnamed: 0"])
@@ -1449,6 +1893,30 @@ def save_screenshot(driver, file_name):
     logger.debug(f"Screenshot saved to {file_name}.png")
 
 
+def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee):
+    df = pd.read_excel(excel_file, engine="openpyxl")
+    if is_licensee:
+        df = df.drop_duplicates(subset=["Licensee 1_cleaned"])
+        df = df[["Licensee 1_cleaned"]]
+        df.rename(columns={"Licensee 1_cleaned": "Company name"}, inplace=True)
+    else:
+        df = df.drop_duplicates(subset=["Licensor 1_cleaned"])
+        df = df[["Licensor 1_cleaned"]]
+        df.rename(columns={"Licensor 1_cleaned": "Company name"}, inplace=True)
+
+    # remove string quotes from any column
+
+    # df["identifier"] = df["identifier"].str.replace(r"\D", "")
+    # for col in df.columns:
+    #     df[col] = df[col].str.replace('"', "")
+    df = df.apply(lambda x: x.str.strip())
+    # remove string quotes from any column
+    df = df.apply(lambda x: x.str.replace('"', ""))
+    # remove new line characters from any column
+    df = df.apply(lambda x: x.str.replace(r"\r", ""))
+    df.to_csv(output_csv_file, sep=";", index=False)
+
+
 def get_data_dir_from_config():
     """
     Get the data directory from the config file.
@@ -1467,11 +1935,11 @@ def get_data_dir_from_config():
 if __name__ == "__main__":
     # initial checks
     if environ.get("LOCAL_DEV") == "True":
-        environ["DATA_SOURCE"] = "sample_data.xlsx"
+        environ["DATA_SOURCE"] = "sample_data_big.xlsx"
         environ["DATA_DIR"] = get_data_dir_from_config()["data"]["path"]
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
-            exit(f"Config file {path.abspath(environ.get('CONFIG_PATH')) } does not exist")
+            exit(f"Config file {path.abspath(environ.get('CONFIG_PATH'))} does not exist")
 
     # start to work
 
@@ -1501,7 +1969,7 @@ if __name__ == "__main__":
     if os.path.exists(path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name)):
         print(f"Licensee file exists: {orbis_data_licensee_file_name}. Skipping to re-create it.")
     else:
-        create_input_file_for_orbis_batch_search(
+        extract_company_data_from_raw_excel(
             path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
             path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
             is_licensee=True,
@@ -1513,7 +1981,7 @@ if __name__ == "__main__":
         print(f"Licensor file exists: {orbis_data_licensor_file_name}. Skipping to re-create it.")
     else:
         # generates csv file for licensor
-        create_input_file_for_orbis_batch_search(
+        extract_company_data_from_raw_excel(
             path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
             path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
             is_licensee=False,
@@ -1595,7 +2063,7 @@ if __name__ == "__main__":
     time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
     # try:
-    #     aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx",f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
+    #     aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
     # except FileNotFoundError as fne:
     #     print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
 
@@ -1603,22 +2071,27 @@ if __name__ == "__main__":
     #     aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx",f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
     # except FileNotFoundError as fne:
     #     print(f"File could not be found to aggregate please make sure it exists !")
-    # # run_in_parallel_generic(function=aggregate_data,
-    # #                         [(f"orbis_data_licensee_{timestamp}.xlsx",
-    # #                           f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
-    # #                          (f"orbis_data_licensor_{timestamp}.xlsx",
-    # #                           f"orbis_aggregated_data_licensor_{timestamp}.xlsx")])
+    # run_in_parallel_generic(
+    #     function=aggregate_data,
+    #     args=[
+    #         (f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
+    #         (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
+    #     ],
+    # )
 
-    # run_in_parallel_generic(function=post_process_data,
-    #                         args=[f"orbis_aggregated_data_{timestamp}.xlsx",
-    #                             f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
-    #                             f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
-    #                             f"orbis_aggregated_data_guo_{timestamp}.xlsx",
-    #                             f"orbis_data_guo_{timestamp}.xlsx",
-    #                             f"orbis_data_licensee_{timestamp}_ish.xlsx",
-    #                             f"orbis_data_licensor_{timestamp}_ish.xlsx",
-    #                             f"orbis_data_licensee_{timestamp}.xlsx",
-    #                             f"orbis_data_licensee_{timestamp}_guo.xlsx",
-    #                             f"orbis_data_licensor_{timestamp}.xlsx",
-    #                             f"orbis_data_licensor_{timestamp}_guo.xlsx",
-    #                             f"orbis_data_{timestamp}.xlsx"])
+    # run_in_parallel_generic(
+    #     function=post_process_data,
+    #     args=[
+    #         f"orbis_aggregated_data_{timestamp}.xlsx",
+    #         f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
+    #         f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
+    #         f"orbis_aggregated_data_{timestamp}_guo.xlsx",
+    #         f"orbis_data_guo_{timestamp}.xlsx",
+    #         f"orbis_data_licensee_{timestamp}_ish.xlsx",
+    #         f"orbis_data_licensor_{timestamp}_ish.xlsx",
+    #         f"orbis_data_licensee_{timestamp}.xlsx",
+    #         f"orbis_data_licensee_{timestamp}_guo.xlsx",
+    #         f"orbis_data_licensor_{timestamp}.xlsx",
+    #         f"orbis_data_licensor_{timestamp}_guo.xlsx",
+    #     ],
+    # )

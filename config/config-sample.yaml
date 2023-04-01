@@ -8,12 +8,14 @@ orbis:
 log: 
   dir: "<path to log directory>"
 
-selenium:
-  executable_path: ""
-  driver_options:
-    - "--detach"
 data: 
   path: "<absolute-path-to-data-dir>"  # [REQUIRED] Path to data directory better to define it as absolute path
   file: "< >" #  [OPTIONAL] program is generating this file automatically
   orbis: "< > " # [OPTIONAL] Program is generating this file automatically
   source: "< >" # [REQUIRED] Contains license information 
+
+slack:
+  notify: 'False'
+  send_on_demand: 'False'
+  channel: 'orbis-data'
+  token: '<hidden-token-received-from-slack-app>'
