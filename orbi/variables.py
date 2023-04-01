@@ -17,7 +17,7 @@ UPLOAD_BUTTON = "/html/body/section[3]/div[3]/div/div[2]/div/div/form/div[2]/p/a
 FIELD_SEPERATOR = "/html/body/section[2]/div[3]/div/form/div[1]/table/tbody/tr[2]/td[1]/input"
 APPLY_BUTTON = "/html/body/section[2]/div[3]/div/form/div[3]/div[2]/input"
 SEARCH_PROGRESS_BAR = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[1]"
-PROGRESS_TEXT_XPATH = '/html/body/section[2]/div[3]/div/form/div[1]/div[2]/div[1]/div[2]/p'
+PROGRESS_TEXT_XPATH = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]/div[1]/div[2]/p"
 VIEW_RESULTS_BUTTON = "/html/body/section[2]/div[1]/div[2]/ul/li[1]/a"
 ADD_REMOVE_COLUMNS_VIEW = '//*[@id="main-content"]/div/div[2]/div[1]/a'
 
@@ -78,5 +78,13 @@ APPLY_CHANGES_BUTTON = '//*[@id="main-content"]/div/div[3]/form/div/input[2]'
 EXCEL_BUTTON = "/html/body/section[2]/div[1]/div[2]/div[2]/div[2]/ul/li[3]/a"
 EXPORT_BUTTON = "/html/body/section[2]/div[5]/form/div[2]/a[2]"
 POPUP_DOWNLOAD_BUTTON = "/html/body/section[2]/div[6]/div[3]/a"
+
+POPUP_CLOSE_BUTTON = "/html/body/section[2]/div[6]/div[1]/img"
+NUMBER_OF_ROWS_DROP_DOWN = '//*[@id="pageSize"]'
+COMPANIES_TABLE = '//*[@id="main-content"]/div/form/table/tbody'
+INPUT_FIELD_VALUE = "/html/body/section[2]/div[3]/div/form/div[2]/ul/li[2]/input"
+CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
+TOTAL_PAGE_XPATH = '//*[@id="main-content"]/div/form/div[2]/ul/li[2]/input'
+PROCESSING_DIV = "//div[@class='processing-overlay']"
 
 NOT_MATCHED_COMPANIES_FILE_NAME = "not_matched_companies.txt"

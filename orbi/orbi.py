@@ -1165,7 +1165,6 @@ class Orbis:
 
         """
 
-        POPUP_CLOSE_BUTTON = "/html/body/section[2]/div[6]/div[1]/img"
         self.wait_until_clickable(POPUP_DOWNLOAD_BUTTON)
         try:
             while True:
@@ -1219,8 +1218,6 @@ class Orbis:
         )
 
     def set_number_of_rows_in_view(self):
-        NUMBER_OF_ROWS_DROP_DOWN = '//*[@id="pageSize"]'
-
         try:
             self.wait_until_clickable(NUMBER_OF_ROWS_DROP_DOWN)
             # set data-default-value to 100
@@ -1231,7 +1228,6 @@ class Orbis:
             pass
 
     def find_no_matched_companies(self, file_name):
-        COMPANIES_TABLE = '//*[@id="main-content"]/div/form/table/tbody'
         try:
             companies_table = self.driver.find_element(By.XPATH, COMPANIES_TABLE)
             companies = companies_table.find_elements(By.TAG_NAME, "tr")
@@ -1263,7 +1259,6 @@ class Orbis:
                     f.write("\n")
 
     def go_to_page(self, current_page):
-        INPUT_FIELD_VALUE = "/html/body/section[2]/div[3]/div/form/div[2]/ul/li[2]/input"
         try:
             self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).clear()
             self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(str(current_page))
@@ -1273,7 +1268,6 @@ class Orbis:
             pass
 
     def is_search_continuing(self):
-        CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
         try:
             continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
             is_search_in_progress = continue_search_button.is_displayed()
@@ -1292,7 +1286,6 @@ class Orbis:
         time.sleep(5)
         self.go_to_page(current_page)
 
-        TOTAL_PAGE_XPATH = '//*[@id="main-content"]/div/form/div[2]/ul/li[2]/input'
         try:
             input_field = self.driver.find_element(By.XPATH, TOTAL_PAGE_XPATH)
             max_value = input_field.get_attribute("max")
@@ -1359,8 +1352,6 @@ class Orbis:
 
         # when search is finished, click on the search results button
         self.view_search_results()
-
-        PROCESSING_DIV = "//div[@class='processing-overlay']"
 
         try:
             processing_div_main = self.driver.find_element(By.XPATH, PROCESSING_DIV)
