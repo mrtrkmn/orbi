@@ -527,7 +527,7 @@ class Orbis:
         print(f"Message : {progress_text.text}")
 
     def check_continue_later_button(self):
-        CONTINUE_LATER_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]/div[2]/p/a"
+        
         try:
             self.driver.find_element(By.XPATH, CONTINUE_LATER_BUTTON)
             return True
@@ -536,7 +536,7 @@ class Orbis:
             return False
 
     def count_total_search(self):
-        BATCH_WIDGET_XPATH = "/html/body/section[2]/div[3]/div/form/div[1]"
+       
         # get parameters from batch widget
         batch_search_info = self.driver.find_element(By.XPATH, BATCH_WIDGET_XPATH)
         all_search_result_data = batch_search_info.get_attribute("data-parameters")
@@ -562,7 +562,7 @@ class Orbis:
             return False
 
     def check_warning_message_header(self):
-        WARNING_MESSAGE_HEADER = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]"
+        
 
         try:
             warning_message_info = self.driver.find_element(By.XPATH, WARNING_MESSAGE_HEADER)
@@ -618,7 +618,7 @@ class Orbis:
             time.sleep(10)
         except Exception as e:
             logger.debug(f"{process_name}: search is not finished: stale element exception {e}")
-            SEARCHING_POP_UP = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]"
+            
             try:
                 pop_up_window = self.driver.find_element(By.XPATH, SEARCHING_POP_UP)
             except Exception as e:

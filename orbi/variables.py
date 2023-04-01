@@ -86,5 +86,9 @@ INPUT_FIELD_VALUE = "/html/body/section[2]/div[3]/div/form/div[2]/ul/li[2]/input
 CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
 TOTAL_PAGE_XPATH = '//*[@id="main-content"]/div/form/div[2]/ul/li[2]/input'
 PROCESSING_DIV = "//div[@class='processing-overlay']"
+BATCH_WIDGET_XPATH = "/html/body/section[2]/div[3]/div/form/div[1]"
+CONTINUE_LATER_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]/div[2]/p/a"
+SEARCHING_POP_UP = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]"
+WARNING_MESSAGE_HEADER = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]"
 
 NOT_MATCHED_COMPANIES_FILE_NAME = "not_matched_companies.txt"
