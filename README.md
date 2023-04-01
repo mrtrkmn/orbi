@@ -8,6 +8,9 @@ This is a simple crawler that crawls data from two websites currently:
 
 for company and patent related data.
 
+- _**main branch:**_ [possible] sync with `run-on-github` branch. 
+- _**run-on-self-hosted:**_ runs on self-hosted computer - updated frequently than main branch. Create PR to main to receive updates. 
+
 
 ## How to run 
 
