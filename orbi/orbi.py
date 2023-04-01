@@ -492,6 +492,10 @@ class Orbis:
             print(f"Exception on clicking continue search {e}")
 
     def refresh_page_at_stuck(self):
+        """
+        Refreshes the page if the search is stuck, by Javascript method. 
+        """
+
         try:
             time.sleep(5)
             self.driver.execute_script("window.location.reload()")
@@ -500,6 +504,13 @@ class Orbis:
             print(f"Exception on refreshing page {e}")
 
     def check_progress_text(self, d):
+        """
+        Checks the progress text in the batch search page and refreshes the page if the search is stuck.
+        Additionally, it calls check_search_progress_bar() method to check the progress bar.
+        :param d: A dictionary to keep count of the progress text. 
+
+        """
+
         try:
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
         except Exception as e:
@@ -527,6 +538,10 @@ class Orbis:
         print(f"Message : {progress_text.text}")
 
     def check_continue_later_button(self):
+        """
+        Checks if the continue later button is present in the batch search page.
+        If the pop up window is not present, then this method returns False.
+        """
         
         try:
             self.driver.find_element(By.XPATH, CONTINUE_LATER_BUTTON)
@@ -536,7 +551,10 @@ class Orbis:
             return False
 
     def count_total_search(self):
-       
+        """
+        This method counts the total number of searches performed in the batch search page.
+        This check enable us to know if the search is over or not, important !
+        """ 
         # get parameters from batch widget
         batch_search_info = self.driver.find_element(By.XPATH, BATCH_WIDGET_XPATH)
         all_search_result_data = batch_search_info.get_attribute("data-parameters")
@@ -562,7 +580,12 @@ class Orbis:
             return False
 
     def check_warning_message_header(self):
-        
+        """
+        Checks warning message header to see if the search is finished.
+        Returns False if the warning message header is not present.
+
+        (Warning message is not present when the search is finished.)
+        """
 
         try:
             warning_message_info = self.driver.find_element(By.XPATH, WARNING_MESSAGE_HEADER)
@@ -766,10 +789,13 @@ class Orbis:
         print(f"{process_name} delisting note is added")
 
     def select_only_first_value_from_popup(self, field):
+        """
+        Selects only the first value from the pop up.
+        :param field: The field for which the pop up is opened.
+        """
         try:
             time.sleep(1)
             # selects first value from the pop up
-            POPUP_SELECT_VALUE = '//*[@id="ClassicOption"]/div/div[1]/div/div/ul/li[2]/label'
             self.wait_until_clickable(POPUP_SELECT_VALUE)
             self.driver.find_element(By.XPATH, POPUP_SELECT_VALUE).click()
         except Exception as e:
@@ -1351,7 +1377,10 @@ class Orbis:
             self.iterate_over_pages(file_name=input_file)
 
         # when search is finished, click on the search results button
-        self.view_search_results()
+        if not self.count_total_search():
+            self.view_search_results()
+        else: 
+            self.check_search_progress_bar()
 
         try:
             processing_div_main = self.driver.find_element(By.XPATH, PROCESSING_DIV)
