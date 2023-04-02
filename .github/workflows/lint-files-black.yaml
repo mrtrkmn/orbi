@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'orbi/**'
+      - 'utils/**'
 
   workflow_dispatch:
     inputs:
