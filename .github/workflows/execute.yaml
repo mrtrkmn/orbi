@@ -186,7 +186,7 @@ jobs:
         ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
         ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
         RETENTION_DAYS: 7
-        CONTAINER_NAME: ${{ env.AZURE_CONTAINER_NAME }}
+        CONTAINER_NAME: ${{ secrets.AZURE_CONTAINER_NAME }}
       continue-on-error: true
 
     # zip the data except sample_data.xlsx
