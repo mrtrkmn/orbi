@@ -39,7 +39,7 @@ SCROLLABLE_XPATH = '//*[@id="ClassicOption"]/div/div[1]/div/div[1]/div[4]/div[1]
 SCROLLABLE_XPATH_IN_SECOND_OPTION = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[3]/div/div'
 
 ANNUAL_DATA_LIST = '//*[@id="ClassicOption"]/div/div[1]/div/div[1]/div[4]/div[1]/div/ul'
-MILLION_UNITS = '//*[@id="id-currency-menu-popup"]/ul[1]/li[4]'
+MILLION_UNITS =             '//*[@id="id-currency-menu-popup"]/ul[1]/li[4]'
 OP_REVENUE_OK_BUTTON = "/html/body/section[2]/div[6]/div[3]/a[2]"
 CURRENY_DROPDOWN = "/html/body/section[2]/div[1]/div[2]/div[2]/div[2]/ul/li[4]/a"
 DROPDOWN_APPLY = '//*[@id="id-currency-menu-popup"]/div/a[2]'
