@@ -493,7 +493,7 @@ class Orbis:
 
     def refresh_page_at_stuck(self):
         """
-        Refreshes the page if the search is stuck, by Javascript method. 
+        Refreshes the page if the search is stuck, by Javascript method.
         """
 
         try:
@@ -507,7 +507,7 @@ class Orbis:
         """
         Checks the progress text in the batch search page and refreshes the page if the search is stuck.
         Additionally, it calls check_search_progress_bar() method to check the progress bar.
-        :param d: A dictionary to keep count of the progress text. 
+        :param d: A dictionary to keep count of the progress text.
 
         """
 
@@ -542,7 +542,7 @@ class Orbis:
         Checks if the continue later button is present in the batch search page.
         If the pop up window is not present, then this method returns False.
         """
-        
+
         try:
             self.driver.find_element(By.XPATH, CONTINUE_LATER_BUTTON)
             return True
@@ -554,7 +554,7 @@ class Orbis:
         """
         This method counts the total number of searches performed in the batch search page.
         This check enable us to know if the search is over or not, important !
-        """ 
+        """
         # get parameters from batch widget
         batch_search_info = self.driver.find_element(By.XPATH, BATCH_WIDGET_XPATH)
         all_search_result_data = batch_search_info.get_attribute("data-parameters")
@@ -641,7 +641,7 @@ class Orbis:
             time.sleep(10)
         except Exception as e:
             logger.debug(f"{process_name}: search is not finished: stale element exception {e}")
-            
+
             try:
                 pop_up_window = self.driver.find_element(By.XPATH, SEARCHING_POP_UP)
             except Exception as e:
@@ -1245,7 +1245,7 @@ class Orbis:
 
     def set_number_of_rows_in_view(self):
         """
-        Sets the number of rows in view to number_of_rows in the dropdown menu according to number of inputs. 
+        Sets the number of rows in view to number_of_rows in the dropdown menu according to number of inputs.
         """
         try:
             self.wait_until_clickable(NUMBER_OF_ROWS_DROP_DOWN)
@@ -1293,7 +1293,7 @@ class Orbis:
 
     def go_to_page(self, current_page):
         """
-        Iterates over pages in the search result 
+        Iterates over pages in the search result
         :param current_page: current page number
         """
         try:
@@ -1397,7 +1397,7 @@ class Orbis:
         # when search is finished, click on the search results button
         if not self.count_total_search():
             self.view_search_results()
-        else: 
+        else:
             self.check_search_progress_bar()
 
         try:
