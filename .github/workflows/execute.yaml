@@ -76,7 +76,7 @@ permissions:
 jobs:
 
   precheck_and_run: # default working directory
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v3
