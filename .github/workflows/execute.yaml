@@ -68,7 +68,7 @@ env:
   SLACK_FOOTER: '🤓 automated bot Orbi'
   SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
   # artifact specific 
-  RETENTION_PERIOD: 90 # in days 
+  RETENTION_PERIOD: 20 # in days 
 
 permissions:
   contents: read
