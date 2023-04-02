@@ -25,13 +25,15 @@ on:
 
       send_data_on_completion:
         description: 'To receive data on search completion, set this to true, otherwise all data will be zipped and sent to slack if slack notify is set to true.'
+        type: boolean
         required: false
-        default: 'False'
+        default: false
 
       notify:
         description: 'Send notification to Slack'
+        type: boolean
         required: false
-        default: 'True'
+        default: false
 
   repository_dispatch:
     types: crawl-data
