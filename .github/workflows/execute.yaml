@@ -207,7 +207,7 @@ jobs:
     - name: Send data to slack channel 
       if: ${{ success() && github.event.inputs.notify == 'true' }}
       run: |
-        python utils/utils.py --file_path orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip is attached.'
+        python utils/send_to_slack.py --file_path orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip is attached.'
       continue-on-error: true
 
     - name: Upload data to artifact 
