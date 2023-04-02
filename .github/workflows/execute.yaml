@@ -84,11 +84,11 @@ jobs:
       id: check_input_file_name
       # check if the input file name is referring to a file or url 
       run: |
-          if [[ ${{ github.event.inputs.data }} == http* ]]; then
-            echo "is_url=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_url=false" >> $GITHUB_OUTPUT
-          fi
+        if [[ ${{ github.event.inputs.data }} == http* ]]; then
+          echo "is_url=true" >> $GITHUB_OUTPUT
+        else
+          echo "is_url=false" >> $GITHUB_OUTPUT
+        fi
 
     - name: Get file name
       if: ${{ github.event.inputs.data != '${{ env.DEFAULT_DATA_SOURCE }}' }}
