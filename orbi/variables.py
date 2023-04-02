@@ -10,15 +10,15 @@ This file contains XPATH of the elements on the Orbis website to conduct the sea
 Used by Orbi Class. 
 """
 # ORBIS ELEMENT VARIABLES
-LOGIN_BUTTON = "/html/body/div[2]/div/div[1]/div[1]/div[1]/form/fieldset/div[3]/input"
-DRAG_DROP_BUTTON = "/html/body/section[3]/div[3]/div/div[2]/form/div/div/label/a"
-SELECT_FILE_BUTTON = "/html/body/section[3]/div[3]/div/div[2]/div/div/form/div[1]/div[1]/input[1]"
-UPLOAD_BUTTON = "/html/body/section[3]/div[3]/div/div[2]/div/div/form/div[2]/p/a[2]"
-FIELD_SEPERATOR = "/html/body/section[2]/div[3]/div/form/div[1]/table/tbody/tr[2]/td[1]/input"
-APPLY_BUTTON = "/html/body/section[2]/div[3]/div/form/div[3]/div[2]/input"
+LOGIN_BUTTON =                              "/html/body/div[2]/div/div[1]/div[1]/div[1]/form/fieldset/div[3]/input"
+DRAG_DROP_BUTTON =                                              "/html/body/section[3]/div[3]/div/div[2]/form/div/div/label/a"
+SELECT_FILE_BUTTON =            "/html/body/section[3]/div[3]/div/div[2]/div/div/form/div[1]/div[1]/input[1]"
+UPLOAD_BUTTON =             "/html/body/section[3]/div[3]/div/div[2]/div/div/form/div[2]/p/a[2]"
+FIELD_SEPERATOR =       "/html/body/section[2]/div[3]/div/form/div[1]/table/tbody/tr[2]/td[1]/input"
+APPLY_BUTTON =                      "/html/body/section[2]/div[3]/div/form/div[3]/div[2]/input"
 SEARCH_PROGRESS_BAR = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[1]"
 PROGRESS_TEXT_XPATH = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]/div[1]/div[2]/p"
-VIEW_RESULTS_BUTTON = "/html/body/section[2]/div[1]/div[2]/ul/li[1]/a"
+VIEW_RESULTS_BUTTON =               "/html/body/section[2]/div[1]/div[2]/ul/li[1]/a"
 ADD_REMOVE_COLUMNS_VIEW = '//*[@id="main-content"]/div/div[2]/div[1]/a'
 
 FINANCIAL_DATA_BUTTON = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[7]/div'
@@ -57,13 +57,13 @@ CITY_COLUMN = '//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.CITY:UNIVERSAL"]
 COUNTRY_COLUMN = '//*[@id="CONTACT_INFORMATION*CONTACT_INFORMATION.COUNTRY:UNIVERSAL"]/div[2]/span'
 CONTACT_INFORMATION = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[3]/div'
 BVD_SECTORS = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.BVD_SECTOR_CORE_LABEL:UNIVERSAL"]/div[2]/span'
-US_SIC_PRIMARY_CODES = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.USSIC_PRIMARY_CODE:UNIVERSAL"]/div[2]/span'
+US_SIC_PRIMARY_CODES =                      '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.USSIC_PRIMARY_CODE:UNIVERSAL"]/div[2]/span'
 US_SIC_SECONDARY_CODES = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.USSIC_SECONDARY_CODE:UNIVERSAL"]/div[2]/span'
 DELISTING_NOTE = '//*[@id="STOCKDATA*STOCKDATA.SD_DELISTED_NOTE:UNIVERSAL"]/div[2]/span'
 DESCRIPTION_HISTORY = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.DESCRIPTION_HISTORY:UNIVERSAL"]/div[2]/span'
 HISTORY = '//*[@id="OVERVIEW*OVERVIEW.OVERVIEW_HISTORY:UNIVERSAL"]/div[2]/span'
 IDENTIFICATION_NUMBER_VIEW = "/html/body/section[2]/div[3]/div/div[2]/div[1]/div/div[2]/div/ul/li[5]/div"
-TRADE_DESC = '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.TRADE_DESCRIPTION_EN:UNIVERSAL"]/div[1]/span'
+TRADE_DESC =                '//*[@id="INDUSTRY_ACTIVITIES*INDUSTRY_ACTIVITIES.TRADE_DESCRIPTION_EN:UNIVERSAL"]/div[1]/span'
 BVD_ID_NUMBER_ADD = '//*[@id="IDENTIFIERS*IDENTIFIERS.BVD_ID_NUMBER:UNIVERSAL"]'
 ORBIS_ID_NUMBER_ADD = '//*[@id="IDENTIFIERS*IDENTIFIERS.ORBISID:UNIVERSAL"]'
 OWNERSHIP_COLUMN = '//*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/div'
@@ -76,16 +76,16 @@ IMMEDIATE_PARENT_COMPANY_NAME = (
 ISH_NAME = '//*[@id="ISH*ISH.ISH_NAME:UNIVERSAL"]'
 APPLY_CHANGES_BUTTON = '//*[@id="main-content"]/div/div[3]/form/div/input[2]'
 EXCEL_BUTTON = "/html/body/section[2]/div[1]/div[2]/div[2]/div[2]/ul/li[3]/a"
-EXPORT_BUTTON = "/html/body/section[2]/div[5]/form/div[2]/a[2]"
+EXPORT_BUTTON =                 "/html/body/section[2]/div[5]/form/div[2]/a[2]"
 POPUP_DOWNLOAD_BUTTON = "/html/body/section[2]/div[6]/div[3]/a"
-POPUP_SELECT_VALUE = '//*[@id="ClassicOption"]/div/div[1]/div/div/ul/li[2]/label'
+
 POPUP_CLOSE_BUTTON = "/html/body/section[2]/div[6]/div[1]/img"
 NUMBER_OF_ROWS_DROP_DOWN = '//*[@id="pageSize"]'
 COMPANIES_TABLE = '//*[@id="main-content"]/div/form/table/tbody'
-INPUT_FIELD_VALUE = "/html/body/section[2]/div[3]/div/form/div[2]/ul/li[2]/input"
+INPUT_FIELD_VALUE =                     "/html/body/section[2]/div[3]/div/form/div[2]/ul/li[2]/input"
 CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
 TOTAL_PAGE_XPATH = '//*[@id="main-content"]/div/form/div[2]/ul/li[2]/input'
-PROCESSING_DIV = "//div[@class='processing-overlay']"
+PROCESSING_DIV =                "//div[@class='processing-overlay']"
 BATCH_WIDGET_XPATH = "/html/body/section[2]/div[3]/div/form/div[1]"
 CONTINUE_LATER_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]/div[2]/p/a"
 SEARCHING_POP_UP = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]"
