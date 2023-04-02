@@ -8,11 +8,14 @@ from azure.storage.blob import (
 )
 from datetime import datetime
 from datetime import timedelta
+from utils import send_message_to_slack
 
 # import public_access
 from azure.storage.blob import PublicAccess
 from azure.storage.blob import AccessPolicy, ContainerSasPermissions
 
+root_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(root_path)
 
 ACCOUNT_NAME = os.environ.get("ACCOUNT_NAME")
 ACCOUNT_KEY = os.environ.get("ACCOUNT_KEY")
@@ -76,4 +79,13 @@ if __name__ == "__main__":
     else:
         upload_blob_file(sys.argv[1], blob_service_client, sys.argv[2], sys.argv[3])
 
-    print(f"{get_public_access_url(blob_service_client, sys.argv[2])}/{sys.argv[1].split('/')[-1]}/")
+    message = f""""
+    File uploaded to Azure Blob Storage: {get_public_access_url(blob_service_client, sys.argv[2])}/{sys.argv[1].split('/')[-1]}/
+    Uploaded files can be accessed for {RETENTION_DAYS} days.
+    Files can be downloaded by appending file name to the above URL.
+    e.g (for data generated on 26-03-2023)
+        - {get_public_access_url(blob_service_client, sys.argv[2])}/{sys.argv[1].split('/')[-1]}/orbis_data_licensee_26_03_2023.xlsx
+        - {get_public_access_url(blob_service_client, sys.argv[2])}/{sys.argv[1].split('/')[-1]}/orbis_data_licensee_26_03_2023.csv
+    """
+
+    send_message_to_slack(message)
