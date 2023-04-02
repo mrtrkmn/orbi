@@ -180,7 +180,7 @@ jobs:
     # zip the data except sample_data.xlsx
     - name: Zip data
       run: |
-        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip orbis-data/ -x "orbis-data/sample_data.xlsx"
+        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip '${{ env.DATA_DIR }}' -x '${{ env.DATA_DIR }}sample_data.xlsx' -x '${{ env.DATA_DIR }}sample_data_big.xlsx' -x '${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }}'
 
 # do not upload for now
     # - name: Upload to S3 
@@ -202,8 +202,8 @@ jobs:
         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
         path: |
            ${{ env.DATA_DIR }}
-           ${{ env.LOG_DIR }}
            !'${{ env.DATA_DIR }}sample_data.xlsx'
+           !'${{ env.DATA_DIR }}sample_data_big.xlsx'
         retention-days: ${{ env.RETENTION_PERIOD }}
 
     - name: Send data to Telegram 
