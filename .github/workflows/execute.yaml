@@ -85,16 +85,16 @@ jobs:
       # check if the input file name is referring to a file or url 
       run: |
           if [[ ${{ github.event.inputs.data }} == http* ]]; then
-            echo "::set-output name=is_url::true"
+            echo "is_url=true" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=is_url::false"
+            echo "is_url=false" >> $GITHUB_OUTPUT
           fi
 
     - name: Get file name
       if: ${{ github.event.inputs.data != '${{ env.DEFAULT_DATA_SOURCE }}' }}
       id: get-file-name
       run: |
-        echo "::set-output name=file_name::$(basename ${{ github.event.inputs.data }})"
+        echo "file_name=$(basename ${{ github.event.inputs.data }})" >> $GITHUB_OUTPUT
 
 
     - name: Check file existence 
@@ -123,7 +123,7 @@ jobs:
     - name: Get timestamp
       id: get-timestamp
       run: |
-        echo "::set-output name=timestamp::$(date +'%d-%m-%Y')"
+        echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
 
 #**********************************************************************************************************************
 # SETTING UP PYTHON ENVIRONMENT
