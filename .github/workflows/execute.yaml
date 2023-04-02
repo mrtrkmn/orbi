@@ -46,7 +46,7 @@ env:
 
   # crawler specific
   DATA_DIR: /home/runner/work/orbi/orbi/data/
-  LOG_DIR:/home/runner/work/orbi/orbi/logs/
+  LOG_DIR: /home/runner/work/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
   MAX_RUN_ATTEMPTS: 3  # if it is unable to successfull in this number tries, the crawler will exit with failure
@@ -74,7 +74,7 @@ permissions:
 jobs:
 
   precheck_and_run: # default working directory
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     
     steps:
     - uses: actions/checkout@v3
