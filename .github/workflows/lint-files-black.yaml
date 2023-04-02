@@ -1,0 +1,64 @@
+name: Lint
+on:
+  push:
+    paths:
+      - 'orbi/**'
+
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Commit message'
+        required: false
+        default: 'Format python code'
+
+jobs:
+  format_files_with_black:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+          cache: "pip" # cache pip dependencies
+      - name: Install black 
+        run: |
+          pip install black
+      
+      - name: Check if python code needs to be formatted
+        run: |
+          black --check --line-length 120 orbi/*.py
+          if [ $? -eq 0 ]; then
+            echo "No changes to python code"
+            exit 0
+          fi
+      
+      - name: Get timestamp
+        id: get-timestamp
+        run: |
+          echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
+
+      - name: Format python code
+        run: |
+          black --check --line-length 120 orbi/*.py
+          if [ $? -eq 0 ]; then
+            echo "No changes to python code"
+            exit 0
+          fi
+          black --line-length 120 orbi/*.py
+          
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add orbi
+          git commit -m "[${{ steps.get-timestamp.outputs.timestamp }}] Python files are formatted by black."
+          git push
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Format python code"
+          title: "Format python code"
+          body: "Format python code"
+          branch: "format-python-code"
+          delete-branch: true
