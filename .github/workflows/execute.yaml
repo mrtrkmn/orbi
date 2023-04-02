@@ -24,13 +24,13 @@ on:
         default: sample_data.xlsx
 
       send_data_on_completion:
-        description: 'To receive data on search completion, set this to true, otherwise all data will be zipped and sent to slack if slack notify is set to true.'
+        description: 'To receive data on search completion, check this option'
         type: boolean
         required: false
         default: false
 
       notify:
-        description: 'Send notification to Slack'
+        description: 'To receive notifications and all search result files in zip on Slack channel, check this option'
         type: boolean
         required: false
         default: false
