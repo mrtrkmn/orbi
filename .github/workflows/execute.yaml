@@ -31,7 +31,7 @@ on:
       notify:
         description: 'Send notification to Slack'
         required: false
-        default: 'true'
+        default: 'True'
 
   repository_dispatch:
     types: crawl-data
@@ -45,8 +45,8 @@ env:
   ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
 
   # crawler specific
-  DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
-  LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
+  DATA_DIR: /home/runner/work/orbi/orbi/data/
+  LOG_DIR:/home/runner/work/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
   MAX_RUN_ATTEMPTS: 3  # if it is unable to successfull in this number tries, the crawler will exit with failure
@@ -56,7 +56,7 @@ env:
   # AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
   # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
   # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
-  # SOURCE_DIR:  /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/
+  # SOURCE_DIR: /home/runner/work/orbi/orbi/
 
   # slack specific
   SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
@@ -72,14 +72,21 @@ permissions:
   contents: read
 
 jobs:
+
   precheck_and_run: # default working directory
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
+    
     steps:
     - uses: actions/checkout@v3
-
-#**********************************************************************************************************************
-# PRECHECKS 
-#**********************************************************************************************************************
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+        cache: "pip" # cache pip dependencies
+        
+    #**********************************************************************************************************************
+    # PRECHECKS 
+    #**********************************************************************************************************************
     - name: Check input file name
       id: check_input_file_name
       # check if the input file name is referring to a file or url 
@@ -125,15 +132,9 @@ jobs:
       run: |
         echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
 
-#**********************************************************************************************************************
-# SETTING UP PYTHON ENVIRONMENT
-#**********************************************************************************************************************
-
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-        cache: "pip" # cache pip dependencies
+    #**********************************************************************************************************************
+    # INSTALL REQUIREMENTS
+    #**********************************************************************************************************************
     
     - name: Install dependencies
       run: |
@@ -148,9 +149,9 @@ jobs:
         SLACK_MESSAGE: ':bell: Orbi is started crawl data from Orbis database on  Github using the file ${{ github.event.inputs.data }}  as input data.'
         SLACK_TITLE: ':bell: Orbi is working on crawling data from Orbis database on Github'
    
-#**********************************************************************************************************************
-# RUN Orbi for batch search on Orbis
-#**********************************************************************************************************************
+    #**********************************************************************************************************************
+    # RUN Orbi for batch search on Orbis
+    #**********************************************************************************************************************
     - name: Execute the script
       uses: nick-fields/retry@v2
       id: batch_search
@@ -163,9 +164,9 @@ jobs:
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
         SEND_DATA_ON_COMPLETION: ${{ github.event.inputs.send_data_on_completion }}
 
-#**********************************************************************************************************************
-#  POST PROCESSING STEPS 
-#**********************************************************************************************************************
+    #**********************************************************************************************************************
+    #  POST PROCESSING STEPS 
+    #**********************************************************************************************************************
 
     - name: Send Job Failed Notification to Slack
       if: ${{ failure() && steps.batch_search.conclusion == 'failure' && github.event.inputs.notify == 'true' }}
