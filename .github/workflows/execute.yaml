@@ -47,8 +47,8 @@ env:
   ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
 
   # crawler specific
-  DATA_DIR: /home/runner/work/orbi/orbi/data/
-  LOG_DIR: /home/runner/work/orbi/orbi/logs/
+  DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
+  LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
   MAX_RUN_ATTEMPTS: 3  # if it is unable to successfull in this number tries, the crawler will exit with failure
