@@ -83,7 +83,7 @@ jobs:
     - name: Check input file name
       id: check_input_file_name
       # check if the input file name is referring to a file or url 
-        run: |
+      run: |
           if [[ ${{ github.event.inputs.data }} == http* ]]; then
             echo "::set-output name=is_url::true"
           else
