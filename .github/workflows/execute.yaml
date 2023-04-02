@@ -72,11 +72,63 @@ permissions:
   contents: read
 
 jobs:
-  build: # default working directory
+  precheck_and_run: # default working directory
     runs-on: self-hosted
-
     steps:
     - uses: actions/checkout@v3
+
+#**********************************************************************************************************************
+# PRECHECKS 
+#**********************************************************************************************************************
+    - name: Check input file name
+      id: check_input_file_name
+      # check if the input file name is referring to a file or url 
+        run: |
+          if [[ ${{ github.event.inputs.data }} == http* ]]; then
+            echo "::set-output name=is_url::true"
+          else
+            echo "::set-output name=is_url::false"
+          fi
+
+    - name: Get file name
+      if: ${{ github.event.inputs.data != '${{ env.DEFAULT_DATA_SOURCE }}' }}
+      id: get-file-name
+      run: |
+        echo "::set-output name=file_name::$(basename ${{ github.event.inputs.data }})"
+
+
+    - name: Check file existence 
+      if: ${{ steps.check_input_file_name.outputs.is_url == 'false' }}
+      run: |
+        if [ ! -f ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} ]; then
+          echo "File ${{ steps.get-file-name.outputs.file_name }} does not exist in ${{ env.DATA_DIR }}. Exiting..."
+          exit 1
+        fi
+
+    - name: Download data if provided 
+      if: ${{ steps.check_input_file_name.outputs.is_url == 'true' }}
+      run: |
+        wget ${{ github.event.inputs.data }}
+        mv  ${{ steps.get-file-name.outputs.file_name }} ${{ env.DATA_DIR }} 
+    
+    - name: Check file existence 
+      if: ${{ steps.check_input_file_name.outputs.is_url == 'false' }}
+      run: |
+        if [ ! -f ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} ]; then
+          echo "File ${{ steps.get-file-name.outputs.file_name }} does not exist in ${{ env.DATA_DIR }}. Exiting..."
+          exit 1
+        fi
+
+      # get timestamp in format DD-MM-YYYY
+    - name: Get timestamp
+      id: get-timestamp
+      run: |
+        echo "::set-output name=timestamp::$(date +'%d-%m-%Y')"
+
+#**********************************************************************************************************************
+# SETTING UP PYTHON ENVIRONMENT
+#**********************************************************************************************************************
+
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
@@ -86,20 +138,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
-    - name: Get file name
-      if: ${{ github.event.inputs.data != '${{ env.DEFAULT_DATA_SOURCE }}' }}
-      id: get-file-name
-      run: |
-        echo "::set-output name=file_name::$(basename ${{ github.event.inputs.data }})"
-
-    - name: Download data if provided 
-      if: ${{ github.event.inputs.data != 'sample_data.xlsx' }}
-      run: |
-        wget ${{ github.event.inputs.data }}
-        mv  ${{ steps.get-file-name.outputs.file_name }} ${{ env.DATA_DIR }}
 
     - name: Send Job Started Notification to Slack
       if: ${{ github.event.inputs.notify == 'true' }}
@@ -109,7 +148,9 @@ jobs:
         SLACK_MESSAGE: ':bell: Orbi is started crawl data from Orbis database on  Github using the file ${{ github.event.inputs.data }}  as input data.'
         SLACK_TITLE: ':bell: Orbi is working on crawling data from Orbis database on Github'
    
-   
+#**********************************************************************************************************************
+# RUN Orbi for batch search on Orbis
+#**********************************************************************************************************************
     - name: Execute the script
       uses: nick-fields/retry@v2
       id: batch_search
@@ -122,6 +163,10 @@ jobs:
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
         SEND_DATA_ON_COMPLETION: ${{ github.event.inputs.send_data_on_completion }}
 
+#**********************************************************************************************************************
+#  POST PROCESSING STEPS 
+#**********************************************************************************************************************
+
     - name: Send Job Failed Notification to Slack
       if: ${{ failure() && steps.batch_search.conclusion == 'failure' && github.event.inputs.notify == 'true' }}
       uses: rtCamp/action-slack-notify@v2.2.0
@@ -130,16 +175,11 @@ jobs:
         SLACK_MESSAGE: ':x: Failed to run batch search, please check on Github. '
         SLACK_TITLE: ':x: Batch search failed at some point, in most cases this is caused due to slowness in the network (since it causes slow rendering of the page and leads to have no element we are looking for) !'
 
-  # get timestamp in format DD-MM-YYYY
-    - name: Get timestamp
-      id: get-timestamp
-      run: |
-        echo "::set-output name=timestamp::$(date +'%d-%m-%Y')"
 
     # zip the data except sample_data.xlsx
     - name: Zip data
       run: |
-        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip '${{ env.DATA_DIR }}' -x '${{ env.DATA_DIR }}sample_data.xlsx'
+        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip orbis-data/ -x "orbis-data/sample_data.xlsx"
 
 # do not upload for now
     # - name: Upload to S3 
