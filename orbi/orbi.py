@@ -24,6 +24,8 @@ from slack_sdk import WebClient
 from variables import *
 from webdriver_manager.chrome import ChromeDriverManager
 
+from crawl import create_input_file_for_orbis_batch_search
+
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 
@@ -80,10 +82,12 @@ class Orbis:
             self.slack_channel = config["slack"]["channel"]
             self.slack_token = config["slack"]["token"]
             self.data_source = config["data"]["source"]
+            self.check_on_sec = config["data"]["check_on_sec"]
             self.license_data = path.join(self.data_dir, self.data_source)
             environ["DATA_DIR"] = self.data_dir  # only for local dev and data_dir
         else:
             self.orbis_access_url = environ.get("ORBIS_ACCESS_URL")
+            self.check_on_sec = environ.get("CHECK_ON_SEC")
             self.send_data_on_completion = environ.get("SEND_DATA_ON_COMPLETION")
             self.slack_channel = environ.get("SLACK_DATA_CHANNEL")
             self.slack_token = environ.get("SLACK_TOKEN")
@@ -1969,11 +1973,18 @@ if __name__ == "__main__":
     if os.path.exists(path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name)):
         print(f"Licensee file exists: {orbis_data_licensee_file_name}. Skipping to re-create it.")
     else:
-        extract_company_data_from_raw_excel(
-            path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
-            path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
-            is_licensee=True,
-        )
+        if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC"):
+            create_input_file_for_orbis_batch_search(
+                path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+                path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
+                is_licensee=True,
+            )
+        else:
+            extract_company_data_from_raw_excel(
+                path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+                path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
+                is_licensee=True,
+            )
 
     orbis_data_licensor_file_name = f"orbis_data_licensor_{timestamp}.csv"
 
@@ -1981,11 +1992,18 @@ if __name__ == "__main__":
         print(f"Licensor file exists: {orbis_data_licensor_file_name}. Skipping to re-create it.")
     else:
         # generates csv file for licensor
-        extract_company_data_from_raw_excel(
-            path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
-            path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
-            is_licensee=False,
-        )
+        if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC"):
+            create_input_file_for_orbis_batch_search(
+                path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+                path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
+                is_licensee=False,
+            )
+        else:
+            extract_company_data_from_raw_excel(
+                path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+                path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
+                is_licensee=False,
+            )
 
     time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
 
