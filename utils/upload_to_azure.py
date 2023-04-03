@@ -14,6 +14,8 @@ from send_to_slack import send_message_to_slack
 from azure.storage.blob import PublicAccess
 from azure.storage.blob import AccessPolicy, ContainerSasPermissions
 
+import argparse
+
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 
@@ -68,25 +70,34 @@ def get_public_access_url(blob_service_client: BlobServiceClient, container_name
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage: python azure-blob-storage.py <dir/file> <container> <blob>")
-        sys.exit(1)
+
+
+    parser = argparse.ArgumentParser(description="Upload file/dir to Azure Blob Storage.")
+    file_path = parser.add_argument("--dir-file-path", type=str, help="The path to the file or data to upload.")
+    container_name = parser.add_argument("--container-name", type=str, help="Container name to have on Azure Blob Storage.")
+    blob_name = parser.add_argument("--blob-name", type=str, help="Block name to have on Azure Blob Storage.")
+    args = parser.parse_args()
+
+
     blob_service_client = BlobServiceClient(
         account_url=f"https://{ACCOUNT_NAME}.blob.core.windows.net", credential=ACCOUNT_KEY
     )
-    create_container(blob_service_client, sys.argv[2])
-    if os.path.isdir(sys.argv[1]):
-        upload_dir_content_to_azure(sys.argv[1], blob_service_client, sys.argv[2])
+
+
+
+    create_container(blob_service_client, container_name)
+    if os.path.isdir(file_path):
+        upload_dir_content_to_azure(file_path, blob_service_client, container_name)
     else:
-        upload_blob_file(sys.argv[1], blob_service_client, sys.argv[2], sys.argv[3])
+        upload_blob_file(file_path, blob_service_client, container_name, blob_name)
 
     message = f""""
-    File uploaded to Azure Blob Storage: {get_public_access_url(blob_service_client, sys.argv[2])}/{sys.argv[1].split('/')[-1]}/
+    File uploaded to Azure Blob Storage: {get_public_access_url(blob_service_client, container_name)}/{file_path.split('/')[-1]}/
     Uploaded files can be accessed for {RETENTION_DAYS} days.
     Files can be downloaded by appending file name to the above URL.
     e.g (for data generated on 26-03-2023)
-        - {get_public_access_url(blob_service_client, sys.argv[2])}/{sys.argv[1].split('/')[-1]}/orbis_data_licensee_26_03_2023.xlsx
-        - {get_public_access_url(blob_service_client, sys.argv[2])}/{sys.argv[1].split('/')[-1]}/orbis_data_licensee_26_03_2023.csv
+        - {get_public_access_url(blob_service_client, container_name)}/{file_path.split('/')[-1]}/orbis_data_licensee_26_03_2023.xlsx
+        - {get_public_access_url(blob_service_client, container_name)}/{file_path.split('/')[-1]}/orbis_data_licensee_26_03_2023.csv
     """
 
     send_message_to_slack(message, SLACK_CHANNEL)
