@@ -35,6 +35,12 @@ on:
         required: false
         default: false
 
+      check_on_sec:
+        description: 'SEC.GOV website will be checked for additional data to aggregate. Check this option to enable it.'
+        type: boolean
+        required: false
+        default: false
+
   repository_dispatch:
     types: crawl-data
 
@@ -70,6 +76,7 @@ env:
   # artifact specific 
   RETENTION_PERIOD: 20 # in days 
 
+  CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
 permissions:
   contents: read
 
@@ -165,7 +172,7 @@ jobs:
       env: 
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
         SEND_DATA_ON_COMPLETION: ${{ github.event.inputs.send_data_on_completion }}
-
+        CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
     #**********************************************************************************************************************
     #  POST PROCESSING STEPS 
     #**********************************************************************************************************************
@@ -210,6 +217,14 @@ jobs:
         python utils/send_to_slack.py --file_path orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip is attached.'
       continue-on-error: true
 
+
+    - name: Send data to Telegram 
+      run: |
+        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F text="Data is ready ! Link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}" https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
+      continue-on-error: true
+
+
     - name: Upload data to artifact 
       uses: actions/upload-artifact@v3
       with:
@@ -219,11 +234,6 @@ jobs:
            !'${{ env.DATA_DIR }}sample_data.xlsx'
            !'${{ env.DATA_DIR }}sample_data_big.xlsx'
         retention-days: ${{ env.RETENTION_PERIOD }}
-
-    - name: Send data to Telegram 
-      run: |
-        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
-        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F text="Data is ready ! Link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}" https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
       continue-on-error: true
 
     - name:  Send Job Success Notification to Slack
