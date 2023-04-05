@@ -330,7 +330,7 @@ def create_input_file_for_orbis_batch_search(source_file, output_file, is_licens
         # get
 
         df = crawler.read_xlxs_file(source_file)
-        df = df.drop_duplicates(subset="Licensee 1_cleaned")
+        df = df.drop_duplicates(subset=["Licensee 1_cleaned", "Licensee CIK 1_cleaned"])
         # get two columns
         df = df[cols]
         df = df.replace(r"\n", " ", regex=True)

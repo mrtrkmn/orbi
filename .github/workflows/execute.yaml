@@ -35,6 +35,12 @@ on:
         required: false
         default: false
 
+      check_on_sec:
+        description: 'SEC.GOV website will be checked for additional data to aggregate. Check this option to enable it.'
+        type: boolean
+        required: false
+        default: false
+
   repository_dispatch:
     types: crawl-data
 
@@ -47,8 +53,8 @@ env:
   ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
 
   # crawler specific
-  DATA_DIR: /home/runner/work/orbi/orbi/data/
-  LOG_DIR: /home/runner/work/orbi/orbi/logs/
+  DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
+  LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
   MAX_RUN_ATTEMPTS: 3  # if it is unable to successfull in this number tries, the crawler will exit with failure
@@ -68,8 +74,9 @@ env:
   SLACK_FOOTER: '🤓 automated bot Orbi'
   SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
   # artifact specific 
-  RETENTION_PERIOD: 90 # in days 
+  RETENTION_PERIOD: 20 # in days 
 
+  CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
 permissions:
   contents: read
 
@@ -165,7 +172,7 @@ jobs:
       env: 
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
         SEND_DATA_ON_COMPLETION: ${{ github.event.inputs.send_data_on_completion }}
-
+        CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
     #**********************************************************************************************************************
     #  POST PROCESSING STEPS 
     #**********************************************************************************************************************
@@ -177,12 +184,24 @@ jobs:
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
         SLACK_MESSAGE: ':x: Failed to run batch search, please check on Github. '
         SLACK_TITLE: ':x: Batch search failed at some point, in most cases this is caused due to slowness in the network (since it causes slow rendering of the page and leads to have no element we are looking for) !'
-
+        
+        
+    # python utils/upload_to_azure.py <file/dir> <container> <blob>
+    - name: Upload to Azure Blob 
+      run: | 
+        pip install azure-storage-blob
+        python utils/upload_to_azure.py --dir-file-path ${{ env.DATA_DIR }} --container-name ${{ env.AZURE_CONTAINER_NAME }} --blob-name orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
+      env: 
+        ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+        ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+        RETENTION_DAYS: 7
+        CONTAINER_NAME: ${{ secrets.AZURE_CONTAINER_NAME }}
+      continue-on-error: true
 
     # zip the data except sample_data.xlsx
     - name: Zip data
       run: |
-        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip orbis-data/ -x "orbis-data/sample_data.xlsx"
+        zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip '${{ env.DATA_DIR }}' -x '${{ env.DATA_DIR }}sample_data.xlsx' -x '${{ env.DATA_DIR }}sample_data_big.xlsx' -x '${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }}'
 
 # do not upload for now
     # - name: Upload to S3 
@@ -195,8 +214,16 @@ jobs:
     - name: Send data to slack channel 
       if: ${{ success() && github.event.inputs.notify == 'true' }}
       run: |
-        python utils/utils.py --file_path orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip is attached.'
+        python utils/send_to_slack.py --file_path orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip is attached.'
       continue-on-error: true
+
+
+    - name: Send data to Telegram 
+      run: |
+        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F text="Data is ready ! Link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}" https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
+      continue-on-error: true
+
 
     - name: Upload data to artifact 
       uses: actions/upload-artifact@v3
@@ -204,14 +231,9 @@ jobs:
         name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
         path: |
            ${{ env.DATA_DIR }}
-           ${{ env.LOG_DIR }}
            !'${{ env.DATA_DIR }}sample_data.xlsx'
+           !'${{ env.DATA_DIR }}sample_data_big.xlsx'
         retention-days: ${{ env.RETENTION_PERIOD }}
-
-    - name: Send data to Telegram 
-      run: |
-        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
-        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F text="Data is ready ! Link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}" https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
       continue-on-error: true
 
     - name:  Send Job Success Notification to Slack
