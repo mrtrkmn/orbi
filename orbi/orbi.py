@@ -1973,7 +1973,7 @@ if __name__ == "__main__":
     if os.path.exists(path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name)):
         print(f"Licensee file exists: {orbis_data_licensee_file_name}. Skipping to re-create it.")
     else:
-        if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC"):
+        if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC") != "false":
             create_input_file_for_orbis_batch_search(
                 path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
                 path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
@@ -1992,7 +1992,7 @@ if __name__ == "__main__":
         print(f"Licensor file exists: {orbis_data_licensor_file_name}. Skipping to re-create it.")
     else:
         # generates csv file for licensor
-        if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC"):
+        if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC") != "false":
             create_input_file_for_orbis_batch_search(
                 path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
                 path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
