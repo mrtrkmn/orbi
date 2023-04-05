@@ -1260,7 +1260,7 @@ class Orbis:
         except Exception as e:
             print("Not possible to set 100 in the page size dropdown")
             pass
-            
+
     def find_no_matched_companies(self):
         COMPANIES_TABLE = '//*[@id="main-content"]/div/form/table/tbody'
         try:
@@ -1270,7 +1270,7 @@ class Orbis:
             print("Not possible to find no matched companies")
             return
         return companies
-    
+
     def write_not_matched_companies_to_file(self, companies, file_name, orbis_data_source_file):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         with open(path.join(self.data_dir, file_name), "a") as f:
@@ -1293,7 +1293,7 @@ class Orbis:
                     raw_company_info = company_text.split("\n")
                     # print(f"raw company info is {raw_company_info}")
                     # print(f"raw company info last element length is {len(raw_company_info[:-1])}")
-                    if (len(raw_company_info[-1]) != 1):  # expecting to have a one letter A, B, C, D, E, ....
+                    if len(raw_company_info[-1]) != 1:  # expecting to have a one letter A, B, C, D, E, ....
                         f.write(raw_company_info[0])
                         f.write("\n")
             f.write(f"{timestamp}-------------------------------------------- \n")
@@ -1356,7 +1356,7 @@ class Orbis:
 
         while current_page != int(max_value):
             not_matched_companies = self.find_no_matched_companies()
-            self.write_not_matched_companies_to_file(not_matched_companies, NOT_MATCHED_COMPANIES_FILE_NAME, file_name) 
+            self.write_not_matched_companies_to_file(not_matched_companies, NOT_MATCHED_COMPANIES_FILE_NAME, file_name)
             time.sleep(5)
             current_page += 1
             self.go_to_page(current_page)
