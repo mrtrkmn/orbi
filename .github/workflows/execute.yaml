@@ -76,7 +76,7 @@ env:
   # artifact specific 
   RETENTION_PERIOD: 20 # in days 
 
-  CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
+
 permissions:
   contents: read
 
@@ -168,6 +168,7 @@ jobs:
         timeout_minutes: ${{ env.RUN_TIMEOUT_IN_MN }} # 2 hours
         max_attempts: ${{ env.MAX_RUN_ATTEMPTS }} # 3 times retry if failed
         command: |
+          echo $CHECK_ON_SEC
           python orbi/orbi.py
       env: 
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
