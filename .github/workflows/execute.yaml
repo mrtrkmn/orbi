@@ -158,6 +158,14 @@ jobs:
         SLACK_MESSAGE: ':bell: Orbi is started crawl data from Orbis database on  Github using the file ${{ github.event.inputs.data }}  as input data.'
         SLACK_TITLE: ':bell: Orbi is working on crawling data from Orbis database on Github'
    
+
+    - name: Print value of CHECK_ON_SEC
+      run: |
+        echo $CHECK_ON_SEC
+        exit 0
+      env: 
+        CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
+
     #**********************************************************************************************************************
     # RUN Orbi for batch search on Orbis
     #**********************************************************************************************************************
