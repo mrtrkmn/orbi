@@ -36,7 +36,7 @@ timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 # log_file = pathlib.Path(getenv("LOG_DIR")).joinpath(rf'{timestamp}_orbis.log')
 # get current working directory
-log_file = pathlib.Path.cwd().joinpath(rf"logs/{timestamp}_orbis.log")
+log_file = pathlib.Path.cwd().joinpath(f"logs/{timestamp}_orbis.log")
 
 logging.basicConfig(
     filename=log_file,
