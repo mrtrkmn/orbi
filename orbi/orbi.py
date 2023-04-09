@@ -47,7 +47,7 @@ logging.basicConfig(
 
 logger = logging.getLogger()
 
-SLACK_CHANNEL = 
+SLACK_CHANNEL = environ.get("SLACK_CHANNEL")
 
 ##### Orbis #####
 
@@ -1946,7 +1946,7 @@ def get_data_dir_from_config():
 if __name__ == "__main__":
     # initial checks
     if environ.get("LOCAL_DEV") == "True":
-        environ["DATA_SOURCE"] = "sample_data_big.xlsx"
+        environ["DATA_SOURCE"] = "sample_data.xlsx"
         environ["DATA_DIR"] = get_data_dir_from_config()["data"]["path"]
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
