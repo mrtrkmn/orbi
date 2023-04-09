@@ -18,6 +18,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from slack_sdk import WebClient
+from utils.send_to_slack import send_file_to_slack
 
 # from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
@@ -46,6 +47,7 @@ logging.basicConfig(
 
 logger = logging.getLogger()
 
+SLACK_CHANNEL = 
 
 ##### Orbis #####
 
@@ -1344,7 +1346,7 @@ class Orbis:
             print("Not possible to find total page")
             print("Exception: ", e)
 
-        with open(path.join(self.data_dir, "not_matched_companies.txt"), "a") as f:
+        with open(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), "a") as f:
             f.write(f"List of companies not matched in {file_name}: \n")
             f.write("-------------------------------------------- \n")
         self.find_no_matched_companies()
@@ -1398,6 +1400,11 @@ class Orbis:
         if not self.count_total_search():
             self.iterate_over_pages(file_name=input_file)
 
+        try:
+            if environ.get("SLACK_CHANNEL") is not None and environ.get("SLACK_CHANNEL") != "":
+                send_file_to_slack(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), environ.get("SLACK_CHANNEL"), f"Not found companies for input file: {input_file}" )
+        except Exception as e:
+            print(e)
         # when search is finished, click on the search results button
         if not self.count_total_search():
             self.view_search_results()
