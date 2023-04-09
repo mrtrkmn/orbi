@@ -1402,7 +1402,11 @@ class Orbis:
 
         try:
             if environ.get("SLACK_CHANNEL") is not None and environ.get("SLACK_CHANNEL") != "":
-                send_file_to_slack(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), environ.get("SLACK_CHANNEL"), f"Not found companies for input file: {input_file}" )
+                send_file_to_slack(
+                    path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME),
+                    environ.get("SLACK_CHANNEL"),
+                    f"Not found companies for input file: {input_file}",
+                )
         except Exception as e:
             print(e)
         # when search is finished, click on the search results button
