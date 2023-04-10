@@ -18,7 +18,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from slack_sdk import WebClient
-from utils.send_to_slack import send_file_to_slack
+
 
 # from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
@@ -29,6 +29,9 @@ from crawl import create_input_file_for_orbis_batch_search
 
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
+sys.path.append("utils")
+
+import send_to_slack
 
 # initialize logger
 
@@ -36,6 +39,7 @@ timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 # log_file = pathlib.Path(getenv("LOG_DIR")).joinpath(rf'{timestamp}_orbis.log')
 # get current working directory
+
 log_file = pathlib.Path.cwd().joinpath(f"logs/{timestamp}_orbis.log")
 
 logging.basicConfig(
@@ -46,8 +50,7 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger()
-
-SLACK_CHANNEL = environ.get("SLACK_CHANNEL")
+logger.setLevel(logging.DEBUG)
 
 ##### Orbis #####
 
@@ -1230,25 +1233,6 @@ class Orbis:
             self.__exit__()
             sys.exit(1)
 
-    def send_file_to_slack(self, file_path, channel, message):
-        """
-        Send a file to a Slack channel.
-
-        :param file_path (str): The path to the file to send.
-        :param channel (str): The channel to send the file to.
-        :param message (str): The message to send with the file.
-
-        :return:
-        None
-        """
-        logger.debug(f"Sending file {file_path} to Slack channel {channel}")
-        slack_client = WebClient(token=self.slack_token)
-        slack_client.files_upload(
-            channels=self.slack_channel,
-            file=file_path,
-            initial_comment=message,
-        )
-
     def set_number_of_rows_in_view(self):
         """
         Sets the number of rows in view to number_of_rows in the dropdown menu according to number of inputs.
@@ -1401,8 +1385,12 @@ class Orbis:
             self.iterate_over_pages(file_name=input_file)
 
         try:
-            if environ.get("SLACK_CHANNEL") is not None and environ.get("SLACK_CHANNEL") != "":
-                send_file_to_slack(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), environ.get("SLACK_CHANNEL"), f"Not found companies for input file: {input_file}" )
+            if self.slack_channel is not None and self.slack_channel != "":
+                send_file_to_slack(
+                    path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME),
+                    self.slack_channel,
+                    f"Not found companies for input file: {input_file}",
+                )
         except Exception as e:
             print(e)
         # when search is finished, click on the search results button
