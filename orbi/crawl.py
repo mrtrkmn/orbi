@@ -209,16 +209,13 @@ class Crawler:
                 }
             )
         # convert the CIK Number to int
-        
+
         # return only the CIK Number and FY columns
         df = df[["CIK Number", "FY"]].dropna(subset=["CIK Number"])
         # df["CIK Number"] = df["CIK Number"].astype(int)
         return df
 
-    def get_company_facts_data(
-        self,
-        df
-    ):
+    def get_company_facts_data(self, df):
         """
         Retrieve the company facts data from the json data
 
@@ -240,7 +237,6 @@ class Crawler:
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
             }
             try:
-
                 response = requests.get(
                     url,
                     headers=headers,
@@ -254,7 +250,7 @@ class Crawler:
             else:
                 print(f"Failed to get JSON data: {response.text}")
                 continue
-                
+
             # raw_data = company_facts_data["JSON"]
             company_name = company_facts_data["entityName"]
             cik_number = company_facts_data["cik"]
@@ -265,31 +261,29 @@ class Crawler:
                 if not "GrossProfit" in company_facts_data["facts"]["us-gaap"]:
                     print(f"GrossProfit not in company_facts_data['facts']['us-gaap'] for {cik_number}")
                     continue
-                
+
                 gross_profit_usd = company_facts_data["facts"]["us-gaap"]["GrossProfit"]["units"]["USD"]
                 is_us_gaap = True
 
-            if not is_us_gaap and "ifrs-full"  in company_facts_data["facts"]:
+            if not is_us_gaap and "ifrs-full" in company_facts_data["facts"]:
                 print("ifrs-full not in company_facts_data['facts']")
                 if not "GrossProfit" in company_facts_data["facts"]["ifrs-full"]:
                     print(f"GrossProfit not in company_facts_data['facts']['ifrs-full'] for {cik_number}")
                     continue
-                
+
                 gross_profit_usd = company_facts_data["facts"]["ifrs-full"]["GrossProfit"]["units"]["DKK"]
                 is_us_gaap = False
-            
 
             for value in gross_profit_usd:
-                
-                    if  value["fy"] == fy:
-                        form_type = value["form"]  
-                        start_date = value["start"]
-                        end_date = value["end"]
-                        financial_year = value["fy"]
-                        gross_profit = value["value"]
-                        print(f"company_name: {company_name} form_type: {form_type}, start_date: {start_date}, end_date: {end_date}, financial_year: {financial_year}, gross_profit: {gross_profit}")
-
-
+                if value["fy"] == fy:
+                    form_type = value["form"]
+                    start_date = value["start"]
+                    end_date = value["end"]
+                    financial_year = value["fy"]
+                    gross_profit = value["value"]
+                    print(
+                        f"company_name: {company_name} form_type: {form_type}, start_date: {start_date}, end_date: {end_date}, financial_year: {financial_year}, gross_profit: {gross_profit}"
+                    )
 
     def parse_company_financial_info(
         self,
@@ -304,17 +298,13 @@ class Crawler:
         company_name = company_facts_data["entityName"]
         cik_number = company_facts_data["cik"]
 
-
-
         gross_profit_usd = company_facts_data["facts"]["us-gaap"]["GrossProfit"]["units"]["USD"]
-        
+
         for key, value in gross_profit_usd.items():
-            form_type = gross_profit_usd[key]["form"]  
+            form_type = gross_profit_usd[key]["form"]
             start_date = gross_profit_usd[key]["start"]
             end_date = gross_profit_usd[key]["end"]
             financial_year = gross_profit_usd[key]["fy"]
-
-
 
     def get_data_from_sec_gov_in_parallel(
         self,
@@ -790,13 +780,12 @@ if __name__ == "__main__":
         #     f"company_facts_{timestamp}.json",
         #     is_licensee=True,
         # )
-       
-        fy_cik_df = crawler.get_cik_number_fy_columns(os.path.join(os.path.abspath("data"), "sample_data.xlsx"), is_licensee=True)
-       # get company facts
-        crawler.get_company_facts_data(fy_cik_df)
-        
 
+        fy_cik_df = crawler.get_cik_number_fy_columns(
+            os.path.join(os.path.abspath("data"), "sample_data.xlsx"), is_licensee=True
+        )
+        # get company facts
+        crawler.get_company_facts_data(fy_cik_df)
 
     # print(fy_cik_df)
 # -------------------------------------------------------------------------------------------------------------------------------
-
