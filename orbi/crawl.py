@@ -3,14 +3,21 @@ import hashlib
 import os
 import re
 import sys
+import json
 import time
-from datetime import datetime
-from threading import Thread
+from datetime import (
+    datetime,
+)
+from threading import (
+    Thread,
+)
 
 import pandas as pd
 import requests
 import yaml
-from bs4 import BeautifulSoup
+from bs4 import (
+    BeautifulSoup,
+)
 
 # Description: This script crawls the IPO website for the patent-related data and SEC.gov for the company-related data
 #             and stores them in a csv file.
@@ -31,7 +38,9 @@ class Crawler:
     CIK numbers are fetched from SEC.gov.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+    ):
         """
         Initialize the crawler
 
@@ -47,7 +56,10 @@ class Crawler:
 
     # crawl the IPO website for the patent-related data
 
-    def find_publication(self, publication_number):
+    def find_publication(
+        self,
+        publication_number,
+    ):
         """
         Find the publication number on the IPO website and add the data to the dictionary
 
@@ -64,10 +76,16 @@ class Crawler:
             raise Exception(f"Failed to get HTML content: {response.text}")
 
         # parse the html content
-        soup = BeautifulSoup(html, "html.parser")
+        soup = BeautifulSoup(
+            html,
+            "html.parser",
+        )
         # find the table with the publication details
         try:
-            table = soup.find("table", {"class": "BibliographyTable"})
+            table = soup.find(
+                "table",
+                {"class": "BibliographyTable"},
+            )
         except AttributeError as e:
             raise Exception(f"Failed to find the table: {e}")
 
@@ -80,32 +98,53 @@ class Crawler:
         # find the first row
         for row in rows:
             # find the first column
-            header = row.find_all("td", {"class": "CaseDataItemHeader"})[0].text
-            value = row.find_all("td", {"class": "CaseDataItemValue"})[0].text
+            header = row.find_all(
+                "td",
+                {"class": "CaseDataItemHeader"},
+            )[0].text
+            value = row.find_all(
+                "td",
+                {"class": "CaseDataItemValue"},
+            )[0].text
             self.ipo_data[header] = value
 
         # publication_no = all_data.find(class_="CaseHeader").text
 
-    def __enter__(self):
+    def __enter__(
+        self,
+    ):
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type,
+        exc_value,
+        traceback,
+    ):
         # empty the dictionaries
         self.ipo_data.clear()
         self.sec_cik_numbers.clear()
 
-    def check_cik_number_format(self, cik_number):
+    def check_cik_number_format(
+        self,
+        cik_number,
+    ):
         """
         Check if the CIK number is 10 digits
         :param cik_number: CIK number of the company
         """
         # check if the cik number is 10 digits
         cik_number = str(cik_number)
-        if re.match(r"^\d{10}$", cik_number):
+        if re.match(
+            r"^\d{10}$",
+            cik_number,
+        ):
             return True
         return False
 
-    def get_publication(self):
+    def get_publication(
+        self,
+    ):
         # return the publication details
         """
         Return all the publication details from the dictionary saved in the class
@@ -113,7 +152,10 @@ class Crawler:
 
         return self.ipo_data
 
-    def get_data_from_sec_gov(self, cik_number):
+    def get_data_from_sec_gov(
+        self,
+        cik_number,
+    ):
         """
         Retrieve the json data from the SEC.gov website
 
@@ -128,7 +170,10 @@ class Crawler:
             "Content-Type": "application/json",
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
         }
-        response = requests.get(url, headers=headers)
+        response = requests.get(
+            url,
+            headers=headers,
+        )
         if response.status_code == 200:
             json_data = response.json()
         else:
@@ -136,7 +181,12 @@ class Crawler:
 
         return json_data
 
-    def get_data_from_sec_gov_in_parallel(self, url, company_name, results):
+    def get_data_from_sec_gov_in_parallel(
+        self,
+        url,
+        company_name,
+        results,
+    ):
         # get the json data from the SEC.gov website
         # https://data.sec.gov/submissions/CIK##########.json
 
@@ -154,7 +204,10 @@ class Crawler:
         else:
             cik_number = url.split(".json")[0].split("CIK")[1]
             print(f"requesting data from {url}")
-            response = requests.get(url, headers=headers)
+            response = requests.get(
+                url,
+                headers=headers,
+            )
             if response.status_code == 200:
                 json_data = response.json()
             else:
@@ -163,7 +216,10 @@ class Crawler:
 
         results.append(json_data)
 
-    def lookup_cik(self, company_name):
+    def lookup_cik(
+        self,
+        company_name,
+    ):
         """
         Lookup the CIK number of the company on the SEC.gov website
         :param company_name: name of the company
@@ -172,14 +228,23 @@ class Crawler:
         # get the html content of the page
         # https://www.sec.gov/edgar/searchedgar/cik
         url = f"https://www.sec.gov/cgi-bin/cik_lookup"
-        params = {"company": company_name, "MIME Type": "application/x-www-form-urlencode"}
-        response = requests.post(url, data=params)
+        params = {
+            "company": company_name,
+            "MIME Type": "application/x-www-form-urlencode",
+        }
+        response = requests.post(
+            url,
+            data=params,
+        )
 
         if response.status_code == 200:
             html = response.text
         else:
             raise Exception(f"Failed to get HTML content: {response.text}")
-        soup = BeautifulSoup(html, "html.parser")
+        soup = BeautifulSoup(
+            html,
+            "html.parser",
+        )
 
         try:
             # find the table with the publication details
@@ -204,7 +269,9 @@ class Crawler:
                 continue
 
     # get all cik numbers
-    def get_existing_cik_numbers(self):
+    def get_existing_cik_numbers(
+        self,
+    ):
         """
         Get all the CIK numbers from the dictionary saved in the class
         """
@@ -212,16 +279,25 @@ class Crawler:
 
     # read xlxs file with pandas
 
-    def read_xlxs_file(self, file_path):
+    def read_xlxs_file(
+        self,
+        file_path,
+    ):
         """
         Generate a pandas dataframe from the excel file
         :param file_path: path to the excel file
         """
-        df = pd.read_excel(file_path, engine="openpyxl")
+        df = pd.read_excel(
+            file_path,
+            engine="openpyxl",
+        )
         return df
 
     # check if the state code belongs to the US
-    def is_usa(self, state_code):
+    def is_usa(
+        self,
+        state_code,
+    ):
         """
         Check if the state code belongs to the US
         :param state_code: state code of the company
@@ -282,13 +358,19 @@ class Crawler:
             return True
         return False
 
-    def read_config(self, path):
+    def read_config(
+        self,
+        path,
+    ):
         """
         Read the config file
         :param path: path to the config file
         """
         # read from yaml config file
-        with open(path, "r") as f:
+        with open(
+            path,
+            "r",
+        ) as f:
             try:
                 config = yaml.safe_load(f)
             except yaml.YAMLError as exc:
@@ -296,7 +378,10 @@ class Crawler:
         return config
 
 
-def generate_unique_id(company_name, n=25):
+def generate_unique_id(
+    company_name,
+    n=25,
+):
     """
     Generate a unique id for the company; hash company name
     :param company_name: name of the company
@@ -306,13 +391,91 @@ def generate_unique_id(company_name, n=25):
     return sha256.hexdigest()[:n]
 
 
+def save_raw_data(
+    results,
+    output_file,
+):
+    """
+    Save the raw data from the SEC.gov website
+    :param results: list of dictionaries with the data from the SEC.gov website
+    :param output_file: path to the output file
+    """
+    with open(
+        output_file,
+        "w",
+    ) as f:
+        for result in results:
+            try:
+                street1 = result["addresses"]["business"]["street1"]
+            except KeyError as e:
+                street1 = "No street1 found"
+
+            try:
+                street2 = result["addresses"]["business"]["street2"]
+            except KeyError as e:
+                street2 = "No street2 found"
+
+            try:
+                city = result["addresses"]["business"]["city"]
+            except KeyError as e:
+                city = "No city found"
+
+            try:
+                state = result["addresses"]["business"]["state"]
+            except KeyError as e:
+                state = "No state found"
+
+            try:
+                zipCode = result["addresses"]["business"]["zipCode"]
+            except KeyError as e:
+                zipCode = "No zipCode found"
+
+            try:
+                stateOrCountry = result["addresses"]["business"]["stateOrCountry"]
+            except KeyError as e:
+                stateOrCountry = "No stateOrCountry found"
+
+            try:
+                stateOrCountryDescription = result["addresses"]["business"]["stateOrCountryDescription"]
+            except KeyError as e:
+                stateOrCountryDescription = "No stateOrCountryDescription found"
+
+            raw_data = (
+                str(street1)
+                + ", "
+                + str(street2)
+                + ", "
+                + str(city)
+                + ", "
+                + str(state)
+                + ", "
+                + str(zipCode)
+                + ", "
+                + str(stateOrCountry)
+                + ", "
+                + str(stateOrCountryDescription)
+            )
+
+            try:
+                # f.write(json.dumps(result["addresses"]["business"]))
+                f.write(raw_data)
+                f.write("\n")
+            except KeyError as e:
+                f.write("No address found\n")
+                continue
+
+
 # prepare_data generates the file which needs to be used in orbi.py first step
 #  source_file: provided by the user
 # output_file: csv file with the data from the SEC.gov website (columns:
 # company name, city, country, identifier)
 
 
-def create_input_file_for_orbis_batch_search(source_file, output_file, is_licensee=False):
+def create_input_file_for_orbis_batch_search(
+    source_file,
+    output_file,
+    is_licensee=False,
+):
     """
     Create the input file for the Orbis batch search; CSV file with the data from the SEC.gov website
 
@@ -321,27 +484,47 @@ def create_input_file_for_orbis_batch_search(source_file, output_file, is_licens
     :param is_licensee: boolean value to indicate if the source file is for licensee or licensor
     """
 
-    if is_licensee:
-        cols = ["Licensee 1_cleaned", "Licensee CIK 1_cleaned"]
-    else:
-        cols = ["Licensor 1_cleaned", "Licensor CIK 1_cleaned"]
     with Crawler() as crawler:
         results = []
         # get
 
         df = crawler.read_xlxs_file(source_file)
-        df = df.drop_duplicates(subset=["Licensee 1_cleaned", "Licensee CIK 1_cleaned"])
+        if is_licensee:
+            cols = [
+                "Licensee 1_cleaned",
+                "Licensee CIK 1_cleaned",
+            ]
+            df = df.drop_duplicates("Licensee 1_cleaned")
+        else:
+            cols = [
+                "Licensor 1_cleaned",
+                "Licensor CIK 1_cleaned",
+            ]
+            df = df.drop_duplicates("Licensor 1_cleaned")
+
         # get two columns
         df = df[cols]
-        df = df.replace(r"\n", " ", regex=True)
+        df = df.replace(
+            r"\n",
+            " ",
+            regex=True,
+        )
         # create file on data folder
-        columns = ["company name", "city", "country", "identifier"]
+        columns = [
+            "company name",
+            "city",
+            "country",
+            "identifier",
+        ]
         # Set the maximum number of requests per second
 
         max_requests_per_second = 10  # defined by SEC.gov
         company_info = {}
 
-        for index, row in df.iterrows():
+        for (
+            index,
+            row,
+        ) in df.iterrows():
             try:
                 company_name = row[0]
 
@@ -356,7 +539,14 @@ def create_input_file_for_orbis_batch_search(source_file, output_file, is_licens
                 company_info[company_name] = ""
 
         threads = [
-            Thread(target=crawler.get_data_from_sec_gov_in_parallel, args=(url, company_name, results))
+            Thread(
+                target=crawler.get_data_from_sec_gov_in_parallel,
+                args=(
+                    url,
+                    company_name,
+                    results,
+                ),
+            )
             for company_name, url in company_info.items()
         ]
 
@@ -367,36 +557,63 @@ def create_input_file_for_orbis_batch_search(source_file, output_file, is_licens
         for thread in threads:
             thread.join()
 
-        with open(output_file, "w") as f:
-            w = csv.writer(f, delimiter=";")
+        save_raw_data(
+            results,
+            "raw_data_from_sec_gov.json",
+        )
+
+        with open(
+            output_file,
+            "w",
+        ) as f:
+            w = csv.writer(
+                f,
+                delimiter=";",
+            )
             w.writerow(columns)
 
             for result in results:
                 try:
                     name = result["name"]
-                    # own_id = generate_unique_id(name)
-                    city = result["addresses"]["business"]["city"]
-                    country = result["addresses"]["business"]["stateOrCountryDescription"]
-                    identifier = result["cik_number"]
-                    if crawler.is_usa(country):
-                        country = "United States of America"
-                    # cik_number = result["cikNumber"]
-                    w.writerow([name, city, country, identifier])
                 except KeyError as e:
                     print(f"Failed to find the key: {e} for {result['name']}")
-                    if result["cik_number"] == "":
-                        w.writerow([result["name"], "", "", ""])
-                    if result["name"] != "" and result["cik_number"] != "":
-                        w.writerow([result["name"], "", "", result["cik_number"]])
+                    continue
+
+                try:
+                    city = result["addresses"]["business"]["city"]
+                except KeyError as e:
+                    print(f"Failed to find the key: {e} for {result['name']}")
+                    city = ""
+
+                try:
+                    country = result["addresses"]["business"]["stateOrCountryDescription"]
+                except KeyError as e:
+                    print(f"Failed to find the key: {e} for {result['name']}")
+                    country = ""
+
+                try:
+                    identifier = result["cik_number"]
+                except KeyError as e:
+                    print(f"Failed to find the key: {e} for {result['name']}")
+                    identifier = ""
+
+                if crawler.is_usa(country):
+                    country = "United States of America"
+                w.writerow(
+                    [
+                        name,
+                        city,
+                        country,
+                        identifier,
+                    ]
+                )
 
 
 # In case of running only crawler part
 # ----------------------------------------------------------------------------------------------------------------------------
 # if __name__ == "__main__":
-#     data_path = os.path.join(
-#         os.path.dirname(
-#             os.path.abspath('data')),
-#         "sample_data.xlsx")
+#     print(os.path.dirname(os.path.abspath("data")))
+#     data_path = os.path.join("sample_data.xlsx")
 #     timestamp = datetime.now().strftime("%d_%m_%Y")
 #     # crawler.find_publication("GB2419368")
 #     # print(crawler.get_publication())
@@ -405,5 +622,14 @@ def create_input_file_for_orbis_batch_search(source_file, output_file, is_licens
 #     # cik_number = crawler.get_existing_cik_numbers()[company_name]
 #     # print(crawler.get_data_from_sec_gov(cik_number))
 #     # print(crawler.get_data_from_sec_gov_in_parallel(cik_number))
-#     create_input_file_for_orbis_batch_search("sample_data.xlsx", f"orbis_data_{timestamp}.csv")
+#     # print(os.path.dirname(os.path.abspath('data')))
+#     create_input_file_for_orbis_batch_search(
+#         os.path.join(
+#             os.path.abspath("data"),
+#             "sample_data.xlsx",
+#         ),
+#         f"orbis_data_{timestamp}.csv",
+#         is_licensee=True,
+#     )
+
 # -------------------------------------------------------------------------------------------------------------------------------
