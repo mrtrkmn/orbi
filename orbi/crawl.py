@@ -181,6 +181,141 @@ class Crawler:
 
         return json_data
 
+    def get_cik_number_fy_columns(self, excel_file, is_licensee=False):
+        # get Licensee CIK 1_cleaned and Agreement Date
+        # substract one year from the Agreement Date
+
+        df = pd.read_excel(excel_file)
+        if is_licensee:
+            df = df[["Licensee CIK 1_cleaned", "Agreement Date"]]
+            df["Agreement Date"] = pd.to_datetime(df["Agreement Date"])
+            df["Agreement Date"] = df["Agreement Date"].dt.year - 1
+            df = df.rename(
+                columns={
+                    "Licensee CIK 1_cleaned": "CIK Number",
+                    "Agreement Date": "FY",
+                }
+            )
+            # drop the rows with invalid CIK Number
+            df = df[df["CIK Number"].apply(self.check_cik_number_format)]
+        else:
+            df = df[["Licensee CIK 1_cleaned", "Agreement Date"]]
+            df["Agreement Date"] = pd.to_datetime(df["Agreement Date"])
+            df["Agreement Date"] = df["Agreement Date"].dt.year - 1
+            df = df.rename(
+                columns={
+                    "Licensee CIK 1_cleaned": "CIK Number",
+                    "Agreement Date": "FY",
+                }
+            )
+        # convert the CIK Number to int
+        
+        # return only the CIK Number and FY columns
+        df = df[["CIK Number", "FY"]].dropna(subset=["CIK Number"])
+        # df["CIK Number"] = df["CIK Number"].astype(int)
+        return df
+
+    def get_company_facts_data(
+        self,
+        df
+    ):
+        """
+        Retrieve the company facts data from the json data
+
+        :param json_data: json data from the SEC.gov website
+        """
+        json_data = {}
+        # df contains the CIK Number and FY columns
+        # get the json data from the SEC.gov website
+        # "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik_number}.json"
+        for index, row in df.iterrows():
+            is_us_gaap = False
+            cik_number = row["CIK Number"]
+            fy = row["FY"]
+            url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik_number}.json"
+            print(f"requesting company facts data from {url}")
+            headers = {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
+            }
+            try:
+
+                response = requests.get(
+                    url,
+                    headers=headers,
+                )
+            except Exception as e:
+                print(e)
+                continue
+
+            if response.status_code == 200:
+                company_facts_data = response.json()
+            else:
+                print(f"Failed to get JSON data: {response.text}")
+                continue
+                
+            # raw_data = company_facts_data["JSON"]
+            company_name = company_facts_data["entityName"]
+            cik_number = company_facts_data["cik"]
+
+            # check if ["facts"]["us-gaap"] exists in the json data
+            if "us-gaap" in company_facts_data["facts"]:
+                print("us-gaap  in company_facts_data['facts']")
+                if not "GrossProfit" in company_facts_data["facts"]["us-gaap"]:
+                    print(f"GrossProfit not in company_facts_data['facts']['us-gaap'] for {cik_number}")
+                    continue
+                
+                gross_profit_usd = company_facts_data["facts"]["us-gaap"]["GrossProfit"]["units"]["USD"]
+                is_us_gaap = True
+
+            if not is_us_gaap and "ifrs-full"  in company_facts_data["facts"]:
+                print("ifrs-full not in company_facts_data['facts']")
+                if not "GrossProfit" in company_facts_data["facts"]["ifrs-full"]:
+                    print(f"GrossProfit not in company_facts_data['facts']['ifrs-full'] for {cik_number}")
+                    continue
+                
+                gross_profit_usd = company_facts_data["facts"]["ifrs-full"]["GrossProfit"]["units"]["DKK"]
+                is_us_gaap = False
+            
+
+            for value in gross_profit_usd:
+                
+                    if  value["fy"] == fy:
+                        form_type = value["form"]  
+                        start_date = value["start"]
+                        end_date = value["end"]
+                        financial_year = value["fy"]
+                        gross_profit = value["value"]
+                        print(f"company_name: {company_name} form_type: {form_type}, start_date: {start_date}, end_date: {end_date}, financial_year: {financial_year}, gross_profit: {gross_profit}")
+
+
+
+    def parse_company_financial_info(
+        self,
+        company_facts_data,
+    ):
+        """
+        Parse the company financial information from the json data
+
+        :param json_data: json data from the SEC.gov website
+        """
+        raw_data = company_facts_data["JSON"]
+        company_name = company_facts_data["entityName"]
+        cik_number = company_facts_data["cik"]
+
+
+
+        gross_profit_usd = company_facts_data["facts"]["us-gaap"]["GrossProfit"]["units"]["USD"]
+        
+        for key, value in gross_profit_usd.items():
+            form_type = gross_profit_usd[key]["form"]  
+            start_date = gross_profit_usd[key]["start"]
+            end_date = gross_profit_usd[key]["end"]
+            financial_year = gross_profit_usd[key]["fy"]
+
+
+
     def get_data_from_sec_gov_in_parallel(
         self,
         url,
@@ -465,6 +600,21 @@ def save_raw_data(
                 continue
 
 
+def get_company_facts(source_file, output_file, is_licensee=False):
+    """
+    Get the company facts from the SEC.gov website
+    :param source_file: path to the input file
+    :param output_file: path to the output file
+    :param is_licensee: boolean value to indicate if the source file is for licensee or licensor
+    """
+    with Crawler() as crawler:
+        results = []
+        # get the data from the SEC.gov website
+        results = crawler.get_company_facts(source_file, is_licensee)
+        # save the raw data
+        save_raw_data(results, output_file)
+
+
 # prepare_data generates the file which needs to be used in orbi.py first step
 #  source_file: provided by the user
 # output_file: csv file with the data from the SEC.gov website (columns:
@@ -611,25 +761,42 @@ def create_input_file_for_orbis_batch_search(
 
 # In case of running only crawler part
 # ----------------------------------------------------------------------------------------------------------------------------
-# if __name__ == "__main__":
-#     print(os.path.dirname(os.path.abspath("data")))
-#     data_path = os.path.join("sample_data.xlsx")
-#     timestamp = datetime.now().strftime("%d_%m_%Y")
-#     # crawler.find_publication("GB2419368")
-#     # print(crawler.get_publication())
-#     # company_name = "Apple Inc."
-#     # crawler.lookup_cik(company_name)
-#     # cik_number = crawler.get_existing_cik_numbers()[company_name]
-#     # print(crawler.get_data_from_sec_gov(cik_number))
-#     # print(crawler.get_data_from_sec_gov_in_parallel(cik_number))
-#     # print(os.path.dirname(os.path.abspath('data')))
-#     create_input_file_for_orbis_batch_search(
-#         os.path.join(
-#             os.path.abspath("data"),
-#             "sample_data.xlsx",
-#         ),
-#         f"orbis_data_{timestamp}.csv",
-#         is_licensee=True,
-#     )
+if __name__ == "__main__":
+    print(os.path.dirname(os.path.abspath("data")))
+    data_path = os.path.join("sample_data.xlsx")
+    timestamp = datetime.now().strftime("%d_%m_%Y")
+    # crawler.find_publication("GB2419368")
+    # print(crawler.get_publication())
+    # company_name = "Apple Inc."
+    # crawler.lookup_cik(company_name)
+    # cik_number = crawler.get_existing_cik_numbers()[company_name]
+    # print(crawler.get_data_from_sec_gov(cik_number))
+    # print(crawler.get_data_from_sec_gov_in_parallel(cik_number))
+    # print(os.path.dirname(os.path.abspath('data')))
+    # create_input_file_for_orbis_batch_search(
+    #     os.path.join(
+    #         os.path.abspath("data"),
+    #         "sample_data.xlsx",
+    #     ),
+    #     f"orbis_data_{timestamp}.csv",
+    #     is_licensee=True,
+    # )
+    with Crawler() as crawler:
+        # crawler.get_company_facts(
+        #     os.path.join(
+        #         os.path.abspath("data"),
+        #         "sample_data.xlsx",
+        #     ),
+        #     f"company_facts_{timestamp}.json",
+        #     is_licensee=True,
+        # )
+       
+        fy_cik_df = crawler.get_cik_number_fy_columns(os.path.join(os.path.abspath("data"), "sample_data.xlsx"), is_licensee=True)
+       # get company facts
+        crawler.get_company_facts_data(fy_cik_df)
+        
 
+
+    # print(fy_cik_df)
 # -------------------------------------------------------------------------------------------------------------------------------
+
