@@ -1,4 +1,5 @@
 import csv
+from email import header
 import hashlib
 import os
 import re
@@ -11,6 +12,8 @@ from datetime import (
 from threading import (
     Thread,
 )
+import concurrent.futures
+
 
 import pandas as pd
 import requests
@@ -28,6 +31,22 @@ from bs4 import (
 # this path append is needed for pdoc to generate the documentation
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
+
+
+NUMBER_OF_EMPLOYEES = "EntityNumberOfEmployees"
+OPERATING_INCOME_LOSS = "OperatingIncomeLoss"
+NET_INCOME_LOSS = "NetIncomeLoss"
+NET_CASH_USED_IN_OP_ACTIVITIES = "NetCashProvidedByUsedInOperatingActivities"
+NET_CASH_USED_IN_INVESTING_ACTIVITIES = "NetCashProvidedByUsedInInvestingActivities"
+NET_CASH_USED_IN_FINANCING_ACTIVITIES = "NetCashProvidedByUsedInFinancingActivities"
+CASH_EQUIVALENTS = (
+    "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect"
+)
+INCOME_LOSS_BEFORE_CONT_OPS = (
+    "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"
+)
+GROSS_PROFIT = "GrossProfit"
+ASSETS = "Assets"
 
 
 # class to crawl the IPO website for the patent-related data
@@ -53,6 +72,33 @@ class Crawler:
         # set of companies and cik_numbers such as {"company_name":
         # "cik_number"}
         self.sec_cik_numbers = {}
+        self.headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
+        }
+        self.kpi_variables = [
+            NUMBER_OF_EMPLOYEES,
+            OPERATING_INCOME_LOSS,
+            NET_INCOME_LOSS,
+            NET_CASH_USED_IN_OP_ACTIVITIES,
+            NET_CASH_USED_IN_INVESTING_ACTIVITIES,
+            NET_CASH_USED_IN_FINANCING_ACTIVITIES,
+            CASH_EQUIVALENTS,
+            INCOME_LOSS_BEFORE_CONT_OPS,
+            GROSS_PROFIT,
+            ASSETS,
+        ]
+
+    def recursive_lookup(self, data, key):
+        if isinstance(data, dict):
+            for k, v in data.items():
+                if k == key:
+                    yield v
+                yield from self.recursive_lookup(v, key)
+        elif isinstance(data, list):
+            for item in data:
+                yield from self.recursive_lookup(item, key)
 
     # crawl the IPO website for the patent-related data
 
@@ -187,33 +233,68 @@ class Crawler:
 
         df = pd.read_excel(excel_file)
         if is_licensee:
-            df = df[["Licensee CIK 1_cleaned", "Agreement Date"]]
+            df = df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned", "Agreement Date"]]
             df["Agreement Date"] = pd.to_datetime(df["Agreement Date"])
             df["Agreement Date"] = df["Agreement Date"].dt.year - 1
             df = df.rename(
                 columns={
                     "Licensee CIK 1_cleaned": "CIK Number",
                     "Agreement Date": "FY",
+                    "Licensee 1_cleaned": "Company Name",
                 }
             )
             # drop the rows with invalid CIK Number
             df = df[df["CIK Number"].apply(self.check_cik_number_format)]
         else:
-            df = df[["Licensee CIK 1_cleaned", "Agreement Date"]]
+            df = df[["Licensor 1_cleaned", "Licensor CIK 1_cleaned", "Agreement Date"]]
             df["Agreement Date"] = pd.to_datetime(df["Agreement Date"])
             df["Agreement Date"] = df["Agreement Date"].dt.year - 1
             df = df.rename(
                 columns={
                     "Licensee CIK 1_cleaned": "CIK Number",
                     "Agreement Date": "FY",
+                    "Licensor 1_cleaned": "Company Name",
                 }
             )
         # convert the CIK Number to int
 
-        # return only the CIK Number and FY columns
-        df = df[["CIK Number", "FY"]].dropna(subset=["CIK Number"])
+        df = df[["CIK Number", "FY", "Company Name"]].dropna(subset=["CIK Number"])
+        # drop duplicates
+        df = df.drop_duplicates(subset=["CIK Number"])
         # df["CIK Number"] = df["CIK Number"].astype(int)
+        print(f"Columns in the dataframe: {df.columns}")
         return df
+
+    def write_to_file(self, file_name, info):
+        # write the info to the file
+        with open(file_name, "a") as f:
+            f.write(info + "\n")
+
+    def get_company_raw_data(self, company_name, cik_number):
+        """
+        Request to the endpoint to get the company raw data
+        If the request is successful, return the json data
+        If not, return an empty dictionary
+        """
+
+        company_facts_data = {}
+        url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik_number}.json"
+
+        try:
+            response = requests.get(url, headers=self.headers)
+        except Exception as e:
+            print(f"Error on fetching: {e}")
+            self.write_to_file("not_found_companies.txt", f"{company_name} , {cik_number}")
+            return company_facts_data
+
+        if response.status_code == 200:
+            company_facts_data = response.json()
+        else:
+            print(f"Failed to get JSON data {response.text}; URL: {url}")
+            self.write_to_file("not_found_companies.txt", f"{company_name} , {cik_number}")
+            return company_facts_data
+
+        return company_facts_data
 
     def get_company_facts_data(self, df):
         """
@@ -226,85 +307,32 @@ class Crawler:
         # get the json data from the SEC.gov website
         # "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik_number}.json"
         for index, row in df.iterrows():
-            is_us_gaap = False
             cik_number = row["CIK Number"]
+            company_name = row["Company Name"]
             fy = row["FY"]
-            url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik_number}.json"
-            print(f"requesting company facts data from {url}")
-            headers = {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
-            }
-            try:
-                response = requests.get(
-                    url,
-                    headers=headers,
-                )
-            except Exception as e:
-                print(e)
-                continue
+            # append result to json_data
+            company_facts_data = self.get_company_raw_data(company_name, cik_number)
+            # print(company_facts_data)
+            if company_facts_data:
+                # print(f"Processing {cik_number} {fy}")
+                for kpi_var in self.kpi_variables:
+                    # print(f"KPI Variable: {kpi_var}")
+                    kpi_information = list(self.recursive_lookup(company_facts_data, kpi_var))
+                    if kpi_information:
+                        if cik_number not in json_data:
+                            json_data[cik_number] = {}
+                        if "financialYear" not in json_data[cik_number]:
+                            json_data[cik_number]["financialYear"] = fy
+                        if "entityName" not in json_data[cik_number]:
+                            json_data[cik_number]["entityName"] = company_facts_data["entityName"]
+                        if kpi_var not in json_data[cik_number]:
+                            json_data[cik_number][kpi_var] = kpi_information
 
-            if response.status_code == 200:
-                company_facts_data = response.json()
+                    # json_data[kpi_var] = list(recursive_lookup(company_facts_data, kpi_var))
             else:
-                print(f"Failed to get JSON data: {response.text}")
                 continue
-
-            # raw_data = company_facts_data["JSON"]
-            company_name = company_facts_data["entityName"]
-            cik_number = company_facts_data["cik"]
-
-            # check if ["facts"]["us-gaap"] exists in the json data
-            if "us-gaap" in company_facts_data["facts"]:
-                print("us-gaap  in company_facts_data['facts']")
-                if not "GrossProfit" in company_facts_data["facts"]["us-gaap"]:
-                    print(f"GrossProfit not in company_facts_data['facts']['us-gaap'] for {cik_number}")
-                    continue
-
-                gross_profit_usd = company_facts_data["facts"]["us-gaap"]["GrossProfit"]["units"]["USD"]
-                is_us_gaap = True
-
-            if not is_us_gaap and "ifrs-full" in company_facts_data["facts"]:
-                print("ifrs-full not in company_facts_data['facts']")
-                if not "GrossProfit" in company_facts_data["facts"]["ifrs-full"]:
-                    print(f"GrossProfit not in company_facts_data['facts']['ifrs-full'] for {cik_number}")
-                    continue
-
-                gross_profit_usd = company_facts_data["facts"]["ifrs-full"]["GrossProfit"]["units"]["DKK"]
-                is_us_gaap = False
-
-            for value in gross_profit_usd:
-                if value["fy"] == fy:
-                    form_type = value["form"]
-                    start_date = value["start"]
-                    end_date = value["end"]
-                    financial_year = value["fy"]
-                    gross_profit = value["value"]
-                    print(
-                        f"company_name: {company_name} form_type: {form_type}, start_date: {start_date}, end_date: {end_date}, financial_year: {financial_year}, gross_profit: {gross_profit}"
-                    )
-
-    def parse_company_financial_info(
-        self,
-        company_facts_data,
-    ):
-        """
-        Parse the company financial information from the json data
-
-        :param json_data: json data from the SEC.gov website
-        """
-        raw_data = company_facts_data["JSON"]
-        company_name = company_facts_data["entityName"]
-        cik_number = company_facts_data["cik"]
-
-        gross_profit_usd = company_facts_data["facts"]["us-gaap"]["GrossProfit"]["units"]["USD"]
-
-        for key, value in gross_profit_usd.items():
-            form_type = gross_profit_usd[key]["form"]
-            start_date = gross_profit_usd[key]["start"]
-            end_date = gross_profit_usd[key]["end"]
-            financial_year = gross_profit_usd[key]["fy"]
+        # this is question mark whether it is good approach or not
+        return json_data
 
     def get_data_from_sec_gov_in_parallel(
         self,
@@ -782,10 +810,14 @@ if __name__ == "__main__":
         # )
 
         fy_cik_df = crawler.get_cik_number_fy_columns(
-            os.path.join(os.path.abspath("data"), "sample_data.xlsx"), is_licensee=True
+            os.path.join(os.path.abspath("data"), "sample_data_big.xlsx"), is_licensee=True
         )
         # get company facts
-        crawler.get_company_facts_data(fy_cik_df)
+        # print(crawler.get_company_facts_data(fy_cik_df))
+
+        company_info = crawler.get_company_facts_data(fy_cik_df)
+        with open(f"company_facts_{timestamp}_big.json", "w") as f:
+            json.dump(company_info, f, indent=4)
 
     # print(fy_cik_df)
 # -------------------------------------------------------------------------------------------------------------------------------
