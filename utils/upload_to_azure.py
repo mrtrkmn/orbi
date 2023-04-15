@@ -26,7 +26,7 @@ SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL")
 
 
 def upload_dir_content_to_azure(dir_path, blob_service_client: BlobServiceClient, container_name):
-    container_client = blob_service_client.get_container_client(container=container_name)
+    container_client = blob_service_client.get_container_client(container_name)
     # check suffix of file if it is .log then split it with '_' and take first part of it
     for file in os.listdir(dir_path):
         if file.endswith(".csv") or file.endswith(".xlsx"):
@@ -41,13 +41,13 @@ def upload_dir_content_to_azure(dir_path, blob_service_client: BlobServiceClient
 
 
 def upload_blob_file(file_path, blob_service_client: BlobServiceClient, container_name, blob_name):
-    container_client = blob_service_client.get_container_client(container=container_name)
+    container_client = blob_service_client.get_container_client(container_name)
     with open(file=file_path, mode="rb") as data:
         blob_client = container_client.upload_blob(name=blob_name, data=data, overwrite=True)
 
 
 def create_container(blob_service_client: BlobServiceClient, container_name):
-    container_client = blob_service_client.get_container_client(container=container_name)
+    container_client = blob_service_client.get_container_client(container_name)
     # set container to public access
     try:
         container_client.create_container()
@@ -65,7 +65,7 @@ def create_container(blob_service_client: BlobServiceClient, container_name):
 
 
 def get_public_access_url(blob_service_client: BlobServiceClient, container_name):
-    container_client = blob_service_client.get_container_client(container=container_name)
+    container_client = blob_service_client.get_container_client(container_name)
     return container_client.url
 
 
