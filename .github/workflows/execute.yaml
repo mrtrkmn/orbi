@@ -98,6 +98,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+   # get timestamp in format DD-MM-YYYY
+    - name: Get timestamp
+      id: get-timestamp
+      run: |
+        echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
+
     - name: Run crawler
       run: |
         python orbi/crawl.py 
@@ -113,7 +119,7 @@ jobs:
         ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
         ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
         RETENTION_DAYS: 30
-        CONTAINER_NAME: sec-gov-data
+        AZURE_CONTAINER_NAME: sec-gov-data
       continue-on-error: true
 
   precheck_and_run: # default working directory
@@ -228,7 +234,7 @@ jobs:
         ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
         ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
         RETENTION_DAYS: 7
-        CONTAINER_NAME: ${{ secrets.AZURE_CONTAINER_NAME }}
+        AZURE_CONTAINER_NAME: ${{ secrets.AZURE_CONTAINER_NAME }}
       continue-on-error: true
 
     # zip the data except sample_data.xlsx
