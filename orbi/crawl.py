@@ -235,11 +235,10 @@ class Crawler:
         if is_licensee:
             df = df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned", "Agreement Date"]]
             df["Agreement Date"] = pd.to_datetime(df["Agreement Date"])
-            df["Agreement Date"] = df["Agreement Date"].dt.year - 1
+            # df["Agreement Date"] = df["Agreement Date"].dt.year - 1
             df = df.rename(
                 columns={
                     "Licensee CIK 1_cleaned": "CIK Number",
-                    "Agreement Date": "FY",
                     "Licensee 1_cleaned": "Company Name",
                 }
             )
@@ -248,17 +247,16 @@ class Crawler:
         else:
             df = df[["Licensor 1_cleaned", "Licensor CIK 1_cleaned", "Agreement Date"]]
             df["Agreement Date"] = pd.to_datetime(df["Agreement Date"])
-            df["Agreement Date"] = df["Agreement Date"].dt.year - 1
+            # df["Agreement Date"] = df["Agreement Date"].dt.year - 1
             df = df.rename(
                 columns={
                     "Licensee CIK 1_cleaned": "CIK Number",
-                    "Agreement Date": "FY",
                     "Licensor 1_cleaned": "Company Name",
                 }
             )
         # convert the CIK Number to int
 
-        df = df[["CIK Number", "FY", "Company Name"]].dropna(subset=["CIK Number"])
+        df = df[["CIK Number", "Agreement Date", "Company Name"]].dropna(subset=["CIK Number"])
         # drop duplicates
         df = df.drop_duplicates(subset=["CIK Number"])
         # df["CIK Number"] = df["CIK Number"].astype(int)
@@ -295,6 +293,108 @@ class Crawler:
             return company_facts_data
 
         return company_facts_data
+    
+
+
+    def parse_data_from_end_result(self, file_path: str):
+        # read json file
+        parsed_data = {}
+
+        with open(file_path, "r") as f:
+            json_data = json.load(f)
+        # parse the data
+        for k, v in json_data.items():
+            for kpi_var in self.kpi_variables:
+                try:
+                    unit = list(json_data[k][kpi_var][0]["units"].keys())[0]
+                    value = json_data[k][kpi_var][0]["units"][unit]
+                    for i in value:
+                        if i["form"] == "10-K":
+                            agreement_date = json_data[k]["agreementDate"]
+
+                            # convert agreement date to datetime object
+                            agreement_date = datetime.strptime(agreement_date, "%Y-%m-%d")
+                            end_date = datetime.strptime(i["end"], "%Y-%m-%d")
+
+                            # subtract the two dates
+                            diff = end_date - agreement_date
+
+                            # convert the difference to positive number
+
+                            if "diffInDays" not in json_data[k]:
+                                json_data[k]["diffInDays"] = abs(diff.days)
+                                val = i["val"]
+                                company_name = json_data[k]["entityName"]
+                                form_type = i["form"]
+
+                            if abs(diff.days) < json_data[k]["diffInDays"]:
+                                json_data[k]["diffInDays"] = diff.days
+                                val = i["val"]
+                                company_name = json_data[k]["entityName"]
+                                form_type = i["form"]
+
+                            if k not in parsed_data:
+                                parsed_data[k] = {}
+
+                            if "companyName" not in parsed_data[k]:
+                                parsed_data[k]["companyName"] = {}
+
+                            if company_name not in parsed_data[k]["companyName"]:
+                                parsed_data[k]["companyName"] = company_name
+
+                            if kpi_var not in parsed_data[k]:
+                                parsed_data[k][kpi_var] = {}
+
+                            parsed_data[k][kpi_var]["value"] = val
+
+                            parsed_data[k][kpi_var]["unit"] = unit
+                            parsed_data[k][kpi_var]["form"] = form_type
+                            parsed_data[k]["diffInDays"] = diff.days
+                            parsed_data[k]["agreementDate"] = json_data[k]["agreementDate"]
+                            parsed_data[k]["endDate"] = i["end"]
+
+                except KeyError as ke:
+                    # print(f"Key error: {ke}")
+                    # print(f"Key: {kpi_var}")
+                    # print(f"File: {file_path}")
+                    continue
+        return parsed_data
+
+
+    def json_to_csv(self, input_file: str, output_file: str):
+        with open(input_file, "r") as f:
+            json_data = json.load(f)
+
+        not_financial = ["companyName", "agreementDate", "endDate", "diffInDays"]
+
+        # take the keys from the json file for column headers
+        for k, v in json_data.items():
+            headers = list(json_data[k].keys())
+            break
+
+        financial_columns = set(headers) - set(not_financial)
+        financial_columns = list(financial_columns)
+
+        headers = not_financial + financial_columns
+
+        # create a csv file
+        with open(output_file, "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+        data = ""
+        # write the data to the csv file
+        with open(output_file, "a") as f:
+            for k, v in json_data.items():
+                for i in not_financial:
+                    data += str(json_data[k][i]) + ","
+                for i in financial_columns:
+                    if i in json_data[k]:
+                        data += str(json_data[k][i]["value"]) + ","
+                    else:
+                        data += "NAN" + ","
+                f.write(data + "\n")
+                data = ""
+
 
     def get_company_facts_data(self, df):
         """
@@ -303,13 +403,12 @@ class Crawler:
         :param json_data: json data from the SEC.gov website
         """
         json_data = {}
-        # df contains the CIK Number and FY columns
         # get the json data from the SEC.gov website
         # "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik_number}.json"
         for index, row in df.iterrows():
             cik_number = row["CIK Number"]
             company_name = row["Company Name"]
-            fy = row["FY"]
+            agreement_date = row["Agreement Date"]
             # append result to json_data
             company_facts_data = self.get_company_raw_data(company_name, cik_number)
             # print(company_facts_data)
@@ -321,8 +420,8 @@ class Crawler:
                     if kpi_information:
                         if cik_number not in json_data:
                             json_data[cik_number] = {}
-                        if "financialYear" not in json_data[cik_number]:
-                            json_data[cik_number]["financialYear"] = fy
+                        if "agreementDate" not in json_data[cik_number]:
+                            json_data[cik_number]["agreementDate"] = str(agreement_date.date())
                         if "entityName" not in json_data[cik_number]:
                             json_data[cik_number]["entityName"] = company_facts_data["entityName"]
                         if kpi_var not in json_data[cik_number]:
@@ -816,8 +915,15 @@ if __name__ == "__main__":
         # print(crawler.get_company_facts_data(fy_cik_df))
 
         company_info = crawler.get_company_facts_data(fy_cik_df)
-        with open(f"company_facts_{timestamp}_big.json", "w") as f:
+        with open(os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.json", "w")) as f:
             json.dump(company_info, f, indent=4)
+
+        parsed_data = crawler.parse_data_from_end_result(os.path.join(os.path.abspath("data"),f"company_facts_{timestamp}_big.json"))
+        with open(os.path.join(os.path.abspath("data"),f"parsed_company_facts_{timestamp}_big.json"), "w") as f:
+            json.dump(parsed_data, f, indent=4)
+
+        crawler.json_to_csv(input_file=os.path.join(os.path.abspath("data"),f"parsed_company_facts_{timestamp}_big.json"), output_file=os.path.join(os.path.abspath("data"),f"parsed_company_facts_{timestamp}_big.csv"))
+
 
     # print(fy_cik_df)
 # -------------------------------------------------------------------------------------------------------------------------------
