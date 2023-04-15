@@ -100,7 +100,7 @@ jobs:
     
     - name: Run crawler
       run: |
-        python orbi/crawler.py 
+        python orbi/crawl.py 
       
     # upload csv and json files to azure blob storage
     
@@ -118,7 +118,6 @@ jobs:
 
   precheck_and_run: # default working directory
     runs-on: self-hosted
-    
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.10
