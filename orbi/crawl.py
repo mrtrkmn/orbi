@@ -915,7 +915,7 @@ if __name__ == "__main__":
         # print(crawler.get_company_facts_data(fy_cik_df))
 
         company_info = crawler.get_company_facts_data(fy_cik_df)
-        with open(os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.json", "w")) as f:
+        with open(os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.json"), "w") as f:
             json.dump(company_info, f, indent=4)
 
         parsed_data = crawler.parse_data_from_end_result(os.path.join(os.path.abspath("data"),f"company_facts_{timestamp}_big.json"))
