@@ -114,7 +114,7 @@ jobs:
     - name: Upload to Azure Blob 
       run: | 
         pip install azure-storage-blob
-        python utils/upload_to_azure.py --dir-file-path ${{ env.DATA_DIR }} --container-name ${{ env.AZURE_CONTAINER_NAME }} --blob-name orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
+        python utils/upload_to_azure.py --dir_file_path ${{ env.DATA_DIR }} --container_name ${{ env.AZURE_CONTAINER_NAME }} --blob_name orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
       env: 
         ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
         ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
@@ -229,7 +229,7 @@ jobs:
     - name: Upload to Azure Blob 
       run: | 
         pip install azure-storage-blob
-        python utils/upload_to_azure.py --dir-file-path ${{ env.DATA_DIR }} --container-name ${{ env.AZURE_CONTAINER_NAME }} --blob-name orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
+        python utils/upload_to_azure.py --dir_file_path ${{ env.DATA_DIR }} --container_name ${{ env.AZURE_CONTAINER_NAME }} --blob_name orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
       env: 
         ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
         ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
