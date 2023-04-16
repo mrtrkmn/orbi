@@ -21,7 +21,7 @@ sys.path.append(root_path)
 
 ACCOUNT_NAME = os.environ.get("ACCOUNT_NAME")
 ACCOUNT_KEY = os.environ.get("ACCOUNT_KEY")
-RETENTION_DAYS = os.environ.get("RETENTION_DAYS")
+RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS"))
 SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL")
 
 
@@ -49,7 +49,6 @@ def upload_blob_file(file_path, blob_service_client: BlobServiceClient, containe
 def create_container(blob_service_client: BlobServiceClient, container_name):
     container_client = blob_service_client.get_container_client(container_name)
     # set container to public access
-    RETENTION_DAYS = int(RETENTION_DAYS)
     try:
         container_client.create_container()
     except Exception as e:
