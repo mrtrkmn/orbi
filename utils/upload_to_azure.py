@@ -84,7 +84,7 @@ if __name__ == "__main__":
     if os.path.isdir(args.dir_file_path):
         upload_dir_content_to_azure(args.dir_file_path, blob_service_client, args.container_name)
     else:
-        upload_blob_file(args.file_path, blob_service_client, args.container_name, args.blob_name)
+        upload_blob_file(args.dir_file_path, blob_service_client, args.container_name, args.blob_name)
 
     message = f""""
     File uploaded to Azure Blob Storage: {get_public_access_url(blob_service_client, args.container_name)}/{args.dir_file_path.split('/')[-1]}/
