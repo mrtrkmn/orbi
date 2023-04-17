@@ -29,7 +29,7 @@ def upload_dir_content_to_azure(dir_path, blob_service_client: BlobServiceClient
     container_client = blob_service_client.get_container_client(container_name)
     # check suffix of file if it is .log then split it with '_' and take first part of it
     for file in os.listdir(dir_path):
-        if file.endswith(".csv") or file.endswith(".xlsx"):
+        if file.endswith(".csv") or file.endswith(".xlsx") or file.endswith(".json"):
             # take last part of dir_path
             azure_blob_storage_dir_path = dir_path.split("/")[-1]
 
