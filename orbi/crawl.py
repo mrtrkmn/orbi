@@ -293,8 +293,6 @@ class Crawler:
             return company_facts_data
 
         return company_facts_data
-    
-
 
     def parse_data_from_end_result(self, file_path: str):
         # read json file
@@ -360,7 +358,6 @@ class Crawler:
                     continue
         return parsed_data
 
-
     def json_to_csv(self, input_file: str, output_file: str):
         with open(input_file, "r") as f:
             json_data = json.load(f)
@@ -394,7 +391,6 @@ class Crawler:
                         data += "NAN" + ","
                 f.write(data + "\n")
                 data = ""
-
 
     def get_company_facts_data(self, df):
         """
@@ -918,12 +914,16 @@ if __name__ == "__main__":
         with open(os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.json"), "w") as f:
             json.dump(company_info, f, indent=4)
 
-        parsed_data = crawler.parse_data_from_end_result(os.path.join(os.path.abspath("data"),f"company_facts_{timestamp}_big.json"))
-        with open(os.path.join(os.path.abspath("data"),f"parsed_company_facts_{timestamp}_big.json"), "w") as f:
+        parsed_data = crawler.parse_data_from_end_result(
+            os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.json")
+        )
+        with open(os.path.join(os.path.abspath("data"), f"parsed_company_facts_{timestamp}_big.json"), "w") as f:
             json.dump(parsed_data, f, indent=4)
 
-        crawler.json_to_csv(input_file=os.path.join(os.path.abspath("data"),f"parsed_company_facts_{timestamp}_big.json"), output_file=os.path.join(os.path.abspath("data"),f"parsed_company_facts_{timestamp}_big.csv"))
-
+        crawler.json_to_csv(
+            input_file=os.path.join(os.path.abspath("data"), f"parsed_company_facts_{timestamp}_big.json"),
+            output_file=os.path.join(os.path.abspath("data"), f"parsed_company_facts_{timestamp}_big.csv"),
+        )
 
     # print(fy_cik_df)
 # -------------------------------------------------------------------------------------------------------------------------------
