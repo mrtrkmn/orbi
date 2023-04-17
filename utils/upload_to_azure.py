@@ -48,11 +48,12 @@ def upload_blob_file(file_path, blob_service_client: BlobServiceClient, containe
 
 def create_container(blob_service_client: BlobServiceClient, container_name):
     container_client = blob_service_client.get_container_client(container_name)
-    # set container to public access
-    try:
+    # set container to public acces
+    if not container_client.exists():
+        print(f"Container does not exists creating one. Container name: {container_name}")
         container_client.create_container()
-    except Exception as e:
-        print(e)
+
+
     # set public access level to container
     access_policy = AccessPolicy(
         permission=ContainerSasPermissions(read=True),
