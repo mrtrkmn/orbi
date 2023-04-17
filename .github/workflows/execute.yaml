@@ -15,9 +15,7 @@ on:
       data: 
         description: '
           The data link which contains list of licensee/licensor info. (e.g sample_data.xlsx)
-          The link should be a public link which can be downloaded by wget command.
-          (e.g https://some-bucket.s3.amazonaws.com/some-excel-file.xlsx)
-          
+          The link should be a public link which can be downloaded by wget command.          
           **** ONLY XLSX FILE IS SUPPORTED ! ****
           '
         required: false
