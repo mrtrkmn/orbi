@@ -117,7 +117,7 @@ jobs:
         ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
         ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
         RETENTION_DAYS: 30
-        AZURE_CONTAINER_NAME: sec-gov-data-
+        AZURE_CONTAINER_NAME: sec-gov-data
       continue-on-error: true
 # -----------------------RUN ON ORBIS JOB-------------------------------------------
   search_on_orbis: # default working directory
