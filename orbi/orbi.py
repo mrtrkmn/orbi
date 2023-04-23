@@ -24,11 +24,12 @@ from slack_sdk import WebClient
 from variables import *
 from webdriver_manager.chrome import ChromeDriverManager
 
+from utils import send_file_to_slack
+
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 sys.path.append("utils")
 
-import send_to_slack
 
 # initialize logger
 
