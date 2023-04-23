@@ -3,6 +3,7 @@
 # Description: Orbis class is used to handle connections to Orbis database and perform batch search
 
 import os # isort:skip
+import sys # isort:skip
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 sys.path.append("utils")
