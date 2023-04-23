@@ -1,27 +1,18 @@
+import asyncio
 import csv
-from email import header
 import hashlib
 import os
 import re
 import sys
-import json
 import time
-from datetime import (
-    datetime,
-)
-from threading import (
-    Thread,
-)
-import concurrent.futures
-from wsgiref import headers
+from datetime import datetime
+from threading import Thread
+
 import aiohttp
-import asyncio
 import pandas as pd
 import requests
 import yaml
-from bs4 import (
-    BeautifulSoup,
-)
+from bs4 import BeautifulSoup
 
 # Description: This script crawls the IPO website for the patent-related data and SEC.gov for the company-related data
 #             and stores them in a csv file.
@@ -40,12 +31,8 @@ NET_INCOME_LOSS = "NetIncomeLoss"
 NET_CASH_USED_IN_OP_ACTIVITIES = "NetCashProvidedByUsedInOperatingActivities"
 NET_CASH_USED_IN_INVESTING_ACTIVITIES = "NetCashProvidedByUsedInInvestingActivities"
 NET_CASH_USED_IN_FINANCING_ACTIVITIES = "NetCashProvidedByUsedInFinancingActivities"
-CASH_EQUIVALENTS = (
-    "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect"
-)
-INCOME_LOSS_BEFORE_CONT_OPS = (
-    "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"
-)
+CASH_EQUIVALENTS = "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect"
+INCOME_LOSS_BEFORE_CONT_OPS = "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"
 GROSS_PROFIT = "GrossProfit"
 ASSETS = "Assets"
 
@@ -90,7 +77,7 @@ class Crawler:
             GROSS_PROFIT,
             ASSETS,
         ]
-        self.not_financial_columns = ["companyName","agreementDate", "endDate", "diffInDays"]
+        self.not_financial_columns = ["companyName", "agreementDate", "endDate", "diffInDays"]
 
     def recursive_lookup(self, data, key):
         if isinstance(data, dict):
@@ -274,7 +261,7 @@ class Crawler:
         with open(file_name, "a") as f:
             f.write(info + "\n")
 
-    def parse_export_data_to_csv(self, json_data:dict, file_path: str):
+    def parse_export_data_to_csv(self, json_data: dict, file_path: str):
         # read json file
         parsed_data = {}
 
@@ -355,7 +342,6 @@ class Crawler:
 
         self.export_to_csv_file(parsed_data, file_path)
 
-
     def export_to_csv_file(self, parsed_data: dict, output_file: str):
         data = ""
         with open(output_file, "a") as f:
@@ -393,7 +379,10 @@ class Crawler:
                     return json_data
                 else:
                     print(f"No response: [  {company_name} | {cik_number} | reason: {response.reason} | status: {response.status} ]")
-                    self.write_to_file(file_name="no_response.txt", info=f"company: {company_name} | cik: {cik_number} | status: {response.status} | reason: {response.reason}\n \t ---> {url}")
+                    self.write_to_file(
+                        file_name="no_response.txt",
+                        info=f"company: {company_name} | cik: {cik_number} | status: {response.status} | reason: {response.reason}\n \t ---> {url}",
+                    )
                     return None
 
     async def get_company_facts_data(self, df):
@@ -433,7 +422,7 @@ class Crawler:
                 kpi_information = list(self.recursive_lookup(company_facts_data, kpi_var))
                 if kpi_information:
                     kpi_data[kpi_var] = kpi_information
-                else: 
+                else:
                     self.write_to_file(file_name="missing_kpi_variables.txt", info=f"{company_name} | {cik_number} | {kpi_var}")
             return (cik_number, agreement_date, company_facts_data["entityName"], kpi_data)
 
@@ -681,37 +670,37 @@ def save_raw_data(
         for result in results:
             try:
                 street1 = result["addresses"]["business"]["street1"]
-            except KeyError as e:
+            except KeyError:
                 street1 = "No street1 found"
 
             try:
                 street2 = result["addresses"]["business"]["street2"]
-            except KeyError as e:
+            except KeyError:
                 street2 = "No street2 found"
 
             try:
                 city = result["addresses"]["business"]["city"]
-            except KeyError as e:
+            except KeyError:
                 city = "No city found"
 
             try:
                 state = result["addresses"]["business"]["state"]
-            except KeyError as e:
+            except KeyError:
                 state = "No state found"
 
             try:
                 zipCode = result["addresses"]["business"]["zipCode"]
-            except KeyError as e:
+            except KeyError:
                 zipCode = "No zipCode found"
 
             try:
                 stateOrCountry = result["addresses"]["business"]["stateOrCountry"]
-            except KeyError as e:
+            except KeyError:
                 stateOrCountry = "No stateOrCountry found"
 
             try:
                 stateOrCountryDescription = result["addresses"]["business"]["stateOrCountryDescription"]
-            except KeyError as e:
+            except KeyError:
                 stateOrCountryDescription = "No stateOrCountryDescription found"
 
             raw_data = (
@@ -734,13 +723,10 @@ def save_raw_data(
                 # f.write(json.dumps(result["addresses"]["business"]))
                 f.write(raw_data)
                 f.write("\n")
-            except KeyError as e:
+            except KeyError:
                 f.write("No address found\n")
                 continue
 
-
-
-    
 
 def get_company_facts(source_file, output_file, is_licensee=False):
     """
@@ -901,42 +887,39 @@ def create_input_file_for_orbis_batch_search(
                 )
 
 
-
 async def main():
     # create the crawler
     timestamp = datetime.now().strftime("%d_%m_%Y")
 
     crawler = Crawler()
-    fy_cik_df = crawler.get_cik_number_fy_columns(
-        os.path.join(os.path.abspath("data"), "sample_data_big.xlsx"), is_licensee=True
-    )
+    fy_cik_df = crawler.get_cik_number_fy_columns(os.path.join(os.path.abspath("data"), "sample_data_big.xlsx"), is_licensee=True)
 
     company_info = await crawler.get_company_facts_data(fy_cik_df)
 
     # save company facts
     crawler.parse_export_data_to_csv(company_info, f"company_facts_{timestamp}_big.csv")
 
+
 asyncio.run(main())
 # In case of running only crawler part
 # ----------------------------------------------------------------------------------------------------------------------------
 # if __name__ == "__main__":
-    # print(os.path.dirname(os.path.abspath("data")))
-    # data_path = os.path.join("sample_data.xlsx")
-    # timestamp = datetime.now().strftime("%d_%m_%Y")
-    # # crawler.find_publication("GB2419368")
-    # print(crawler.get_publication())
-    # company_name = "Apple Inc."
-    # crawler.lookup_cik(company_name)
-    # cik_number = crawler.get_existing_cik_numbers()[company_name]
-    # print(crawler.get_data_from_sec_gov(cik_number))
-    # print(crawler.get_data_from_sec_gov_in_parallel(cik_number))
-    # print(os.path.dirname(os.path.abspath('data')))
-    # create_input_file_for_orbis_batch_search(
-    #     os.path.join(
-    #         os.path.abspath("data"),
-    #         "sample_data.xlsx",
-    #     ),
-    #     f"orbis_data_{timestamp}.csv",
-    #     is_licensee=True,
-    # )
-   
+# print(os.path.dirname(os.path.abspath("data")))
+# data_path = os.path.join("sample_data.xlsx")
+# timestamp = datetime.now().strftime("%d_%m_%Y")
+# # crawler.find_publication("GB2419368")
+# print(crawler.get_publication())
+# company_name = "Apple Inc."
+# crawler.lookup_cik(company_name)
+# cik_number = crawler.get_existing_cik_numbers()[company_name]
+# print(crawler.get_data_from_sec_gov(cik_number))
+# print(crawler.get_data_from_sec_gov_in_parallel(cik_number))
+# print(os.path.dirname(os.path.abspath('data')))
+# create_input_file_for_orbis_batch_search(
+#     os.path.join(
+#         os.path.abspath("data"),
+#         "sample_data.xlsx",
+#     ),
+#     f"orbis_data_{timestamp}.csv",
+#     is_licensee=True,
+# )
