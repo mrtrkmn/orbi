@@ -379,8 +379,9 @@ class Crawler:
                     return json_data
                 else:
                     print(f"No response: [  {company_name} | {cik_number} | reason: {response.reason} | status: {response.status} ]")
+                    timestamp = datetime.now().strftime("%d_%m_%Y")
                     self.write_to_file(
-                        file_name="no_response.txt",
+                        file_name=os.path.join(os.path.abspath("data"), f"no_response_{timestamp}.txt"),
                         info=f"company: {company_name} | cik: {cik_number} | status: {response.status} | reason: {response.reason}\n \t ---> {url}",
                     )
                     return None
@@ -423,7 +424,8 @@ class Crawler:
                 if kpi_information:
                     kpi_data[kpi_var] = kpi_information
                 else:
-                    self.write_to_file(file_name="missing_kpi_variables.txt", info=f"{company_name} | {cik_number} | {kpi_var}")
+                    timestamp = datetime.now().strftime("%d_%m_%Y")
+                    self.write_to_file(file_name=os.path.join(os.path.abspath("data"), f"missing_kpi_vars_{timestamp}.txt"), info=f"{company_name} | {cik_number} | {kpi_var}")
             return (cik_number, agreement_date, company_facts_data["entityName"], kpi_data)
 
     async def run_parallel_requests(self, tasks):
@@ -897,7 +899,7 @@ async def main():
     company_info = await crawler.get_company_facts_data(fy_cik_df)
 
     # save company facts
-    crawler.parse_export_data_to_csv(company_info, f"company_facts_{timestamp}_big.csv")
+    crawler.parse_export_data_to_csv(company_info, os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.csv"))
 
 
 asyncio.run(main())
