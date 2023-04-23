@@ -13,8 +13,9 @@ from threading import (
     Thread,
 )
 import concurrent.futures
-
-
+from wsgiref import headers
+import aiohttp
+import asyncio
 import pandas as pd
 import requests
 import yaml
@@ -89,6 +90,7 @@ class Crawler:
             GROSS_PROFIT,
             ASSETS,
         ]
+        self.not_financial_columns = ["companyName","agreementDate", "endDate", "diffInDays"]
 
     def recursive_lookup(self, data, key):
         if isinstance(data, dict):
@@ -258,7 +260,11 @@ class Crawler:
 
         df = df[["CIK Number", "Agreement Date", "Company Name"]].dropna(subset=["CIK Number"])
         # drop duplicates
+
         df = df.drop_duplicates(subset=["CIK Number"])
+        # strip company name
+        df["Company Name"] = df["Company Name"].str.strip()
+
         # df["CIK Number"] = df["CIK Number"].astype(int)
         print(f"Columns in the dataframe: {df.columns}")
         return df
@@ -268,44 +274,31 @@ class Crawler:
         with open(file_name, "a") as f:
             f.write(info + "\n")
 
-    def get_company_raw_data(self, company_name, cik_number):
-        """
-        Request to the endpoint to get the company raw data
-        If the request is successful, return the json data
-        If not, return an empty dictionary
-        """
-
-        company_facts_data = {}
-        url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik_number}.json"
-
-        try:
-            response = requests.get(url, headers=self.headers)
-        except Exception as e:
-            print(f"Error on fetching: {e}")
-            self.write_to_file("not_found_companies.txt", f"{company_name} , {cik_number}")
-            return company_facts_data
-
-        if response.status_code == 200:
-            company_facts_data = response.json()
-        else:
-            print(f"Failed to get JSON data {response.text}; URL: {url}")
-            self.write_to_file("not_found_companies.txt", f"{company_name} , {cik_number}")
-            return company_facts_data
-
-        return company_facts_data
-
-    def parse_data_from_end_result(self, file_path: str):
+    def parse_export_data_to_csv(self, json_data:dict, file_path: str):
         # read json file
         parsed_data = {}
 
-        with open(file_path, "r") as f:
-            json_data = json.load(f)
-        # parse the data
+        # # dump json_data to a file
+        # with open("raw_company_data.json", "w") as f:
+        #     json.dump(json_data, f, indent=4)
+
         for k, v in json_data.items():
             for kpi_var in self.kpi_variables:
-                try:
-                    unit = list(json_data[k][kpi_var][0]["units"].keys())[0]
-                    value = json_data[k][kpi_var][0]["units"][unit]
+                if kpi_var in json_data[k]:
+                    try:
+                        unit = list(json_data[k][kpi_var][0]["units"].keys())[0]
+                    except Exception as e:
+                        print(f"Error on parsing(unit): {e}")
+                        print(f"CIK number (value): {k}")
+                        continue
+
+                    try:
+                        value = json_data[k][kpi_var][0]["units"][unit]
+                    except Exception as e:
+                        print(f"Error on parsing (value): {e}")
+                        print(f"CIK number (value): {k}")
+                        continue
+
                     for i in value:
                         if i["form"] == "10-K":
                             agreement_date = json_data[k]["agreementDate"]
@@ -315,119 +308,152 @@ class Crawler:
                             end_date = datetime.strptime(i["end"], "%Y-%m-%d")
 
                             # subtract the two dates
-                            diff = end_date - agreement_date
+
+                            # "agreementDate": "2019-08-31",
+                            # "endDate": "2011-01-02"
+
+                            # if end date is greater than agreement date, then the difference is negative
+
+                            if end_date > agreement_date:
+                                diff = end_date - agreement_date
+                            else:
+                                diff = agreement_date - end_date
 
                             # convert the difference to positive number
 
                             if "diffInDays" not in json_data[k]:
                                 json_data[k]["diffInDays"] = abs(diff.days)
+
+                            if "endDate" not in json_data[k]:
+                                json_data[k]["endDate"] = end_date
+
+                            if abs(diff.days) <= json_data[k]["diffInDays"]:
+                                json_data[k]["diffInDays"] = abs(diff.days)
                                 val = i["val"]
                                 company_name = json_data[k]["entityName"]
                                 form_type = i["form"]
 
-                            if abs(diff.days) < json_data[k]["diffInDays"]:
-                                json_data[k]["diffInDays"] = diff.days
-                                val = i["val"]
-                                company_name = json_data[k]["entityName"]
-                                form_type = i["form"]
+                                if k not in parsed_data:
+                                    parsed_data[k] = {}
 
-                            if k not in parsed_data:
-                                parsed_data[k] = {}
+                                if company_name not in parsed_data[k]:
+                                    parsed_data[k]["companyName"] = company_name
 
-                            if "companyName" not in parsed_data[k]:
-                                parsed_data[k]["companyName"] = {}
+                                if kpi_var not in parsed_data[k]:
+                                    parsed_data[k][kpi_var] = {}
 
-                            if company_name not in parsed_data[k]["companyName"]:
-                                parsed_data[k]["companyName"] = company_name
+                                parsed_data[k][kpi_var]["value"] = val
 
-                            if kpi_var not in parsed_data[k]:
-                                parsed_data[k][kpi_var] = {}
+                                parsed_data[k][kpi_var]["unit"] = unit
+                                parsed_data[k][kpi_var]["form"] = form_type
+                                parsed_data[k]["diffInDays"] = diff.days
+                                parsed_data[k]["agreementDate"] = json_data[k]["agreementDate"]
+                                parsed_data[k]["endDate"] = i["end"]
 
-                            parsed_data[k][kpi_var]["value"] = val
+        # with open("parsed_data.json", "w") as f:
+        #     json.dump(parsed_data, f, indent=4)
 
-                            parsed_data[k][kpi_var]["unit"] = unit
-                            parsed_data[k][kpi_var]["form"] = form_type
-                            parsed_data[k]["diffInDays"] = diff.days
-                            parsed_data[k]["agreementDate"] = json_data[k]["agreementDate"]
-                            parsed_data[k]["endDate"] = i["end"]
+        self.export_to_csv_file(parsed_data, file_path)
 
-                except KeyError as ke:
-                    # print(f"Key error: {ke}")
-                    # print(f"Key: {kpi_var}")
-                    # print(f"File: {file_path}")
-                    continue
-        return parsed_data
 
-    def json_to_csv(self, input_file: str, output_file: str):
-        with open(input_file, "r") as f:
-            json_data = json.load(f)
-
-        not_financial = ["companyName", "agreementDate", "endDate", "diffInDays"]
-
-        # take the keys from the json file for column headers
-        for k, v in json_data.items():
-            headers = list(json_data[k].keys())
-            break
-
-        financial_columns = set(headers) - set(not_financial)
-        financial_columns = list(financial_columns)
-
-        headers = not_financial + financial_columns
-
-        # create a csv file
-        with open(output_file, "w") as f:
-            writer = csv.writer(f)
-            writer.writerow(headers)
+    def export_to_csv_file(self, parsed_data: dict, output_file: str):
         data = ""
-        # write the data to the csv file
         with open(output_file, "a") as f:
-            for k, v in json_data.items():
-                for i in not_financial:
-                    data += str(json_data[k][i]) + ","
-                for i in financial_columns:
-                    if i in json_data[k]:
-                        data += str(json_data[k][i]["value"]) + ","
+            writer = csv.writer(f)
+            writer.writerow(self.not_financial_columns + self.kpi_variables)
+
+            for k, v in parsed_data.items():
+                data += str(k) + ","
+                for i in self.not_financial_columns:
+                    if i in parsed_data[k]:
+                        data += str(parsed_data[k][i]) + ","
+                    else:
+                        data += "NAN" + ","
+                for i in self.kpi_variables:
+                    if i in parsed_data[k]:
+                        data += str(parsed_data[k][i]["value"]) + ","
                     else:
                         data += "NAN" + ","
                 f.write(data + "\n")
                 data = ""
+        print(f"Exported to {output_file}")
 
-    def get_company_facts_data(self, df):
+    async def get_company_raw_data(self, company_name, cik_number):
         """
-        Retrieve the company facts data from the json data
+        Retrieve the raw company data from the SEC.gov website
 
-        :param json_data: json data from the SEC.gov website
+        :param company_name: Name of the company
+        :param cik_number: CIK number of the company
         """
-        json_data = {}
-        # get the json data from the SEC.gov website
-        # "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik_number}.json"
+        async with aiohttp.ClientSession(headers=self.headers) as session:
+            url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik_number}.json"
+            async with session.get(url) as response:
+                if response.status == 200:
+                    json_data = await response.json()
+                    return json_data
+                else:
+                    print(f"No response: [  {company_name} | {cik_number} | reason: {response.reason} | status: {response.status} ]")
+                    self.write_to_file(file_name="no_response.txt", info=f"company: {company_name} | cik: {cik_number} | status: {response.status} | reason: {response.reason}\n \t ---> {url}")
+                    return None
+
+    async def get_company_facts_data(self, df):
+        """
+        Retrieve the company facts data asynchronously
+
+        :param df: Dataframe containing the company names and CIK numbers
+        """
+        tasks = []
+        results = {}
         for index, row in df.iterrows():
             cik_number = row["CIK Number"]
             company_name = row["Company Name"]
             agreement_date = row["Agreement Date"]
-            # append result to json_data
-            company_facts_data = self.get_company_raw_data(company_name, cik_number)
-            # print(company_facts_data)
-            if company_facts_data:
-                # print(f"Processing {cik_number} {fy}")
-                for kpi_var in self.kpi_variables:
-                    # print(f"KPI Variable: {kpi_var}")
-                    kpi_information = list(self.recursive_lookup(company_facts_data, kpi_var))
-                    if kpi_information:
-                        if cik_number not in json_data:
-                            json_data[cik_number] = {}
-                        if "agreementDate" not in json_data[cik_number]:
-                            json_data[cik_number]["agreementDate"] = str(agreement_date.date())
-                        if "entityName" not in json_data[cik_number]:
-                            json_data[cik_number]["entityName"] = company_facts_data["entityName"]
-                        if kpi_var not in json_data[cik_number]:
-                            json_data[cik_number][kpi_var] = kpi_information
+            tasks.append(asyncio.ensure_future(self.process_company(cik_number, company_name, agreement_date)))
+            if len(tasks) == 10:
+                results.update(await self.run_parallel_requests(tasks))
+                tasks = []
 
-                    # json_data[kpi_var] = list(recursive_lookup(company_facts_data, kpi_var))
-            else:
-                continue
-        # this is question mark whether it is good approach or not
-        return json_data
+        if tasks:
+            results.update(await self.run_parallel_requests(tasks))
+
+        print(f"Total number of companies: {len(results)}")
+        return results
+
+    async def process_company(self, cik_number, company_name, agreement_date):
+        """
+        Process the company data and retrieve the KPI data asynchronously
+        :param cik_number: CIK number of the company
+        :param company_name: Name of the company
+        :param agreement_date: License agreement date of the company
+        """
+        company_facts_data = await self.get_company_raw_data(company_name, cik_number)
+        if company_facts_data:
+            kpi_data = {}
+            for kpi_var in self.kpi_variables:
+                kpi_information = list(self.recursive_lookup(company_facts_data, kpi_var))
+                if kpi_information:
+                    kpi_data[kpi_var] = kpi_information
+                else: 
+                    self.write_to_file(file_name="missing_kpi_variables.txt", info=f"{company_name} | {cik_number} | {kpi_var}")
+            return (cik_number, agreement_date, company_facts_data["entityName"], kpi_data)
+
+    async def run_parallel_requests(self, tasks):
+        """
+        Run the parallel requests
+        :param tasks: List of tasks to run
+        """
+        results = {}
+        async with aiohttp.ClientSession(headers=self.headers) as session:
+            for result in await asyncio.gather(*tasks):
+                if result is not None:
+                    cik_number, agreement_date, entity_name, kpi_data = result
+                    if cik_number not in results:
+                        results[cik_number] = {}
+                    results[cik_number]["agreementDate"] = str(agreement_date.date())
+                    results[cik_number]["entityName"] = entity_name
+                    results[cik_number].update(kpi_data)
+                await asyncio.sleep(0.1)  # 10 requests per second max
+        return results
 
     def get_data_from_sec_gov_in_parallel(
         self,
@@ -713,6 +739,9 @@ def save_raw_data(
                 continue
 
 
+
+    
+
 def get_company_facts(source_file, output_file, is_licensee=False):
     """
     Get the company facts from the SEC.gov website
@@ -872,13 +901,29 @@ def create_input_file_for_orbis_batch_search(
                 )
 
 
+
+async def main():
+    # create the crawler
+    timestamp = datetime.now().strftime("%d_%m_%Y")
+
+    crawler = Crawler()
+    fy_cik_df = crawler.get_cik_number_fy_columns(
+        os.path.join(os.path.abspath("data"), "sample_data_big.xlsx"), is_licensee=True
+    )
+
+    company_info = await crawler.get_company_facts_data(fy_cik_df)
+
+    # save company facts
+    crawler.parse_export_data_to_csv(company_info, f"company_facts_{timestamp}_big.csv")
+
+asyncio.run(main())
 # In case of running only crawler part
 # ----------------------------------------------------------------------------------------------------------------------------
-if __name__ == "__main__":
-    print(os.path.dirname(os.path.abspath("data")))
-    data_path = os.path.join("sample_data.xlsx")
-    timestamp = datetime.now().strftime("%d_%m_%Y")
-    # crawler.find_publication("GB2419368")
+# if __name__ == "__main__":
+    # print(os.path.dirname(os.path.abspath("data")))
+    # data_path = os.path.join("sample_data.xlsx")
+    # timestamp = datetime.now().strftime("%d_%m_%Y")
+    # # crawler.find_publication("GB2419368")
     # print(crawler.get_publication())
     # company_name = "Apple Inc."
     # crawler.lookup_cik(company_name)
@@ -894,36 +939,4 @@ if __name__ == "__main__":
     #     f"orbis_data_{timestamp}.csv",
     #     is_licensee=True,
     # )
-    with Crawler() as crawler:
-        # crawler.get_company_facts(
-        #     os.path.join(
-        #         os.path.abspath("data"),
-        #         "sample_data.xlsx",
-        #     ),
-        #     f"company_facts_{timestamp}.json",
-        #     is_licensee=True,
-        # )
-
-        fy_cik_df = crawler.get_cik_number_fy_columns(
-            os.path.join(os.path.abspath("data"), "sample_data_big.xlsx"), is_licensee=True
-        )
-        # get company facts
-        # print(crawler.get_company_facts_data(fy_cik_df))
-
-        company_info = crawler.get_company_facts_data(fy_cik_df)
-        with open(os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.json"), "w") as f:
-            json.dump(company_info, f, indent=4)
-
-        parsed_data = crawler.parse_data_from_end_result(
-            os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.json")
-        )
-        with open(os.path.join(os.path.abspath("data"), f"parsed_company_facts_{timestamp}_big.json"), "w") as f:
-            json.dump(parsed_data, f, indent=4)
-
-        crawler.json_to_csv(
-            input_file=os.path.join(os.path.abspath("data"), f"parsed_company_facts_{timestamp}_big.json"),
-            output_file=os.path.join(os.path.abspath("data"), f"parsed_company_facts_{timestamp}_big.csv"),
-        )
-
-    # print(fy_cik_df)
-# -------------------------------------------------------------------------------------------------------------------------------
+   
