@@ -13,6 +13,58 @@ on:
         default: 'Format python code'
 
 jobs:
+
+  remove_unused_imports:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+          cache: "pip" # cache pip dependencies
+      - name: Install isort
+        run: |
+          pip install isort
+
+      - name: Get timestamp
+        id: get-timestamp
+        run: |
+          echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
+
+      - name: Remove unused imports
+        run: |
+          isort --recursive orbi/*.py
+
+      - name: Check if there are any changes
+        id: check-changes
+        run: |
+          if [[ -z $(git status --porcelain orbi) ]]; then
+            echo "No changes to commit"
+            echo "changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes to commit"
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit changes
+        if: ${{ steps.check-changes.outputs.changes == 'true' }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add orbi
+          git commit -m "[${{ steps.get-timestamp.outputs.timestamp }}] Remove unused imports."
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Remove unused imports"
+          title: "Remove unused imports"
+          body: "Remove unused imports"
+          branch: "remove-unused-imports"
+          delete-branch: true
+
   format_files_with_black:
     runs-on: ubuntu-latest
     steps:
@@ -25,7 +77,7 @@ jobs:
       - name: Install black 
         run: |
           pip install black
-      
+
       - name: Get timestamp
         id: get-timestamp
         run: |
@@ -34,6 +86,7 @@ jobs:
       - name: Format python code
         run: |
           black --line-length 120 orbi/*.py
+
 
       - name: Check if there are any changes
         id: check-changes
