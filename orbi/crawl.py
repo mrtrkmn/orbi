@@ -31,8 +31,12 @@ NET_INCOME_LOSS = "NetIncomeLoss"
 NET_CASH_USED_IN_OP_ACTIVITIES = "NetCashProvidedByUsedInOperatingActivities"
 NET_CASH_USED_IN_INVESTING_ACTIVITIES = "NetCashProvidedByUsedInInvestingActivities"
 NET_CASH_USED_IN_FINANCING_ACTIVITIES = "NetCashProvidedByUsedInFinancingActivities"
-CASH_EQUIVALENTS = "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect"
-INCOME_LOSS_BEFORE_CONT_OPS = "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"
+CASH_EQUIVALENTS = (
+    "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect"
+)
+INCOME_LOSS_BEFORE_CONT_OPS = (
+    "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"
+)
 GROSS_PROFIT = "GrossProfit"
 ASSETS = "Assets"
 
@@ -378,7 +382,9 @@ class Crawler:
                     json_data = await response.json()
                     return json_data
                 else:
-                    print(f"No response: [  {company_name} | {cik_number} | reason: {response.reason} | status: {response.status} ]")
+                    print(
+                        f"No response: [  {company_name} | {cik_number} | reason: {response.reason} | status: {response.status} ]"
+                    )
                     timestamp = datetime.now().strftime("%d_%m_%Y")
                     self.write_to_file(
                         file_name=os.path.join(os.path.abspath("data"), f"no_response_{timestamp}.txt"),
@@ -425,7 +431,10 @@ class Crawler:
                     kpi_data[kpi_var] = kpi_information
                 else:
                     timestamp = datetime.now().strftime("%d_%m_%Y")
-                    self.write_to_file(file_name=os.path.join(os.path.abspath("data"), f"missing_kpi_vars_{timestamp}.txt"), info=f"{company_name} | {cik_number} | {kpi_var}")
+                    self.write_to_file(
+                        file_name=os.path.join(os.path.abspath("data"), f"missing_kpi_vars_{timestamp}.txt"),
+                        info=f"{company_name} | {cik_number} | {kpi_var}",
+                    )
             return (cik_number, agreement_date, company_facts_data["entityName"], kpi_data)
 
     async def run_parallel_requests(self, tasks):
@@ -894,12 +903,16 @@ async def main():
     timestamp = datetime.now().strftime("%d_%m_%Y")
 
     crawler = Crawler()
-    fy_cik_df = crawler.get_cik_number_fy_columns(os.path.join(os.path.abspath("data"), "sample_data_big.xlsx"), is_licensee=True)
+    fy_cik_df = crawler.get_cik_number_fy_columns(
+        os.path.join(os.path.abspath("data"), "sample_data_big.xlsx"), is_licensee=True
+    )
 
     company_info = await crawler.get_company_facts_data(fy_cik_df)
 
     # save company facts
-    crawler.parse_export_data_to_csv(company_info, os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.csv"))
+    crawler.parse_export_data_to_csv(
+        company_info, os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.csv")
+    )
 
 
 asyncio.run(main())
