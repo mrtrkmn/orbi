@@ -8,6 +8,7 @@ from datetime import datetime
 from os import environ, path
 
 import pandas as pd
+import send_to_slack
 import yaml
 from crawl import create_input_file_for_orbis_batch_search
 from selenium import webdriver
@@ -23,8 +24,6 @@ from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
 from variables import *
 from webdriver_manager.chrome import ChromeDriverManager
-
-import send_to_slack
 
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
