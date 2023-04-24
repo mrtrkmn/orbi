@@ -1,6 +1,7 @@
 import asyncio
 import csv
 import hashlib
+import json
 import os
 import re
 import sys
@@ -31,12 +32,8 @@ NET_INCOME_LOSS = "NetIncomeLoss"
 NET_CASH_USED_IN_OP_ACTIVITIES = "NetCashProvidedByUsedInOperatingActivities"
 NET_CASH_USED_IN_INVESTING_ACTIVITIES = "NetCashProvidedByUsedInInvestingActivities"
 NET_CASH_USED_IN_FINANCING_ACTIVITIES = "NetCashProvidedByUsedInFinancingActivities"
-CASH_EQUIVALENTS = (
-    "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect"
-)
-INCOME_LOSS_BEFORE_CONT_OPS = (
-    "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"
-)
+CASH_EQUIVALENTS = "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect"
+INCOME_LOSS_BEFORE_CONT_OPS = "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"
 GROSS_PROFIT = "GrossProfit"
 ASSETS = "Assets"
 
@@ -69,19 +66,31 @@ class Crawler:
             "Content-Type": "application/json",
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
         }
+
         self.kpi_variables = [
             NUMBER_OF_EMPLOYEES,
+            f"{NUMBER_OF_EMPLOYEES} Reporting date",
             OPERATING_INCOME_LOSS,
+            f"{OPERATING_INCOME_LOSS} Reporting date",
             NET_INCOME_LOSS,
+            f"{NET_INCOME_LOSS} Reporting date",
             NET_CASH_USED_IN_OP_ACTIVITIES,
+            f"{NET_CASH_USED_IN_OP_ACTIVITIES} Reporting date",
             NET_CASH_USED_IN_INVESTING_ACTIVITIES,
+            f"{NET_CASH_USED_IN_INVESTING_ACTIVITIES} Reporting date",
             NET_CASH_USED_IN_FINANCING_ACTIVITIES,
+            f"{NET_CASH_USED_IN_FINANCING_ACTIVITIES} Reporting date",
             CASH_EQUIVALENTS,
+            f"{CASH_EQUIVALENTS} Reporting date",
             INCOME_LOSS_BEFORE_CONT_OPS,
+            f"{INCOME_LOSS_BEFORE_CONT_OPS} Reporting date",
             GROSS_PROFIT,
+            f"{GROSS_PROFIT} Reporting date",
             ASSETS,
+            f"{ASSETS} Reporting date",
         ]
-        self.not_financial_columns = ["companyName", "agreementDate", "endDate", "diffInDays"]
+
+        self.not_financial_columns = ["cik_number", "companyName", "agreementDate", "endDate", "diffInDays"]
 
     def recursive_lookup(self, data, key):
         if isinstance(data, dict):
@@ -315,9 +324,6 @@ class Crawler:
                             if "diffInDays" not in json_data[k]:
                                 json_data[k]["diffInDays"] = abs(diff.days)
 
-                            if "endDate" not in json_data[k]:
-                                json_data[k]["endDate"] = end_date
-
                             if abs(diff.days) <= json_data[k]["diffInDays"]:
                                 json_data[k]["diffInDays"] = abs(diff.days)
                                 val = i["val"]
@@ -334,7 +340,8 @@ class Crawler:
                                     parsed_data[k][kpi_var] = {}
 
                                 parsed_data[k][kpi_var]["value"] = val
-
+                                parsed_data[k][kpi_var]["filedDate"] = i["filed"]
+                                parsed_data[k][kpi_var]["endDate"] = i["end"]
                                 parsed_data[k][kpi_var]["unit"] = unit
                                 parsed_data[k][kpi_var]["form"] = form_type
                                 parsed_data[k]["diffInDays"] = diff.days
@@ -348,22 +355,32 @@ class Crawler:
 
     def export_to_csv_file(self, parsed_data: dict, output_file: str):
         data = ""
-        with open(output_file, "a") as f:
-            writer = csv.writer(f)
-            writer.writerow(self.not_financial_columns + self.kpi_variables)
+        delimeter = ";"
+        # add reporting date column after each column name
+        # for instance like this Revenues    |      Revenues reporting date        |       GrossProfit       |        GrossProfit reporting date etc
 
+        all_header_info = self.not_financial_columns + self.kpi_variables
+
+        with open(output_file, "w") as f:
+            writer = csv.writer(f, delimiter=delimeter)
+            writer.writerow(all_header_info)
+            cleaned_kpi_variables = [i for i in self.kpi_variables if not i.endswith("Reporting date")]
             for k, v in parsed_data.items():
-                data += str(k) + ","
-                for i in self.not_financial_columns:
+                data += str(k) + delimeter
+                for i in self.not_financial_columns[1:]:
                     if i in parsed_data[k]:
-                        data += str(parsed_data[k][i]) + ","
+                        data += str(parsed_data[k][i]) + delimeter
                     else:
-                        data += "NAN" + ","
-                for i in self.kpi_variables:
+                        data += "NAN" + delimeter
+                for i in cleaned_kpi_variables:
                     if i in parsed_data[k]:
-                        data += str(parsed_data[k][i]["value"]) + ","
+                        data += str(parsed_data[k][i]["value"]) + delimeter
+                        reporting_date = parsed_data[k][i]["filedDate"]
+                        data += reporting_date + delimeter
                     else:
-                        data += "NAN" + ","
+                        data += "NAN" + delimeter
+                        reporting_date = "NAN" + delimeter
+                        data += reporting_date
                 f.write(data + "\n")
                 data = ""
         print(f"Exported to {output_file}")
@@ -382,9 +399,7 @@ class Crawler:
                     json_data = await response.json()
                     return json_data
                 else:
-                    print(
-                        f"No response: [  {company_name} | {cik_number} | reason: {response.reason} | status: {response.status} ]"
-                    )
+                    print(f"No response: [  {company_name} | {cik_number} | reason: {response.reason} | status: {response.status} ]")
                     timestamp = datetime.now().strftime("%d_%m_%Y")
                     self.write_to_file(
                         file_name=os.path.join(os.path.abspath("data"), f"no_response_{timestamp}.txt"),
@@ -903,16 +918,11 @@ async def main():
     timestamp = datetime.now().strftime("%d_%m_%Y")
 
     crawler = Crawler()
-    fy_cik_df = crawler.get_cik_number_fy_columns(
-        os.path.join(os.path.abspath("data"), "sample_data_big.xlsx"), is_licensee=True
-    )
-
+    fy_cik_df = crawler.get_cik_number_fy_columns(os.path.join(os.path.abspath("data"), "sample_data_big.xlsx"), is_licensee=True)
     company_info = await crawler.get_company_facts_data(fy_cik_df)
 
     # save company facts
-    crawler.parse_export_data_to_csv(
-        company_info, os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.csv")
-    )
+    crawler.parse_export_data_to_csv(company_info, os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.csv"))
 
 
 asyncio.run(main())
