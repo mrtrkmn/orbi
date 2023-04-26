@@ -104,7 +104,9 @@ jobs:
 
     - name: Run crawler
       run: |
-        python orbi/crawl.py 
+        python orbi/crawl.py
+      env:
+
       
     # upload csv and json files to azure blob storage
     
@@ -118,6 +120,7 @@ jobs:
         ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
         RETENTION_DAYS: 30
         AZURE_CONTAINER_NAME: sec-gov-data
+        SLACK_CHANNEL: ${{ secrets.SLACK_DATA_CHANNEL }}
       continue-on-error: true
 # -----------------------RUN ON ORBIS JOB-------------------------------------------
   search_on_orbis: # default working directory
