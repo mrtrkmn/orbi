@@ -35,7 +35,7 @@ from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
 from variables import *
 from webdriver_manager.chrome import ChromeDriverManager
-from utils import send_file_to_slack # isort:skip
+import send_to_slack # isort:skip
 # initialize logger
 
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
