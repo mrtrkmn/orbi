@@ -37,6 +37,10 @@ INCOME_LOSS_BEFORE_CONT_OPS = "IncomeLossFromContinuingOperationsBeforeIncomeTax
 GROSS_PROFIT = "GrossProfit"
 ASSETS = "Assets"
 
+# when grossprofit does not exists, use the following variables
+# grossprofit = revenues - costofgoodssold
+REVENUES= "Revenues"
+COST_OF_GOODS_AND_SERVICES_SOLD = "CostOfGoodsAndServicesSold"
 
 # class to crawl the IPO website for the patent-related data
 class Crawler:
@@ -86,6 +90,10 @@ class Crawler:
             f"{INCOME_LOSS_BEFORE_CONT_OPS} Reporting date",
             GROSS_PROFIT,
             f"{GROSS_PROFIT} Reporting date",
+            REVENUES,
+            f"{REVENUES} Reporting date",
+            COST_OF_GOODS_AND_SERVICES_SOLD,
+            f"{COST_OF_GOODS_AND_SERVICES_SOLD} Reporting date",
             ASSETS,
             f"{ASSETS} Reporting date",
         ]
@@ -298,8 +306,12 @@ class Crawler:
                         print(f"Error on parsing (value): {e}")
                         print(f"CIK number (value): {k}")
                         continue
+                    # value : will contain information about instances of the file
+                    # first: sort all instances inside the array object 
+                    # then check from beginning to 
+                    sorted_values = sorted(value, key=lambda x: datetime.strptime(x['end'], '%Y-%m-%d'))
+                    for i in sorted_values:
 
-                    for i in value:
                         if i["form"] == "10-K":
                             agreement_date = json_data[k]["agreementDate"]
 
@@ -319,10 +331,13 @@ class Crawler:
                             else:
                                 diff = agreement_date - end_date
 
-                            # convert the difference to positive number
 
                             if "diffInDays" not in json_data[k]:
                                 json_data[k]["diffInDays"] = abs(diff.days)
+                            elif "diffInDays" in json_data[k]:
+                                if abs(diff.days) < json_data[k]["diffInDays"]:
+                                    json_data[k]["diffInDays"] = abs(diff.days)
+
 
                             if abs(diff.days) <= json_data[k]["diffInDays"]:
                                 json_data[k]["diffInDays"] = abs(diff.days)
@@ -378,9 +393,21 @@ class Crawler:
                         reporting_date = parsed_data[k][i]["filedDate"]
                         data += reporting_date + delimeter
                     else:
-                        data += "NAN" + delimeter
-                        reporting_date = "NAN" + delimeter
-                        data += reporting_date
+                        if i == GROSS_PROFIT:
+                            if REVENUES in parsed_data[k] and COST_OF_GOODS_AND_SERVICES_SOLD in parsed_data[k]:
+                                revenues = parsed_data[k][REVENUES]["value"]
+                                cost_of_goods_and_services = parsed_data[k][COST_OF_GOODS_AND_SERVICES_SOLD]["value"]
+                                cn = parsed_data[k]["companyName"]
+                                print(f"{cn} GrossProfit is generated from Revenues and Cost of goods and services sold")
+                                gross_profit = float(revenues) - float(cost_of_goods_and_services)
+                                data += str(gross_profit) + delimeter
+                                # todo: check here
+                                reporting_date = parsed_data[k][REVENUES]["filedDate"]
+                                data += reporting_date + delimeter
+                        else:
+                            data += "NAN" + delimeter
+                            reporting_date = "NAN" + delimeter
+                            data += reporting_date
                 f.write(data + "\n")
                 data = ""
         print(f"Exported to {output_file}")
@@ -403,6 +430,7 @@ class Crawler:
                     timestamp = datetime.now().strftime("%d_%m_%Y")
                     self.write_to_file(
                         file_name=os.path.join(os.path.abspath("data"), f"no_response_{timestamp}.txt"),
+                        # info=f"{company_name}, {cik_number}"
                         info=f"company: {company_name} | cik: {cik_number} | status: {response.status} | reason: {response.reason}\n \t ---> {url}",
                     )
                     return None
@@ -440,7 +468,9 @@ class Crawler:
         company_facts_data = await self.get_company_raw_data(company_name, cik_number)
         if company_facts_data:
             kpi_data = {}
-            for kpi_var in self.kpi_variables:
+            # remove all elements which ends with "Reporting date"
+            revisioned_kpi_vars = [i for i in self.kpi_variables if not i.endswith("Reporting date")]
+            for kpi_var in revisioned_kpi_vars:
                 kpi_information = list(self.recursive_lookup(company_facts_data, kpi_var))
                 if kpi_information:
                     kpi_data[kpi_var] = kpi_information
