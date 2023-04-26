@@ -105,7 +105,6 @@ jobs:
     - name: Run crawler
       run: |
         python orbi/crawl.py
-      env:
 
       
     # upload csv and json files to azure blob storage
