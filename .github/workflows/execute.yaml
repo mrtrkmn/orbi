@@ -71,8 +71,8 @@ env:
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
   SLACK_FOOTER: '🤓 automated bot Orbi'
   SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-  # artifact specific 
-  RETENTION_PERIOD: 20 # in days 
+  # artifact specific
+  RETENTION_PERIOD: 20 # in days
 
   CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
 permissions:
@@ -82,7 +82,7 @@ jobs:
 
   search_on_sec_gov:
     runs-on: ubuntu-latest
-  
+
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.10
@@ -95,7 +95,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    
+
    # get timestamp in format DD-MM-YYYY
     - name: Get timestamp
       id: get-timestamp
@@ -106,15 +106,15 @@ jobs:
       run: |
         python orbi/crawl.py
 
-      
+
     # upload csv and json files to azure blob storage
-    
+
     # python utils/upload_to_azure.py <file/dir> <container> <blob>
-    - name: Upload to Azure Blob 
-      run: | 
+    - name: Upload to Azure Blob
+      run: |
         pip install azure-storage-blob
         python utils/upload_to_azure.py --dir_file_path /home/runner/work/orbi/orbi/data --container_name ${{ env.AZURE_CONTAINER_NAME }} --blob_name orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
-      env: 
+      env:
         ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
         ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
         RETENTION_DAYS: 30
@@ -152,7 +152,7 @@ jobs:
         echo "file_name=$(basename ${{ github.event.inputs.data }})" >> $GITHUB_OUTPUT
 
 
-    - name: Check file existence 
+    - name: Check file existence
       if: ${{ steps.check_input_file_name.outputs.is_url == 'false' }}
       run: |
         if [ ! -f ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} ]; then
@@ -160,13 +160,13 @@ jobs:
           exit 1
         fi
 
-    - name: Download data if provided 
+    - name: Download data if provided
       if: ${{ steps.check_input_file_name.outputs.is_url == 'true' }}
       run: |
         wget ${{ github.event.inputs.data }}
         mv  ${{ steps.get-file-name.outputs.file_name }} ${{ env.DATA_DIR }} 
-    
-    - name: Check file existence 
+
+    - name: Check file existence
       if: ${{ steps.check_input_file_name.outputs.is_url == 'false' }}
       run: |
         if [ ! -f ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} ]; then
@@ -183,7 +183,7 @@ jobs:
     #**********************************************************************************************************************
     # INSTALL REQUIREMENTS
     #**********************************************************************************************************************
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -196,7 +196,7 @@ jobs:
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
         SLACK_MESSAGE: ':bell: Orbi is started crawl data from Orbis database on  Github using the file ${{ github.event.inputs.data }}  as input data.'
         SLACK_TITLE: ':bell: Orbi is working on crawling data from Orbis database on Github'
-   
+
     #**********************************************************************************************************************
     # RUN Orbi for batch search on Orbis
     #**********************************************************************************************************************
@@ -208,12 +208,12 @@ jobs:
         max_attempts: ${{ env.MAX_RUN_ATTEMPTS }} # 3 times retry if failed
         command: |
           python orbi/orbi.py
-      env: 
+      env:
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
         SEND_DATA_ON_COMPLETION: ${{ github.event.inputs.send_data_on_completion }}
         CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
     #**********************************************************************************************************************
-    #  POST PROCESSING STEPS 
+    #  POST PROCESSING STEPS
     #**********************************************************************************************************************
 
     - name: Send Job Failed Notification to Slack
@@ -223,14 +223,13 @@ jobs:
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
         SLACK_MESSAGE: ':x: Failed to run batch search, please check on Github. '
         SLACK_TITLE: ':x: Batch search failed at some point, in most cases this is caused due to slowness in the network (since it causes slow rendering of the page and leads to have no element we are looking for) !'
-        
-        
+
     # python utils/upload_to_azure.py <file/dir> <container> <blob>
-    - name: Upload to Azure Blob 
-      run: | 
+    - name: Upload to Azure Blob
+      run: |
         pip install azure-storage-blob
         python utils/upload_to_azure.py --dir_file_path ${{ env.DATA_DIR }} --container_name ${{ env.AZURE_CONTAINER_NAME }} --blob_name orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
-      env: 
+      env:
         ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
         ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
         RETENTION_DAYS: 7
