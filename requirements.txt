@@ -6,3 +6,4 @@ pandas
 pyyaml
 webdriver-manager
 slack-sdk
+aiohttp

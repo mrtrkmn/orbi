@@ -1,3 +1,13 @@
+# author: mrtrkmn@github
+# Orbis class is used to handle connections to Orbis database and perform batch search
+
+import os # isort:skip
+import sys # isort:skip
+root_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(root_path)
+sys.path.append("utils")
+
+
 import ast
 import concurrent.futures
 import hashlib
@@ -9,6 +19,7 @@ from os import environ, path
 
 import pandas as pd
 import yaml
+from crawl import create_input_file_for_orbis_batch_search
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import ActionChains
@@ -23,17 +34,15 @@ from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
 from variables import *
 from webdriver_manager.chrome import ChromeDriverManager
-
-root_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(root_path)
-
+import send_to_slack # isort:skip
 # initialize logger
 
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 # log_file = pathlib.Path(getenv("LOG_DIR")).joinpath(rf'{timestamp}_orbis.log')
 # get current working directory
-log_file = pathlib.Path.cwd().joinpath(rf"logs/{timestamp}_orbis.log")
+
+log_file = pathlib.Path.cwd().joinpath(f"logs/{timestamp}_orbis.log")
 
 logging.basicConfig(
     filename=log_file,
@@ -43,7 +52,7 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger()
-
+logger.setLevel(logging.DEBUG)
 
 ##### Orbis #####
 
@@ -80,10 +89,12 @@ class Orbis:
             self.slack_channel = config["slack"]["channel"]
             self.slack_token = config["slack"]["token"]
             self.data_source = config["data"]["source"]
+            self.check_on_sec = config["data"]["check_on_sec"]
             self.license_data = path.join(self.data_dir, self.data_source)
             environ["DATA_DIR"] = self.data_dir  # only for local dev and data_dir
         else:
             self.orbis_access_url = environ.get("ORBIS_ACCESS_URL")
+            self.check_on_sec = environ.get("CHECK_ON_SEC")
             self.send_data_on_completion = environ.get("SEND_DATA_ON_COMPLETION")
             self.slack_channel = environ.get("SLACK_DATA_CHANNEL")
             self.slack_token = environ.get("SLACK_TOKEN")
@@ -1224,25 +1235,6 @@ class Orbis:
             self.__exit__()
             sys.exit(1)
 
-    def send_file_to_slack(self, file_path, channel, message):
-        """
-        Send a file to a Slack channel.
-
-        :param file_path (str): The path to the file to send.
-        :param channel (str): The channel to send the file to.
-        :param message (str): The message to send with the file.
-
-        :return:
-        None
-        """
-        logger.debug(f"Sending file {file_path} to Slack channel {channel}")
-        slack_client = WebClient(token=self.slack_token)
-        slack_client.files_upload(
-            channels=self.slack_channel,
-            file=file_path,
-            initial_comment=message,
-        )
-
     def set_number_of_rows_in_view(self):
         """
         Sets the number of rows in view to number_of_rows in the dropdown menu according to number of inputs.
@@ -1340,7 +1332,7 @@ class Orbis:
             print("Not possible to find total page")
             print("Exception: ", e)
 
-        with open(path.join(self.data_dir, "not_matched_companies.txt"), "a") as f:
+        with open(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), "a") as f:
             f.write(f"List of companies not matched in {file_name}: \n")
             f.write("-------------------------------------------- \n")
         self.find_no_matched_companies()
@@ -1394,6 +1386,15 @@ class Orbis:
         if not self.count_total_search():
             self.iterate_over_pages(file_name=input_file)
 
+        try:
+            if self.slack_channel is not None and self.slack_channel != "":
+                send_file_to_slack(
+                    path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME),
+                    self.slack_channel,
+                    f"Not found companies for input file: {input_file}",
+                )
+        except Exception as e:
+            print(e)
         # when search is finished, click on the search results button
         if not self.count_total_search():
             self.view_search_results()
@@ -1515,7 +1516,7 @@ class Orbis:
 
         if self.send_data_on_completion.lower() == "true":
             message = f"Search for {input_file} is complete. Output of the batch search on orbis is attached."
-            self.send_file_to_slack(
+            send_file_to_slack(
                 path.join(self.data_dir, f"{excel_output_file_name}.xlsx"), self.slack_channel, message
             )
 
@@ -1935,7 +1936,7 @@ def get_data_dir_from_config():
 if __name__ == "__main__":
     # initial checks
     if environ.get("LOCAL_DEV") == "True":
-        environ["DATA_SOURCE"] = "sample_data_big.xlsx"
+        environ["DATA_SOURCE"] = "sample_data.xlsx"
         environ["DATA_DIR"] = get_data_dir_from_config()["data"]["path"]
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
@@ -1969,11 +1970,18 @@ if __name__ == "__main__":
     if os.path.exists(path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name)):
         print(f"Licensee file exists: {orbis_data_licensee_file_name}. Skipping to re-create it.")
     else:
-        extract_company_data_from_raw_excel(
-            path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
-            path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
-            is_licensee=True,
-        )
+        if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC") != "false":
+            create_input_file_for_orbis_batch_search(
+                path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+                path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
+                is_licensee=True,
+            )
+        else:
+            extract_company_data_from_raw_excel(
+                path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+                path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
+                is_licensee=True,
+            )
 
     orbis_data_licensor_file_name = f"orbis_data_licensor_{timestamp}.csv"
 
@@ -1981,11 +1989,18 @@ if __name__ == "__main__":
         print(f"Licensor file exists: {orbis_data_licensor_file_name}. Skipping to re-create it.")
     else:
         # generates csv file for licensor
-        extract_company_data_from_raw_excel(
-            path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
-            path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
-            is_licensee=False,
-        )
+        if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC") != "false":
+            create_input_file_for_orbis_batch_search(
+                path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+                path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
+                is_licensee=False,
+            )
+        else:
+            extract_company_data_from_raw_excel(
+                path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+                path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
+                is_licensee=False,
+            )
 
     time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
 
