@@ -262,10 +262,11 @@ jobs:
       continue-on-error: true
 
 
+    # in case of using aws s3 bucket this message can be used 
+    # curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F text="Data is ready ! Link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}" https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
     - name: Send data to Telegram 
       run: |
         curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
-        curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F text="Data is ready ! Link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}" https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
       continue-on-error: true
 
 
