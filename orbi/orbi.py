@@ -30,6 +30,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from slack_sdk import WebClient
+
 # from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
 from variables import *
@@ -495,6 +496,9 @@ class Orbis:
         print("Changes are applied to the batch search after ; seperator is set")
 
     def click_continue_search(self):
+        """
+        Clicks the continue search button in the batch search page.
+        """
         CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
         try:
             continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
@@ -1895,6 +1899,13 @@ def save_screenshot(driver, file_name):
 
 
 def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee):
+    """
+    Extracts company data from raw excel file and saves it to a csv file.
+    :param excel_file (str): File path of the excel file to extract data from.
+    :param output_csv_file (str): File path of the csv file to save the extracted data to.
+    :param is_licensee (bool): If True, extract licensee data. Otherwise, extract licensor data.
+    """
+
     df = pd.read_excel(excel_file, engine="openpyxl")
     if is_licensee:
         df = df.drop_duplicates(subset=["Licensee 1_cleaned"])
@@ -1907,9 +1918,6 @@ def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee
 
     # remove string quotes from any column
 
-    # df["identifier"] = df["identifier"].str.replace(r"\D", "")
-    # for col in df.columns:
-    #     df[col] = df[col].str.replace('"', "")
     df = df.apply(lambda x: x.str.strip())
     # remove string quotes from any column
     df = df.apply(lambda x: x.str.replace('"', ""))
