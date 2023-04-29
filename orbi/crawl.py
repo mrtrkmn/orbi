@@ -115,6 +115,11 @@ class Crawler:
         self.not_financial_columns = ["cik_number", "companyName", "agreementDate", "endDate", "diffInDays"]
 
     def recursive_lookup(self, data, key):
+        """
+        Generic function to recursively lookup a key in a dictionary
+        :param data: dictionary to lookup
+        :param key: key to lookup
+        """
         if isinstance(data, dict):
             for k, v in data.items():
                 if k == key:
@@ -255,6 +260,13 @@ class Crawler:
         # get Licensee CIK 1_cleaned and Agreement Date
         # substract one year from the Agreement Date
 
+        """
+        Given an excel file, return the columns with CIK number and Agreement Date and Company Name
+        :param excel_file: excel file with the data
+        :param is_licensee: True if the excel file contains licensee data, False otherwise
+        """
+
+
         df = pd.read_excel(excel_file)
         if is_licensee:
             df = df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned", "Agreement Date"]]
@@ -292,11 +304,22 @@ class Crawler:
         return df
 
     def write_to_file(self, file_name, info):
+        """
+        Write the info to the file
+        :param file_name: name of the file
+        :param info: info to be written to the file
+        """
         # write the info to the file
         with open(file_name, "a") as f:
             f.write(info + "\n")
 
     def parse_export_data_to_csv(self, json_data: dict, file_path: str):
+        """
+        Parse the json data and export it to a csv file
+        JSON data is parsed with given KPI variables & agreement date with units
+        :param json_data: json data to be parsed
+        :param file_path: path to the csv file
+        """
         # read json file
         parsed_data = {}
 
@@ -380,6 +403,11 @@ class Crawler:
         self.export_to_csv_file(parsed_data, file_path)
 
     def export_to_csv_file(self, parsed_data: dict, output_file: str):
+        """
+        Export the parsed data to a csv file
+        :param parsed_data: parsed data
+        :param output_file: output file name
+        """
         data = ""
         delimeter = ";"
         # add reporting date column after each column name
