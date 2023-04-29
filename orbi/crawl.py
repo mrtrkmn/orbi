@@ -549,6 +549,13 @@ class Crawler:
         company_name,
         results,
     ):
+        """"
+        Get the data from the SEC.gov website in parallel
+        :param url: URL to get the data from
+        :param company_name: Name of the company
+        :param results: Results dictionary
+        """
+
         # get the json data from the SEC.gov website
         # https://data.sec.gov/submissions/CIK##########.json
 
