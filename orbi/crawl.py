@@ -40,7 +40,8 @@ CASH_EQUIVALENTS = "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalent
 INCOME_LOSS_BEFORE_CONT_OPS = "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"
 GROSS_PROFIT = "GrossProfit"
 ASSETS = "Assets"
-
+COMPREHENSIVE_INCOME_NET_OF_TAX = "ComprehensiveIncomeNetOfTax"
+CASH_EQUIVALENTS_PERIOD_INCREASE_DECREASE = "CashAndCashEquivalentsPeriodIncreaseDecrease"
 # when grossprofit does not exists, use the following variables
 # grossprofit = revenues - costofgoodssold
 REVENUES= "Revenues"
@@ -100,6 +101,11 @@ class Crawler:
             f"{COST_OF_GOODS_AND_SERVICES_SOLD} Reporting date",
             ASSETS,
             f"{ASSETS} Reporting date",
+            COMPREHENSIVE_INCOME_NET_OF_TAX,
+            f"{COMPREHENSIVE_INCOME_NET_OF_TAX} Reporting date",
+            CASH_EQUIVALENTS_PERIOD_INCREASE_DECREASE,
+            f"{CASH_EQUIVALENTS_PERIOD_INCREASE_DECREASE} Reporting date",
+
         ]
 
         self.not_financial_columns = ["cik_number", "companyName", "agreementDate", "endDate", "diffInDays"]
