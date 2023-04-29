@@ -10,11 +10,13 @@ from azure.storage.blob import (
 )
 from datetime import datetime
 from datetime import timedelta
+
 from send_to_slack import send_message_to_slack
 
 # import public_access
 from azure.storage.blob import PublicAccess
 from azure.storage.blob import AccessPolicy, ContainerSasPermissions
+
 
 import argparse
 
@@ -43,7 +45,9 @@ def upload_dir_content_to_azure(dir_path, blob_service_client: BlobServiceClient
 
 
 def upload_blob_file(file_path, blob_service_client: BlobServiceClient, container_name, blob_name):
+
     container_client = blob_service_client.get_container_client(container_name)
+    container_client = blob_service_client.get_container_client(container=container_name)
     with open(file=file_path, mode="rb") as data:
         blob_client = container_client.upload_blob(name=blob_name, data=data, overwrite=True)
 
@@ -54,7 +58,6 @@ def create_container(blob_service_client: BlobServiceClient, container_name):
     if not container_client.exists():
         print(f"Container does not exists creating one. Container name: {container_name}")
         container_client.create_container()
-
 
     # set public access level to container
     access_policy = AccessPolicy(
