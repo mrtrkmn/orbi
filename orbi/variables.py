@@ -1,3 +1,6 @@
+# author: mrtrkmn@github
+# description: This file contains all constant which are used in Orbi python file
+
 import os
 import sys
 

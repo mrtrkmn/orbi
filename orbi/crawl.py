@@ -1,3 +1,7 @@
+# author: mrtrkmn@github
+# Make requests to receive data from SEC website
+# Async and sync requests are possible, in some cases parallel execution might happen
+
 import asyncio
 import csv
 import hashlib

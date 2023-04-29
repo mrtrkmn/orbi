@@ -1,3 +1,5 @@
+# author: mrtrkmn@github
+
 # This file uploads given file to Azure Blob Storage
 # Usage: python azure-blob-storage.py <file/dir> <container> <blob>
 

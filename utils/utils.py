@@ -20,3 +20,14 @@ def compare_excel_files(file1: pd.DataFrame, file2: pd.DataFrame, output_file: s
 #     file2 = 'received_from_sec.xlsx'
 #     output_file = 'diff.xlsx'
 #     compare_excel_files(file2, file1, output_file)
+
+
+from datetime import datetime
+
+json_list = [{'id' : 5461, 'date': '02/14/2009'},
+             {'id' : 5217, 'date': '09/25/2002'},
+             {'id' : 5913, 'date': '02/28/2014'},
+             {'id' : 5132, 'date': '01/07/2005'}]
+
+sorted_date = sorted(json_list, key=lambda x: datetime.strptime(x['date'], '%m/%d/%Y'))
+print (sorted_date)

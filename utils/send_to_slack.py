@@ -1,3 +1,6 @@
+# author: mrtrkmn@github
+# description: This file contains several functions to send message/file for given slack channel
+
 import argparse
 from os import environ
 from os import path

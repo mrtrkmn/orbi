@@ -1,6 +1,5 @@
-# Author: mrtrkmn@github
-# Date: 2021-05-05
-# Description: Orbis class is used to handle connections to Orbis database and perform batch search
+# author: mrtrkmn@github
+# Orbis class is used to handle connections to Orbis database and perform batch search
 
 import os # isort:skip
 import sys # isort:skip
