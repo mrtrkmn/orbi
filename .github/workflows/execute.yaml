@@ -129,10 +129,6 @@ jobs:
 # -----------------------RUN ON ORBIS JOB-------------------------------------------
   search_on_orbis: # default working directory
     runs-on: self-hosted
-
-  precheck_and_run: # default working directory
-    runs-on: self-hosted
-
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.10
@@ -140,9 +136,9 @@ jobs:
       with:
         python-version: "3.10"
         cache: "pip" # cache pip dependencies
-        
+
     #**********************************************************************************************************************
-    # PRECHECKS 
+    # PRECHECKS
     #**********************************************************************************************************************
     - name: Check input file name
       id: check_input_file_name
