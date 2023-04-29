@@ -266,7 +266,6 @@ class Crawler:
         :param is_licensee: True if the excel file contains licensee data, False otherwise
         """
 
-
         df = pd.read_excel(excel_file)
         if is_licensee:
             df = df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned", "Agreement Date"]]
@@ -549,7 +548,7 @@ class Crawler:
         company_name,
         results,
     ):
-        """"
+        """ "
         Get the data from the SEC.gov website in parallel
         :param url: URL to get the data from
         :param company_name: Name of the company
