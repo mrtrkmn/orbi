@@ -36,16 +36,21 @@ NET_INCOME_LOSS = "NetIncomeLoss"
 NET_CASH_USED_IN_OP_ACTIVITIES = "NetCashProvidedByUsedInOperatingActivities"
 NET_CASH_USED_IN_INVESTING_ACTIVITIES = "NetCashProvidedByUsedInInvestingActivities"
 NET_CASH_USED_IN_FINANCING_ACTIVITIES = "NetCashProvidedByUsedInFinancingActivities"
-CASH_EQUIVALENTS = "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect"
-INCOME_LOSS_BEFORE_CONT_OPS = "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"
+CASH_EQUIVALENTS = (
+    "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect"
+)
+INCOME_LOSS_BEFORE_CONT_OPS = (
+    "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"
+)
 GROSS_PROFIT = "GrossProfit"
 ASSETS = "Assets"
 COMPREHENSIVE_INCOME_NET_OF_TAX = "ComprehensiveIncomeNetOfTax"
 CASH_EQUIVALENTS_PERIOD_INCREASE_DECREASE = "CashAndCashEquivalentsPeriodIncreaseDecrease"
 # when grossprofit does not exists, use the following variables
 # grossprofit = revenues - costofgoodssold
-REVENUES= "Revenues"
+REVENUES = "Revenues"
 COST_OF_GOODS_AND_SERVICES_SOLD = "CostOfGoodsAndServicesSold"
+
 
 # class to crawl the IPO website for the patent-related data
 class Crawler:
@@ -105,7 +110,6 @@ class Crawler:
             f"{COMPREHENSIVE_INCOME_NET_OF_TAX} Reporting date",
             CASH_EQUIVALENTS_PERIOD_INCREASE_DECREASE,
             f"{CASH_EQUIVALENTS_PERIOD_INCREASE_DECREASE} Reporting date",
-
         ]
 
         self.not_financial_columns = ["cik_number", "companyName", "agreementDate", "endDate", "diffInDays"]
@@ -317,11 +321,10 @@ class Crawler:
                         print(f"CIK number (value): {k}")
                         continue
                     # value : will contain information about instances of the file
-                    # first: sort all instances inside the array object 
-                    # then check from beginning to 
-                    sorted_values = sorted(value, key=lambda x: datetime.strptime(x['end'], '%Y-%m-%d'))
+                    # first: sort all instances inside the array object
+                    # then check from beginning to
+                    sorted_values = sorted(value, key=lambda x: datetime.strptime(x["end"], "%Y-%m-%d"))
                     for i in sorted_values:
-
                         if i["form"] == "10-K":
                             agreement_date = json_data[k]["agreementDate"]
 
@@ -341,13 +344,11 @@ class Crawler:
                             else:
                                 diff = agreement_date - end_date
 
-
                             if "diffInDays" not in json_data[k]:
                                 json_data[k]["diffInDays"] = abs(diff.days)
                             elif "diffInDays" in json_data[k]:
                                 if abs(diff.days) < json_data[k]["diffInDays"]:
                                     json_data[k]["diffInDays"] = abs(diff.days)
-
 
                             if abs(diff.days) <= json_data[k]["diffInDays"]:
                                 json_data[k]["diffInDays"] = abs(diff.days)
@@ -408,7 +409,9 @@ class Crawler:
                                 revenues = parsed_data[k][REVENUES]["value"]
                                 cost_of_goods_and_services = parsed_data[k][COST_OF_GOODS_AND_SERVICES_SOLD]["value"]
                                 cn = parsed_data[k]["companyName"]
-                                print(f"{cn} GrossProfit is generated from Revenues and Cost of goods and services sold")
+                                print(
+                                    f"{cn} GrossProfit is generated from Revenues and Cost of goods and services sold"
+                                )
                                 gross_profit = float(revenues) - float(cost_of_goods_and_services)
                                 data += str(gross_profit) + delimeter
                                 # todo: check here
@@ -436,7 +439,9 @@ class Crawler:
                     json_data = await response.json()
                     return json_data
                 else:
-                    print(f"No response: [  {company_name} | {cik_number} | reason: {response.reason} | status: {response.status} ]")
+                    print(
+                        f"No response: [  {company_name} | {cik_number} | reason: {response.reason} | status: {response.status} ]"
+                    )
                     timestamp = datetime.now().strftime("%d_%m_%Y")
                     self.write_to_file(
                         file_name=os.path.join(os.path.abspath("data"), f"no_response_{timestamp}.txt"),
@@ -958,11 +963,15 @@ async def main():
     timestamp = datetime.now().strftime("%d_%m_%Y")
 
     crawler = Crawler()
-    fy_cik_df = crawler.get_cik_number_fy_columns(os.path.join(os.path.abspath("data"), "sample_data_big.xlsx"), is_licensee=True)
+    fy_cik_df = crawler.get_cik_number_fy_columns(
+        os.path.join(os.path.abspath("data"), "sample_data_big.xlsx"), is_licensee=True
+    )
     company_info = await crawler.get_company_facts_data(fy_cik_df)
 
     # save company facts
-    crawler.parse_export_data_to_csv(company_info, os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.csv"))
+    crawler.parse_export_data_to_csv(
+        company_info, os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.csv")
+    )
 
 
 asyncio.run(main())

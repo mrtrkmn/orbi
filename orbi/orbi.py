@@ -1,8 +1,9 @@
 # author: mrtrkmn@github
 # Orbis class is used to handle connections to Orbis database and perform batch search
 
-import os # isort:skip
-import sys # isort:skip
+import os  # isort:skip
+import sys  # isort:skip
+
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 sys.path.append("utils")
@@ -29,12 +30,14 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from slack_sdk import WebClient
+
 # from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
 from variables import *
 from webdriver_manager.chrome import ChromeDriverManager
 
-import send_to_slack # isort:skip
+import send_to_slack  # isort:skip
+
 # initialize logger
 
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -1516,9 +1519,7 @@ class Orbis:
 
         if self.send_data_on_completion.lower() == "true":
             message = f"Search for {input_file} is complete. Output of the batch search on orbis is attached."
-            send_file_to_slack(
-                path.join(self.data_dir, f"{excel_output_file_name}.xlsx"), self.slack_channel, message
-            )
+            send_file_to_slack(path.join(self.data_dir, f"{excel_output_file_name}.xlsx"), self.slack_channel, message)
 
     # create a file likewe have data.csv file
     # company name;city;country;identifier
