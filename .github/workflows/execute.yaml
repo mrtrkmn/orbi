@@ -113,19 +113,36 @@ jobs:
 
 
     # upload csv and json files to azure blob storage
+    
+    # THIS PART NEEDS TO BE UPDATED WITH AN ACTIVE AZURE ACCOUNT AND STORAGE CONTAINER
 
     # python utils/upload_to_azure.py <file/dir> <container> <blob>
-    - name: Upload to Azure Blob
-      run: |
-        pip install azure-storage-blob
-        python utils/upload_to_azure.py --dir_file_path /home/runner/work/orbi/orbi/data --container_name ${{ env.AZURE_CONTAINER_NAME }} --blob_name orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
-      env:
-        ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
-        ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
-        RETENTION_DAYS: 30
-        AZURE_CONTAINER_NAME: sec-gov-data
-        SLACK_CHANNEL: ${{ secrets.SLACK_DATA_CHANNEL }}
+    # - name: Upload to Azure Blob
+    #   run: |
+    #     pip install azure-storage-blob
+    #     python utils/upload_to_azure.py --dir_file_path /home/runner/work/orbi/orbi/data --container_name ${{ env.AZURE_CONTAINER_NAME }} --blob_name orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
+    #   env:
+    #     ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+    #     ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+    #     RETENTION_DAYS: 30
+    #     AZURE_CONTAINER_NAME: sec-gov-data
+    #     SLACK_CHANNEL: ${{ secrets.SLACK_DATA_CHANNEL }}
+    #   continue-on-error: true
+
+
+# upload to artifacts 
+    - name: Upload data to artifact 
+      uses: actions/upload-artifact@v3
+      with:
+        name: sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
+        path: |
+           ${{ env.DATA_DIR }}
+           !'${{ env.DATA_DIR }}sample_data.xlsx'
+           !'${{ env.DATA_DIR }}sample_data_big.xlsx'
+        retention-days: ${{ env.RETENTION_PERIOD }}
       continue-on-error: true
+
+
 # -----------------------RUN ON ORBIS JOB-------------------------------------------
   search_on_orbis: # default working directory
     runs-on: self-hosted
