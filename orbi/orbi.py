@@ -1920,9 +1920,9 @@ def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee
 
     df = df.apply(lambda x: x.str.strip())
     # remove string quotes from any column
-    df = df.apply(lambda x: x.str.replace('"', ""))
+    df = df.apply(lambda x: x.str.replace('"', "", regex=True))
     # remove new line characters from any column
-    df = df.apply(lambda x: x.str.replace(r"\r", ""))
+    df = df.apply(lambda x: x.str.replace(r"\r", "", regex=True))
     df.to_csv(output_csv_file, sep=";", index=False)
 
 
