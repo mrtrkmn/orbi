@@ -45,7 +45,6 @@ def upload_dir_content_to_azure(dir_path, blob_service_client: BlobServiceClient
 
 
 def upload_blob_file(file_path, blob_service_client: BlobServiceClient, container_name, blob_name):
-
     container_client = blob_service_client.get_container_client(container_name)
     container_client = blob_service_client.get_container_client(container=container_name)
     with open(file=file_path, mode="rb") as data:
