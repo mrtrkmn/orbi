@@ -251,6 +251,15 @@ class Orbis:
         except NoSuchElementException:
             print("No error message found")
 
+
+        try: 
+            error_class = self.driver.find_element(By.CLASS_NAME, "neterror")
+            print(f"Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {error_class.text}")
+            self.driver.quit()
+            sys.exit(1)
+        except NoSuchElementException:
+            print("No error class found")
+
     def logout(self):
         # logout from the web site
         """
