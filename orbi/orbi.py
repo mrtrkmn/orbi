@@ -161,7 +161,7 @@ class Orbis:
             self.chrome_options.add_argument("--disable-dev-shm-usage")
             self.chrome_options.add_argument("--window-size=1920,1080")
             self.chrome_options.add_argument("--disable-gpu")
-
+            self.chrome_options.add_argument("--no-sandbox")
             prefs = {"download.default_directory": self.data_dir}
             # add user agent to avoid bot detection
             self.chrome_options.add_argument(self.headers)
