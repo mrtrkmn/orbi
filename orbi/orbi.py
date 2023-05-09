@@ -713,22 +713,6 @@ class Orbis:
 
         print(f"{process_name} Add Remove Columns view is opened")
 
-    # def add_contact_info(self, process_name=""):
-    #     """
-    #     A step in the add remove additional columns page to add contact information to the search results.
-    #     :param process_name: The name of the process being performed.
-    #     """
-
-    #     try:
-    #         self.wait_until_clickable(CONTACT_INFORMATION)
-    #         self.driver.find_element(By.XPATH, CONTACT_INFORMATION).click()
-    #     except Exception as e:
-    #         print(f"{process_name} had an exception: {e} ")
-    #         self.driver.refresh()
-    #         time.sleep(3)
-    #         self.add_contact_info(process_name)
-    #     print(f"{process_name} Contact Information is added to the search results")
-
     def clear_search_input(self):
         """
         Clears the search input in the add remove additional columns page.
@@ -1452,19 +1436,6 @@ class Orbis:
         else:
             self.check_search_progress_bar()
 
-        # try:
-        #     processing_div_main = self.driver.find_element(By.XPATH, PROCESSING_DIV)
-        #     processing_div_main_style = processing_div_main.value_of_css_property("display")
-        #     while processing_div_main_style != "none":
-        #         processing_div_main = self.driver.find_element(By.XPATH, PROCESSING_DIV)
-        #         processing_div_main_style = processing_div_main.value_of_css_property("display")
-        #         logger.debug(f"{process_name} processing div main style is {processing_div_main_style}")
-        #         time.sleep(0.5)
-        # except Exception as e:
-        #     print(f"{process_name} had an exception: {e} ")
-
-        # todo: here take out companies which are not found in the search results
-
         self.add_remove_additional_columns(process_name)
 
         # self.add_contact_info(process_name)
@@ -1500,39 +1471,10 @@ class Orbis:
         self.add_orbis_id_number(process_name)
 
         time.sleep(2)
-        # scroll down within in panel
-        # self.scroll_to_bottom()
-        time.sleep(1)
-
-        # Ownership Data >
-        # //*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/div
-
-        # self.add_ownership_info(process_name)
-
-        # scroll down within in panel
-        # self.scroll_to_bottom()
-        # time.sleep(1)
-
-        # Shareholders
-        # //*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/ul/li[1]/div
-
-        # self.add_shareholders_info(process_name)
-
-        # self.scroll_to_bottom()
-        # time.sleep(1)
-        # Global Ultimate Owner Information
-
-        # self.add_guo_owner_info(process_name)
-
-        # Global Ultimate Owner Name
-        # //*[@id="GUO*GUO.GUO_NAME:UNIVERSAL"]/div[2]/span
 
         self.add_guo_name_info(process_name)
 
-        # self.scroll_to_bottom()
         time.sleep(1)
-
-        # self.add_immediate_parent_company_name(process_name)
 
         self.add_ish_name(process_name)
 
@@ -1545,8 +1487,6 @@ class Orbis:
 
         time.sleep(8)
 
-        # currency select unit
-        # self.wait_until_clickable(CURRENY_DROPDOWN)
         self.driver.find_element(By.XPATH, CURRENY_DROPDOWN).click()
 
         self.select_million_units()
@@ -2026,11 +1966,16 @@ if __name__ == "__main__":
     else:
         if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC") != "false":
             pass
+
+            ## ---> ****ATTENTION****: THIS PART IS DEACTIVATED AFTER SEEING THAT MERGED DATA
+            ## ---> FROM SEC.GOV ADDS NOISE TO THE DATA WHICH ONLY CONTAINS COMPANY NAME
+
             # create_input_file_for_orbis_batch_search(
             #     path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
             #     path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
             #     is_licensee=True,
             # )
+
         else:
             extract_company_data_from_raw_excel(
                 path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
@@ -2046,6 +1991,9 @@ if __name__ == "__main__":
         # generates csv file for licensor
         if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC") != "false":
             pass
+            ## ---> ****ATTENTION****: THIS PART IS DEACTIVATED AFTER SEEING THAT MERGED DATA
+            ## ---> FROM SEC.GOV ADDS NOISE TO THE DATA WHICH ONLY CONTAINS COMPANY NAME
+
             # create_input_file_for_orbis_batch_search(
             #     path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
             #     path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
