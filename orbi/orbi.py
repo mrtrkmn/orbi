@@ -1932,7 +1932,7 @@ if __name__ == "__main__":
             # exit with an error message
             exit(f"Config file {path.abspath(environ.get('CONFIG_PATH'))} does not exist")
 
-    is_parallel_exeuction_active = os.get("PARALLEL_EXECUTION")
+    is_parallel_exeuction_active = environ.get("PARALLEL_EXECUTION")
 
     # start to work
 
