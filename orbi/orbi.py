@@ -2068,10 +2068,10 @@ if __name__ == "__main__":
         run_in_parallel_generic(function=run_batch_search, args=input_files_with_ish_info)
     else:
         for ish_input_file in input_files_with_ish_info:
-            print(f"Running for the file with guo info: {ish_input_file}")
+            print(f"Running for the file with ish info: {ish_input_file}")
             run_batch_search(ish_input_file)
             time.sleep(4)
-            print(f"Search is done for guo file {ish_input_file}")
+            print(f"Search is done for ish file {ish_input_file}")
 
     # run_in_parallel_generic(function=run_batch_search,
     #                         args=[f"orbis_data_licensee_{timestamp}_guo.csv",
@@ -2087,36 +2087,36 @@ if __name__ == "__main__":
     # # # # # # Step 5
     time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
-    # try:
-    #     aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
-    # except FileNotFoundError as fne:
-    #     print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
+    try:
+        aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
+    except FileNotFoundError as fne:
+        print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
 
-    # try:
-    #     aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx",f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
-    # except FileNotFoundError as fne:
-    #     print(f"File could not be found to aggregate please make sure it exists !")
-    # run_in_parallel_generic(
-    #     function=aggregate_data,
-    #     args=[
-    #         (f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
-    #         (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
-    #     ],
-    # )
+    try:
+        aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx",f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
+    except FileNotFoundError as fne:
+        print(f"File could not be found to aggregate please make sure it exists !")
+    run_in_parallel_generic(
+        function=aggregate_data,
+        args=[
+            (f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
+            (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
+        ],
+    )
 
-    # run_in_parallel_generic(
-    #     function=post_process_data,
-    #     args=[
-    #         f"orbis_aggregated_data_{timestamp}.xlsx",
-    #         f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
-    #         f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
-    #         f"orbis_aggregated_data_{timestamp}_guo.xlsx",
-    #         f"orbis_data_guo_{timestamp}.xlsx",
-    #         f"orbis_data_licensee_{timestamp}_ish.xlsx",
-    #         f"orbis_data_licensor_{timestamp}_ish.xlsx",
-    #         f"orbis_data_licensee_{timestamp}.xlsx",
-    #         f"orbis_data_licensee_{timestamp}_guo.xlsx",
-    #         f"orbis_data_licensor_{timestamp}.xlsx",
-    #         f"orbis_data_licensor_{timestamp}_guo.xlsx",
-    #     ],
-    # )
+    run_in_parallel_generic(
+        function=post_process_data,
+        args=[
+            f"orbis_aggregated_data_{timestamp}.xlsx",
+            f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
+            f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
+            f"orbis_aggregated_data_{timestamp}_guo.xlsx",
+            f"orbis_data_guo_{timestamp}.xlsx",
+            f"orbis_data_licensee_{timestamp}_ish.xlsx",
+            f"orbis_data_licensor_{timestamp}_ish.xlsx",
+            f"orbis_data_licensee_{timestamp}.xlsx",
+            f"orbis_data_licensee_{timestamp}_guo.xlsx",
+            f"orbis_data_licensor_{timestamp}.xlsx",
+            f"orbis_data_licensor_{timestamp}_guo.xlsx",
+        ],
+    )
