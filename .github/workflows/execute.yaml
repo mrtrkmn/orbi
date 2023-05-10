@@ -28,7 +28,7 @@ on:
         default: false
 
       activate_parallel_exec:
-        description: 'Enable to run the program in parallel'
+        description: 'Enable to run the program in parallel. [ NOT ADVICED DURING WORKING HOURS - SINCE # OF SIMULTANEOUS USERS IS 5 ]'
         type: boolean
         required: false
         default: false
