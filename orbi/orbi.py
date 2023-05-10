@@ -4,6 +4,7 @@
 import os  # isort:skip
 import sys  # isort:skip
 
+# this part is used to create Orbi documentation with pdoc
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 sys.path.append("utils")
@@ -43,10 +44,6 @@ from send_to_slack import send_file_to_slack  # isort:skip
 # initialize logger
 
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-# log_file = pathlib.Path(getenv("LOG_DIR")).joinpath(rf'{timestamp}_orbis.log')
-# get current working directory
-
 log_file = pathlib.Path.cwd().joinpath(f"logs/{timestamp}_orbis.log")
 
 logging.basicConfig(
@@ -88,6 +85,7 @@ class Orbis:
             self.orbis_batch_search_url = config["orbis"]["urls"]["batch"]
             self.orbis_logout_url = config["orbis"]["urls"]["logout"]
             self.email_address = config["orbis"]["email"]
+            self.parallel_execution = config["orbis"]["parallel_execution"]
             self.data_dir = config["data"]["path"]
             self.password = config["orbis"]["password"]
             self.send_data_on_completion = config["slack"]["send_on_demand"]
@@ -99,7 +97,9 @@ class Orbis:
             environ["DATA_DIR"] = self.data_dir  # only for local dev and data_dir
         else:
             self.orbis_access_url = environ.get("ORBIS_ACCESS_URL")
+            # check_on_sec is disabled check the main function
             self.check_on_sec = environ.get("CHECK_ON_SEC")
+            self.parallel_execution = environ.get("PARALLEL_EXECUTION")
             self.send_data_on_completion = environ.get("SEND_DATA_ON_COMPLETION")
             self.slack_channel = environ.get("SLACK_DATA_CHANNEL")
             self.slack_token = environ.get("SLACK_TOKEN")
@@ -273,8 +273,7 @@ class Orbis:
         """
 
         logger.debug("Logging out Orbis ...")
-        ACCOUNT_XPATH = "/html/body/section[1]/ul/li"
-        LOGOUT_XPATH = '//*[@id="header-user-menu"]/section[1]/div[1]/div[2]/a'
+
         time.sleep(2)
 
         try:
@@ -509,7 +508,6 @@ class Orbis:
         """
         Clicks the continue search button in the batch search page.
         """
-        CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
 
         try:
             if (
@@ -800,10 +798,6 @@ class Orbis:
             print(e)
         time.sleep(1)
         self.clear_search_input()
-        # try:
-        #     self.driver.find_element(By.XPATH, SEARCH_INPUT_ADD_RM_COLUMNS).click()
-        # except Exception as e:
-        #     print(e)
         print(f"{process_name} delisting note is added")
 
     def select_only_first_value_from_popup(self, field):
@@ -1303,6 +1297,10 @@ class Orbis:
                     f.write("\n")
 
     def check_exists_by_xpath(self, xpath):
+        """
+        Checks whether given XPATH exists on the web page or not 
+        :param xpath: xpath string
+        """
         try:
             self.driver.find_element(By.XPATH, xpath)
         except NoSuchElementException:
@@ -1340,8 +1338,6 @@ class Orbis:
         return is_search_in_progress
 
     def iterate_over_pages(self, file_name):
-        # <input type="text" min="1" max="7" step="1" data-action="navigate" value="2" title="Number of page" data-type="int" data-validate="true" style="width:27.70551px">
-        # set input field value to 1
         """
         Iterates over pages in the search result to fetch companies which does not have any score found on Orbis
         """
@@ -1936,6 +1932,8 @@ if __name__ == "__main__":
             # exit with an error message
             exit(f"Config file {path.abspath(environ.get('CONFIG_PATH'))} does not exist")
 
+    is_parallel_exeuction_active = os.get("PARALLEL_EXECUTION")
+
     # start to work
 
     timestamp = datetime.now().strftime("%d_%m_%Y")
@@ -2012,18 +2010,20 @@ if __name__ == "__main__":
     # # --> data/data.csv needs to be uploaded to Orbis to start batch search
     # run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file
     # needs to come from crawl_data.py
-    run_in_parallel_generic(
-        function=run_batch_search, args=[f"orbis_data_licensee_{timestamp}.csv", f"orbis_data_licensor_{timestamp}.csv"]
-    )
 
+    if is_parallel_exeuction_active:
+        run_in_parallel_generic(
+            function=run_batch_search, args=files_to_apply_batch_search
+        )
+    else:
     # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
     # # # # --> after batch search is completed, data downloaded from Orbis
 
-    # for file_to_search in files_to_apply_batch_search:
-    #     print(f"Now searching for file {file_to_search}")
-    #     run_batch_search(file_to_search)
-    #     time.sleep(5)
-    #     print(f"Search is done for file {file_to_search}")
+        for file_to_search in files_to_apply_batch_search:
+            print(f"Now searching for file {file_to_search}")
+            run_batch_search(file_to_search)
+            time.sleep(5)
+            print(f"Search is done for file {file_to_search}")
 
     # # # # Step 3
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
@@ -2031,6 +2031,7 @@ if __name__ == "__main__":
         f"orbis_data_licensee_{timestamp}.xlsx",
         f"orbis_data_licensor_{timestamp}.xlsx",
     ]
+
     run_in_parallel_generic(
         function=generate_data_for_guo,
         args=input_files_with_company_raw_info,
@@ -2038,13 +2039,14 @@ if __name__ == "__main__":
 
     input_files_with_guo_info = [f"orbis_data_licensee_{timestamp}_guo.csv", f"orbis_data_licensor_{timestamp}_guo.csv"]
 
-    run_in_parallel_generic(function=run_batch_search, args=input_files_with_guo_info)
-
-    # for guo_input_file in input_files_with_guo_info:
-    #     print(f"Running for the file with guo info: {guo_input_file}")
-    #     run_batch_search(guo_input_file)
-    #     time.sleep(4)
-    #     print(f"Search is done for guo file {guo_input_file}")
+    if is_parallel_exeuction_active:
+        run_in_parallel_generic(function=run_batch_search, args=input_files_with_guo_info)
+    else:
+        for guo_input_file in input_files_with_guo_info:
+            print(f"Running for the file with guo info: {guo_input_file}")
+            run_batch_search(guo_input_file)
+            time.sleep(4)
+            print(f"Search is done for guo file {guo_input_file}")
 
     # # # Step 3
     # # # --> generate_data_for_guo to generate data by considering GUO of companies
@@ -2057,20 +2059,22 @@ if __name__ == "__main__":
     time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
     run_in_parallel_generic(
-        function=generate_data_for_ish,
-        args=[
-            f"orbis_data_licensee_{timestamp}.xlsx",
-            f"orbis_data_licensor_{timestamp}.xlsx",
-        ],
-    )
+            function=generate_data_for_ish,
+            args=[
+                f"orbis_data_licensee_{timestamp}.xlsx",
+                f"orbis_data_licensor_{timestamp}.xlsx",
+            ],
+        )
 
-    run_in_parallel_generic(function=run_batch_search, args=input_files_with_ish_info)
 
-    # for ish_input_file in input_files_with_ish_info:
-    #     print(f"Running for the file with guo info: {ish_input_file}")
-    #     run_batch_search(ish_input_file)
-    #     time.sleep(4)
-    #     print(f"Search is done for guo file {ish_input_file}")
+    if is_parallel_exeuction_active:
+       run_in_parallel_generic(function=run_batch_search, args=input_files_with_ish_info)
+    else:
+        for ish_input_file in input_files_with_ish_info:
+            print(f"Running for the file with guo info: {ish_input_file}")
+            run_batch_search(ish_input_file)
+            time.sleep(4)
+            print(f"Search is done for guo file {ish_input_file}")
 
     # run_in_parallel_generic(function=run_batch_search,
     #                         args=[f"orbis_data_licensee_{timestamp}_guo.csv",
