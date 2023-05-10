@@ -1298,7 +1298,7 @@ class Orbis:
 
     def check_exists_by_xpath(self, xpath):
         """
-        Checks whether given XPATH exists on the web page or not 
+        Checks whether given XPATH exists on the web page or not
         :param xpath: xpath string
         """
         try:
@@ -2012,12 +2012,10 @@ if __name__ == "__main__":
     # needs to come from crawl_data.py
 
     if is_parallel_exeuction_active:
-        run_in_parallel_generic(
-            function=run_batch_search, args=files_to_apply_batch_search
-        )
+        run_in_parallel_generic(function=run_batch_search, args=files_to_apply_batch_search)
     else:
-    # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
-    # # # # --> after batch search is completed, data downloaded from Orbis
+        # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
+        # # # # --> after batch search is completed, data downloaded from Orbis
 
         for file_to_search in files_to_apply_batch_search:
             print(f"Now searching for file {file_to_search}")
@@ -2059,16 +2057,15 @@ if __name__ == "__main__":
     time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
     run_in_parallel_generic(
-            function=generate_data_for_ish,
-            args=[
-                f"orbis_data_licensee_{timestamp}.xlsx",
-                f"orbis_data_licensor_{timestamp}.xlsx",
-            ],
-        )
-
+        function=generate_data_for_ish,
+        args=[
+            f"orbis_data_licensee_{timestamp}.xlsx",
+            f"orbis_data_licensor_{timestamp}.xlsx",
+        ],
+    )
 
     if is_parallel_exeuction_active:
-       run_in_parallel_generic(function=run_batch_search, args=input_files_with_ish_info)
+        run_in_parallel_generic(function=run_batch_search, args=input_files_with_ish_info)
     else:
         for ish_input_file in input_files_with_ish_info:
             print(f"Running for the file with guo info: {ish_input_file}")
