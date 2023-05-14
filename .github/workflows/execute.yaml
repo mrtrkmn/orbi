@@ -27,6 +27,12 @@ on:
         required: false
         default: false
 
+      activate_parallel_exec:
+        description: 'Enable to run the program in parallel. [ NOT ADVICED DURING WORKING HOURS - SINCE # OF MAX SIMULTANEOUS USER ACCESS IS 5 ]'
+        type: boolean
+        required: false
+        default: false
+
       notify:
         description: 'To receive notifications and all search result files in zip on Slack channel, check this option'
         type: boolean
@@ -234,6 +240,7 @@ jobs:
         DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
         SEND_DATA_ON_COMPLETION: ${{ github.event.inputs.send_data_on_completion }}
         CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
+        PARALLEL_EXECUTION: ${{ github.event.inputs.activate_parallel_exec }}
     #**********************************************************************************************************************
     #  POST PROCESSING STEPS
     #**********************************************************************************************************************
