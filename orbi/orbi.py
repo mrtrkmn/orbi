@@ -20,7 +20,8 @@ from os import environ, path
 
 import pandas as pd
 import yaml
-from crawl import create_input_file_for_orbis_batch_search
+
+# from crawl import create_input_file_for_orbis_batch_search
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import ActionChains
@@ -37,6 +38,7 @@ from variables import *
 from webdriver_manager.chrome import ChromeDriverManager
 
 import send_to_slack  # isort:skip
+from send_to_slack import send_file_to_slack  # isort:skip
 
 # initialize logger
 
@@ -250,6 +252,14 @@ class Orbis:
             # self.slack_client.chat_postMessage(channel="#idp-data-c", text=f"Error on logging into Orbis ... ERR_MSG: {response.text}")
         except NoSuchElementException:
             print("No error message found")
+
+        try:
+            error_class = self.driver.find_element(By.CLASS_NAME, "neterror")
+            print(f"Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {error_class.text}")
+            self.driver.quit()
+            sys.exit(1)
+        except NoSuchElementException:
+            print("No error class found")
 
     def logout(self):
         # logout from the web site
@@ -500,11 +510,18 @@ class Orbis:
         Clicks the continue search button in the batch search page.
         """
         CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
+
         try:
-            continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
-            action = ActionChains(self.driver)
-            action.click(on_element=continue_search_button).perform()
-            time.sleep(0.5)
+            if (
+                not self.driver.find_element(By.LINK_TEXT, "Continue later").is_displayed()
+                and not self.count_total_search()
+            ):
+                continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
+                action = ActionChains(self.driver)
+                action.click(on_element=continue_search_button).perform()
+                time.sleep(0.5)
+            else:
+                pass
         except Exception as e:
             print(f"Exception on clicking continue search {e}")
 
@@ -695,22 +712,6 @@ class Orbis:
             self.add_remove_additional_columns(process_name)
 
         print(f"{process_name} Add Remove Columns view is opened")
-
-    def add_contact_info(self, process_name=""):
-        """
-        A step in the add remove additional columns page to add contact information to the search results.
-        :param process_name: The name of the process being performed.
-        """
-
-        try:
-            self.wait_until_clickable(CONTACT_INFORMATION)
-            self.driver.find_element(By.XPATH, CONTACT_INFORMATION).click()
-        except Exception as e:
-            print(f"{process_name} had an exception: {e} ")
-            self.driver.refresh()
-            time.sleep(3)
-            self.add_contact_info(process_name)
-        print(f"{process_name} Contact Information is added to the search results")
 
     def clear_search_input(self):
         """
@@ -1019,7 +1020,8 @@ class Orbis:
         A step in batch search process to add global ultimate owner name to the report
         :param process_name:
         """
-
+        field = "GUO - Name"
+        self.search_field(field, process_name)
         try:
             self.wait_until_clickable(GUO_NAME_INFO)
             self.driver.find_element(By.XPATH, GUO_NAME_INFO).click()
@@ -1049,7 +1051,8 @@ class Orbis:
         A step in batch search process to add ish name to the report
         :param process_name:
         """
-
+        field = "ISH - Name"
+        self.search_field(field, process_name)
         try:
             self.wait_until_clickable(ISH_NAME)
             self.driver.find_element(By.XPATH, ISH_NAME).click()
@@ -1166,6 +1169,16 @@ class Orbis:
             print(e)
         time.sleep(1)
         print("million units is selected")
+
+    def select_usd_currency(self):
+        """
+        Selects USD currency from the dropdown menu.
+        """
+        try:
+            self.wait_until_clickable(USD_UNIT)
+            self.driver.find_element(By.XPATH, USD_UNIT).click()
+        except Exception as e:
+            print(e)
 
     def click_dropdown_button(self):
         """
@@ -1289,18 +1302,29 @@ class Orbis:
                     f.write(company.text)
                     f.write("\n")
 
+    def check_exists_by_xpath(self, xpath):
+        try:
+            self.driver.find_element(By.XPATH, xpath)
+        except NoSuchElementException:
+            return False
+        return True
+
     def go_to_page(self, current_page):
         """
         Iterates over pages in the search result
         :param current_page: current page number
         """
-        try:
-            self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).clear()
-            self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(str(current_page))
-            self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(Keys.RETURN)
-        except Exception as e:
-            print("Setting up input field value to 1 failed")
-            pass
+        if self.check_exists_by_xpath(INPUT_FIELD_VALUE):
+            try:
+                self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).clear()
+                self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(str(current_page))
+                self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(Keys.RETURN)
+            except Exception as e:
+                print("Setting up input field value to 1 failed")
+                return
+        else:
+            print("Current page is already set to ", current_page)
+            return
 
     def is_search_continuing(self):
         """
@@ -1322,33 +1346,38 @@ class Orbis:
         Iterates over pages in the search result to fetch companies which does not have any score found on Orbis
         """
 
+        def write_to_file_not_found_companies():
+            with open(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), "a") as f:
+                f.write(f"List of companies not matched in {file_name}: \n")
+                f.write("-------------------------------------------- \n")
+            self.find_no_matched_companies()
+
         time.sleep(2)
         current_page = 1
         self.set_number_of_rows_in_view()
         time.sleep(5)
         self.go_to_page(current_page)
+        if self.check_exists_by_xpath(TOTAL_PAGE_XPATH):
+            try:
+                input_field = self.driver.find_element(By.XPATH, TOTAL_PAGE_XPATH)
+                max_value = input_field.get_attribute("max")
+                current_value = input_field.get_attribute("value")
+                if int(current_value) != current_page:
+                    self.go_to_page(current_page)
+            except Exception as e:
+                print("Not possible to find total page")
+                print("Exception: ", e)
 
-        try:
-            input_field = self.driver.find_element(By.XPATH, TOTAL_PAGE_XPATH)
-            max_value = input_field.get_attribute("max")
-            current_value = input_field.get_attribute("value")
-            if int(current_value) != current_page:
+            write_to_file_not_found_companies()
+
+            while current_page != int(max_value):
+                time.sleep(5)
+                current_page += 1
                 self.go_to_page(current_page)
-        except Exception as e:
-            print("Not possible to find total page")
-            print("Exception: ", e)
-
-        with open(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), "a") as f:
-            f.write(f"List of companies not matched in {file_name}: \n")
-            f.write("-------------------------------------------- \n")
-        self.find_no_matched_companies()
-
-        while current_page != int(max_value):
-            time.sleep(5)
-            current_page += 1
-            self.go_to_page(current_page)
-            time.sleep(5)
-            self.find_no_matched_companies()
+                time.sleep(5)
+                self.find_no_matched_companies()
+        else:
+            write_to_file_not_found_companies()
 
     def batch_search(self, input_file, process_name=""):
         """
@@ -1407,22 +1436,9 @@ class Orbis:
         else:
             self.check_search_progress_bar()
 
-        try:
-            processing_div_main = self.driver.find_element(By.XPATH, PROCESSING_DIV)
-            processing_div_main_style = processing_div_main.value_of_css_property("display")
-            while processing_div_main_style != "none":
-                processing_div_main = self.driver.find_element(By.XPATH, PROCESSING_DIV)
-                processing_div_main_style = processing_div_main.value_of_css_property("display")
-                logger.debug(f"{process_name} processing div main style is {processing_div_main_style}")
-                time.sleep(0.5)
-        except Exception as e:
-            print(f"{process_name} had an exception: {e} ")
-
-        # todo: here take out companies which are not found in the search results
-
         self.add_remove_additional_columns(process_name)
 
-        self.add_contact_info(process_name)
+        # self.add_contact_info(process_name)
         self.add_city_info(process_name)
 
         self.add_country_info(process_name)
@@ -1435,7 +1451,7 @@ class Orbis:
         time.sleep(1)
 
         # identification number column
-        self.add_identification_number(process_name)
+        # self.add_identification_number(process_name)
 
         # other company id column
         self.add_other_company_id(process_name)
@@ -1455,41 +1471,10 @@ class Orbis:
         self.add_orbis_id_number(process_name)
 
         time.sleep(2)
-        # scroll down within in panel
-        self.scroll_to_bottom()
-        time.sleep(1)
-
-        # Ownership Data >
-        # //*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/div
-
-        self.add_ownership_info(process_name)
-
-        # scroll down within in panel
-        self.scroll_to_bottom()
-        time.sleep(1)
-
-        # Shareholders
-        # //*[@id="main-content"]/div/div[2]/div[1]/div/div[2]/div/ul/li[15]/ul/li[1]/div
-
-        self.add_shareholders_info(process_name)
-
-        self.scroll_to_bottom()
-        time.sleep(1)
-        # Global Ultimate Owner Information
-
-        self.add_guo_owner_info(process_name)
-
-        self.scroll_to_bottom()
-        time.sleep(1)
-        # Global Ultimate Owner Name
-        # //*[@id="GUO*GUO.GUO_NAME:UNIVERSAL"]/div[2]/span
 
         self.add_guo_name_info(process_name)
 
-        self.scroll_to_bottom()
         time.sleep(1)
-
-        self.add_immediate_parent_company_name(process_name)
 
         self.add_ish_name(process_name)
 
@@ -1502,11 +1487,12 @@ class Orbis:
 
         time.sleep(8)
 
-        # currency select unit
-        # self.wait_until_clickable(CURRENY_DROPDOWN)
         self.driver.find_element(By.XPATH, CURRENY_DROPDOWN).click()
 
         self.select_million_units()
+
+        self.select_usd_currency
+
         # select million
         self.click_dropdown_button()
 
@@ -1944,7 +1930,7 @@ def get_data_dir_from_config():
 if __name__ == "__main__":
     # initial checks
     if environ.get("LOCAL_DEV") == "True":
-        environ["DATA_SOURCE"] = "sample_data.xlsx"
+        environ["DATA_SOURCE"] = "sample_data_small.xlsx"
         environ["DATA_DIR"] = get_data_dir_from_config()["data"]["path"]
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
@@ -1979,11 +1965,17 @@ if __name__ == "__main__":
         print(f"Licensee file exists: {orbis_data_licensee_file_name}. Skipping to re-create it.")
     else:
         if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC") != "false":
-            create_input_file_for_orbis_batch_search(
-                path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
-                path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
-                is_licensee=True,
-            )
+            pass
+
+            ## ---> ****ATTENTION****: THIS PART IS DEACTIVATED AFTER SEEING THAT MERGED DATA
+            ## ---> FROM SEC.GOV ADDS NOISE TO THE DATA WHICH ONLY CONTAINS COMPANY NAME
+
+            # create_input_file_for_orbis_batch_search(
+            #     path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+            #     path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
+            #     is_licensee=True,
+            # )
+
         else:
             extract_company_data_from_raw_excel(
                 path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
@@ -1998,11 +1990,15 @@ if __name__ == "__main__":
     else:
         # generates csv file for licensor
         if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC") != "false":
-            create_input_file_for_orbis_batch_search(
-                path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
-                path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
-                is_licensee=False,
-            )
+            pass
+            ## ---> ****ATTENTION****: THIS PART IS DEACTIVATED AFTER SEEING THAT MERGED DATA
+            ## ---> FROM SEC.GOV ADDS NOISE TO THE DATA WHICH ONLY CONTAINS COMPANY NAME
+
+            # create_input_file_for_orbis_batch_search(
+            #     path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+            #     path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
+            #     is_licensee=False,
+            # )
         else:
             extract_company_data_from_raw_excel(
                 path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
