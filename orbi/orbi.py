@@ -41,6 +41,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 import send_to_slack  # isort:skip
 from send_to_slack import send_file_to_slack  # isort:skip
 from send_to_slack import send_message_to_slack  # isort:skip
+
 # initialize logger
 
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -511,6 +512,8 @@ class Orbis:
         """
         Clicks the continue search button in the batch search page.
         """
+
+        CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
 
         try:
             if (
@@ -1304,6 +1307,7 @@ class Orbis:
         Checks whether given XPATH exists on the web page or not
         :param xpath: xpath string
         """
+        
         try:
             self.driver.find_element(By.XPATH, xpath)
         except NoSuchElementException:
@@ -1929,7 +1933,7 @@ def get_data_dir_from_config():
 if __name__ == "__main__":
     # initial checks
     if environ.get("LOCAL_DEV") == "True":
-        environ["DATA_SOURCE"] = "sample_data.xlsx"
+        environ["DATA_SOURCE"] = "sample_data_small.xlsx"
         environ["DATA_DIR"] = get_data_dir_from_config()["data"]["path"]
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
