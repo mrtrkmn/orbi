@@ -4,6 +4,7 @@
 
 import asyncio
 import csv
+
 import hashlib
 import json
 import os
@@ -12,7 +13,7 @@ import sys
 import time
 from datetime import datetime
 from threading import Thread
-
+import argparse
 import aiohttp
 import pandas as pd
 import requests
@@ -994,18 +995,43 @@ def create_input_file_for_orbis_batch_search(
 
 async def main():
     # create the crawler
+
     timestamp = datetime.now().strftime("%d_%m_%Y")
+    # write a argument parser
+    parser = argparse.ArgumentParser(description="Get the company facts from the SEC.gov website")
+    parser.add_argument(
+        "--source_file",
+        type=str,
+        help="path to the input file",
+        required=True,
+    )
+    parser.add_argument(
+        "--output_file",
+        type=str,
+        default=f"company_facts_{timestamp}_big.csv",
+        help="path to the output file",
+        required=False,
+    )
+    parser.add_argument(
+        "--is_licensee",
+        type=bool,
+        help="boolean value to indicate if the source file is for licensee or licensor",
+        required=True,
+    )
+    args = parser.parse_args()
+    source_file = args.source_file
+    output_file = args.output_file
+    is_licensee = args.is_licensee
+
+    if not os.path.exists(source_file):
+        raise Exception("The source file does not exist")
 
     crawler = Crawler()
-    fy_cik_df = crawler.get_cik_number_fy_columns(
-        os.path.join(os.path.abspath("data"), "sample_data_big.xlsx"), is_licensee=True
-    )
+    fy_cik_df = crawler.get_cik_number_fy_columns(source_file, is_licensee=is_licensee)
     company_info = await crawler.get_company_facts_data(fy_cik_df)
 
     # save company facts
-    crawler.parse_export_data_to_csv(
-        company_info, os.path.join(os.path.abspath("data"), f"company_facts_{timestamp}_big.csv")
-    )
+    crawler.parse_export_data_to_csv(company_info, output_file)
 
 
 asyncio.run(main())
