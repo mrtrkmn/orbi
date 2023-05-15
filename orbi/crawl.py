@@ -1034,7 +1034,8 @@ async def main():
     crawler.parse_export_data_to_csv(company_info, output_file)
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
 # In case of running only crawler part
 # ----------------------------------------------------------------------------------------------------------------------------
 # if __name__ == "__main__":
