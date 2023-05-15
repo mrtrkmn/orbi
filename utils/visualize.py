@@ -13,77 +13,12 @@
 import matplotlib.pyplot as plt
 import os
 
+
 # Read file
 def read_file(file_path):
     with open(file_path, "r") as f:
         lines = f.readlines()
     return lines
-
-
-# count values which starts with Inventor
-def count_inventor(lines):
-    """
-    Count values which starts with Inventor
-    """
-    count = 0
-    for line in lines:
-        if line.startswith("Inventor"):
-            count += 1
-    return count
-
-
-# count values which starts with Unknown
-def count_unknown(lines):
-    """
-    Count values which starts with Unknown
-    """
-
-    count = 0
-    for line in lines:
-        if line.startswith("Unknown"):
-            count += 1
-    return count
-
-
-# count values which contains 'University'
-def count_university(lines):
-    count = 0
-    for line in lines:
-        if "School" in line or "University" in line:
-            count += 1
-    return count
-
-
-# count values which contains 'Research or Development'
-def count_research(lines):
-    count = 0
-    for line in lines:
-        if "Research" in line or "Development" in line:
-            count += 1
-    return count
-
-
-def count_others(lines):
-    count = 0
-    for line in lines:
-        if (
-            not line.startswith("Inventor")
-            and not line.startswith("Unknown")
-            and "University" not in line
-            and "Research" not in line
-            and "Development" not in line
-        ):
-            print(line)
-            count += 1
-    return count
-
-
-def count_institute(lines):
-    count = 0
-    for line in lines:
-        if "Institut" in line:
-            count += 1
-    return count
 
 
 # create distribution mapping
@@ -138,9 +73,7 @@ def plot_distribution_mapping(mapping, is_licensee):
 
 
 if __name__ == "__main__":
-    # one level up to utils folder and then go to data folder
-    
-    file_path = "/Users/mrtrkmn/Documents/projects/idp-works/data/test/not_matched_companies.txt"
+    file_path = "./data/not_matched_companies.txt"
     lines = read_file(file_path)
     mapping = create_distribution_mapping(lines)
     print(mapping)
