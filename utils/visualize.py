@@ -11,7 +11,7 @@
 #       BBD Enterprises W.L.L.
 
 import matplotlib.pyplot as plt
-
+import os
 
 # Read file
 def read_file(file_path):
@@ -89,19 +89,32 @@ def count_institute(lines):
 # create distribution mapping
 def create_distribution_mapping(lines):
     mapping = {}
-    for line in lines:
-        if line.startswith("Inventor"):
-            mapping["Inventor"] = count_inventor(lines)
-        elif line.startswith("Unknown"):
-            mapping["Unknown"] = count_unknown(lines)
-        elif "University" in line:
-            mapping["University"] = count_university(lines)
-        elif "Research" in line or "Development" in line:
-            mapping["Research"] = count_research(lines)
-        elif "Institut" in line:
-            mapping["Institut"] = count_institute(lines)
+    if "Inventor" not in mapping:
+        mapping["Inventor"] = 0
+    if "Unknown" not in mapping:
+        mapping["Unknown"] = 0
+    if "University" not in mapping:
+        mapping["University"] = 0
+    if "Research" not in mapping:
+        mapping["Research"] = 0
+    if "Institut" not in mapping:
+        mapping["Institut"] = 0
+    if "Others" not in mapping:
+        mapping["Others"] = 0
+
+    for i in lines:
+        if i.startswith("Inventor"):
+            mapping["Inventor"] += 1
+        elif i.startswith("Unknown"):
+            mapping["Unknown"] += 1
+        elif "University" in i or "School" in i:
+            mapping["University"] += 1
+        elif "Research" in i or "Development" in i:
+            mapping["Research"] += 1
+        elif "Institut" in i:
+            mapping["Institut"] += 1
         else:
-            mapping["Others"] = count_others(lines)
+            mapping["Others"] += 1
     return mapping
 
 
@@ -125,8 +138,10 @@ def plot_distribution_mapping(mapping, is_licensee):
 
 
 if __name__ == "__main__":
-    file_path = "./data/not_matched_companies.txt"
+    # one level up to utils folder and then go to data folder
+    
+    file_path = "/Users/mrtrkmn/Documents/projects/idp-works/data/test/not_matched_companies.txt"
     lines = read_file(file_path)
     mapping = create_distribution_mapping(lines)
     print(mapping)
-    plot_distribution_mapping(mapping)
+    plot_distribution_mapping(mapping, is_licensee=False)
