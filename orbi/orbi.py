@@ -249,7 +249,10 @@ class Orbis:
             # notify slack that logging is not successful to Orbis  database
             print(f"Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {response.text}")
             self.driver.quit()
-            send_message_to_slack(message=f"Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {response.text}", channel="#idp-data-c")
+            send_message_to_slack(
+                message=f"Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {response.text}",
+                channel="#idp-data-c",
+            )
             sys.exit(0)
 
             # self.slack_client.chat_postMessage(channel="#idp-data-c", text=f"Error on logging into Orbis ... ERR_MSG: {response.text}")
@@ -259,7 +262,10 @@ class Orbis:
         try:
             error_class = self.driver.find_element(By.CLASS_NAME, "neterror")
             print(f"Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {error_class.text}")
-            send_message_to_slack(message=f"Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {response.text}", channel="#idp-data-c")
+            send_message_to_slack(
+                message=f"Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {response.text}",
+                channel="#idp-data-c",
+            )
             self.driver.quit()
             sys.exit(1)
         except NoSuchElementException:
@@ -1307,7 +1313,7 @@ class Orbis:
         Checks whether given XPATH exists on the web page or not
         :param xpath: xpath string
         """
-        
+
         try:
             self.driver.find_element(By.XPATH, xpath)
         except NoSuchElementException:
@@ -2100,7 +2106,7 @@ if __name__ == "__main__":
         print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
 
     try:
-        aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx",f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
+        aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
     except FileNotFoundError as fne:
         print(f"File could not be found to aggregate please make sure it exists !")
     run_in_parallel_generic(
