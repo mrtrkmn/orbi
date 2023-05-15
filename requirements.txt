@@ -7,3 +7,4 @@ pyyaml
 webdriver-manager
 slack-sdk
 aiohttp
+matplotlib
