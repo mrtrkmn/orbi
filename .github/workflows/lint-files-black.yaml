@@ -116,3 +116,4 @@ jobs:
           body: "Format python code"
           branch: "format-python-code"
           delete-branch: true
+          labels: "automated-pr"
