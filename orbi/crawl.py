@@ -2,9 +2,9 @@
 # Make requests to receive data from SEC website
 # Async and sync requests are possible, in some cases parallel execution might happen
 
+import argparse
 import asyncio
 import csv
-
 import hashlib
 import json
 import os
@@ -13,7 +13,7 @@ import sys
 import time
 from datetime import datetime
 from threading import Thread
-import argparse
+
 import aiohttp
 import pandas as pd
 import requests
