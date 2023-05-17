@@ -15,12 +15,14 @@ import concurrent.futures
 import hashlib
 import logging
 import pathlib
+import unidecode
 import time
 from datetime import datetime
 from os import environ, path
 
 import pandas as pd
 import yaml
+
 # from crawl import create_input_file_for_orbis_batch_search
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
@@ -31,6 +33,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from slack_sdk import WebClient
+
 # from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
 from variables import *
@@ -1912,6 +1915,9 @@ def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee
     # remove string quotes from any column
 
     df = df.apply(lambda x: x.str.strip())
+
+    # apply unidecode to remove special characters to the language
+    df = df["Company name"].apply(unidecode.unidecode)
     # remove string quotes from any column
     df = df.apply(lambda x: x.str.replace('"', "", regex=True))
     # remove new line characters from any column

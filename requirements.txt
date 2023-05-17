@@ -8,3 +8,4 @@ webdriver-manager
 slack-sdk
 aiohttp
 matplotlib
+unidecode
