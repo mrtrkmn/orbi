@@ -429,7 +429,7 @@ class Crawler:
                 for i in cleaned_kpi_variables:
                     if i in parsed_data[k]:
                         data += str(parsed_data[k][i]["value"]) + delimeter
-                        reporting_date = parsed_data[k][i]["filedDate"]
+                        reporting_date = parsed_data[k][i]["endDate"]
                         data += reporting_date + delimeter
                     else:
                         if i == GROSS_PROFIT:
@@ -1018,6 +1018,13 @@ async def main():
         help="boolean value to indicate if the source file is for licensee or licensor",
         required=True,
     )
+    # if no arguments are provided, print the help message
+    if len(sys.argv) == 1:
+        print("Example usage:\n python3 orbi/crawl.py --source_file sample_data.xlsx --output_file company_facts.csv --is_licensee True")
+        sys.exit(1) 
+    
+
+
     args = parser.parse_args()
     source_file = args.source_file
     output_file = args.output_file
