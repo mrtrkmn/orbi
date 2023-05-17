@@ -1901,19 +1901,36 @@ def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee
     :param output_csv_file (str): File path of the csv file to save the extracted data to.
     :param is_licensee (bool): If True, extract licensee data. Otherwise, extract licensor data.
     """
+    # in case there are multiple Licensee information in the given excel file
+    # combine them into one column
+    # search in columns for names which starts with Licensee and ends with cleaned
+    # if there are multiple columns, combine them into one column
 
     df = pd.read_excel(excel_file, engine="openpyxl")
+    # create resulting df with one column
+    df_result = pd.DataFrame(columns=["Company name"])
+    # searching
+    licensee_columns = [
+        col for col in df.columns if col.startswith("Licensee") and col.endswith("cleaned") and "CIK" not in col
+    ]
+    licensor_columns = [
+        col for col in df.columns if col.startswith("Licensor") and col.endswith("cleaned") and "CIK" not in col
+    ]
+
     if is_licensee:
-        df = df.drop_duplicates(subset=["Licensee 1_cleaned"])
-        df = df[["Licensee 1_cleaned"]]
-        df.rename(columns={"Licensee 1_cleaned": "Company name"}, inplace=True)
+        # combine all col values into df_result in one column called Company name
+
+        # todo!!
+        print()
+
     else:
-        df = df.drop_duplicates(subset=["Licensor 1_cleaned"])
-        df = df[["Licensor 1_cleaned"]]
-        df.rename(columns={"Licensor 1_cleaned": "Company name"}, inplace=True)
+        # todo!!!
+        print()
+
+    df_result = df_result.dropna()
+    df_result = df_result.drop_duplicates()
 
     # remove string quotes from any column
-
     df = df.apply(lambda x: x.str.strip())
 
     # apply unidecode to remove special characters to the language
@@ -2021,119 +2038,119 @@ if __name__ == "__main__":
                 is_licensee=False,
             )
 
-    time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
+    # time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
 
-    # # Step 2
-    # # --> data/data.csv needs to be uploaded to Orbis to start batch search
-    # run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file
-    # needs to come from crawl_data.py
+    # # # Step 2
+    # # # --> data/data.csv needs to be uploaded to Orbis to start batch search
+    # # run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file
+    # # needs to come from crawl_data.py
 
-    if is_parallel_exeuction_active:
-        run_in_parallel_generic(function=run_batch_search, args=files_to_apply_batch_search)
-    else:
-        # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
-        # # # # --> after batch search is completed, data downloaded from Orbis
+    # if is_parallel_exeuction_active:
+    #     run_in_parallel_generic(function=run_batch_search, args=files_to_apply_batch_search)
+    # else:
+    #     # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
+    #     # # # # --> after batch search is completed, data downloaded from Orbis
 
-        for file_to_search in files_to_apply_batch_search:
-            print(f"Now searching for file {file_to_search}")
-            run_batch_search(file_to_search)
-            time.sleep(5)
-            print(f"Search is done for file {file_to_search}")
+    #     for file_to_search in files_to_apply_batch_search:
+    #         print(f"Now searching for file {file_to_search}")
+    #         run_batch_search(file_to_search)
+    #         time.sleep(5)
+    #         print(f"Search is done for file {file_to_search}")
+
+    # # # # # Step 3
+    # # # # # --> generate_data_for_guo to generate data by considering GUO of companies
+    # input_files_with_company_raw_info = [
+    #     f"orbis_data_licensee_{timestamp}.xlsx",
+    #     f"orbis_data_licensor_{timestamp}.xlsx",
+    # ]
+
+    # run_in_parallel_generic(
+    #     function=generate_data_for_guo,
+    #     args=input_files_with_company_raw_info,
+    # )
+
+    # input_files_with_guo_info = [f"orbis_data_licensee_{timestamp}_guo.csv", f"orbis_data_licensor_{timestamp}_guo.csv"]
+
+    # if is_parallel_exeuction_active:
+    #     run_in_parallel_generic(function=run_batch_search, args=input_files_with_guo_info)
+    # else:
+    #     for guo_input_file in input_files_with_guo_info:
+    #         print(f"Running for the file with guo info: {guo_input_file}")
+    #         run_batch_search(guo_input_file)
+    #         time.sleep(4)
+    #         print(f"Search is done for guo file {guo_input_file}")
 
     # # # # Step 3
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
-    input_files_with_company_raw_info = [
-        f"orbis_data_licensee_{timestamp}.xlsx",
-        f"orbis_data_licensor_{timestamp}.xlsx",
-    ]
 
-    run_in_parallel_generic(
-        function=generate_data_for_guo,
-        args=input_files_with_company_raw_info,
-    )
+    # # # # Step 3
+    # # # # --> generate_data_for_guo to generate data by considering GUO of companies
 
-    input_files_with_guo_info = [f"orbis_data_licensee_{timestamp}_guo.csv", f"orbis_data_licensor_{timestamp}_guo.csv"]
-
-    if is_parallel_exeuction_active:
-        run_in_parallel_generic(function=run_batch_search, args=input_files_with_guo_info)
-    else:
-        for guo_input_file in input_files_with_guo_info:
-            print(f"Running for the file with guo info: {guo_input_file}")
-            run_batch_search(guo_input_file)
-            time.sleep(4)
-            print(f"Search is done for guo file {guo_input_file}")
-
-    # # # Step 3
-    # # # --> generate_data_for_guo to generate data by considering GUO of companies
-
-    # # # Step 3
-    # # # --> generate_data_for_guo to generate data by considering GUO of companies
-
-    input_files_with_ish_info = [f"orbis_data_licensee_{timestamp}_ish.csv", f"orbis_data_licensor_{timestamp}_ish.csv"]
-
-    time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
-
-    run_in_parallel_generic(
-        function=generate_data_for_ish,
-        args=[
-            f"orbis_data_licensee_{timestamp}.xlsx",
-            f"orbis_data_licensor_{timestamp}.xlsx",
-        ],
-    )
-
-    if is_parallel_exeuction_active:
-        run_in_parallel_generic(function=run_batch_search, args=input_files_with_ish_info)
-    else:
-        for ish_input_file in input_files_with_ish_info:
-            print(f"Running for the file with ish info: {ish_input_file}")
-            run_batch_search(ish_input_file)
-            time.sleep(4)
-            print(f"Search is done for ish file {ish_input_file}")
-
-    # run_in_parallel_generic(function=run_batch_search,
-    #                         args=[f"orbis_data_licensee_{timestamp}_guo.csv",
-    #                          f"orbis_data_licensor_{timestamp}_guo.csv",
-    #                          ])
+    # input_files_with_ish_info = [f"orbis_data_licensee_{timestamp}_ish.csv", f"orbis_data_licensor_{timestamp}_ish.csv"]
 
     # time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
-    # run_in_parallel_generic(function=run_batch_search,
-    #                         args= [f"orbis_data_licensee_ish_{timestamp}.csv",
-    #                          f"orbis_data_licensor_ish_{timestamp}.csv",
-    #                          ])
-    # # # # # # Step 5
-    time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
+    # run_in_parallel_generic(
+    #     function=generate_data_for_ish,
+    #     args=[
+    #         f"orbis_data_licensee_{timestamp}.xlsx",
+    #         f"orbis_data_licensor_{timestamp}.xlsx",
+    #     ],
+    # )
 
-    try:
-        aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
-    except FileNotFoundError as fne:
-        print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
+    # if is_parallel_exeuction_active:
+    #     run_in_parallel_generic(function=run_batch_search, args=input_files_with_ish_info)
+    # else:
+    #     for ish_input_file in input_files_with_ish_info:
+    #         print(f"Running for the file with ish info: {ish_input_file}")
+    #         run_batch_search(ish_input_file)
+    #         time.sleep(4)
+    #         print(f"Search is done for ish file {ish_input_file}")
 
-    try:
-        aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
-    except FileNotFoundError as fne:
-        print(f"File could not be found to aggregate please make sure it exists !")
-    run_in_parallel_generic(
-        function=aggregate_data,
-        args=[
-            (f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
-            (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
-        ],
-    )
+    # # run_in_parallel_generic(function=run_batch_search,
+    # #                         args=[f"orbis_data_licensee_{timestamp}_guo.csv",
+    # #                          f"orbis_data_licensor_{timestamp}_guo.csv",
+    # #                          ])
 
-    run_in_parallel_generic(
-        function=post_process_data,
-        args=[
-            f"orbis_aggregated_data_{timestamp}.xlsx",
-            f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
-            f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
-            f"orbis_aggregated_data_{timestamp}_guo.xlsx",
-            f"orbis_data_guo_{timestamp}.xlsx",
-            f"orbis_data_licensee_{timestamp}_ish.xlsx",
-            f"orbis_data_licensor_{timestamp}_ish.xlsx",
-            f"orbis_data_licensee_{timestamp}.xlsx",
-            f"orbis_data_licensee_{timestamp}_guo.xlsx",
-            f"orbis_data_licensor_{timestamp}.xlsx",
-            f"orbis_data_licensor_{timestamp}_guo.xlsx",
-        ],
-    )
+    # # time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
+
+    # # run_in_parallel_generic(function=run_batch_search,
+    # #                         args= [f"orbis_data_licensee_ish_{timestamp}.csv",
+    # #                          f"orbis_data_licensor_ish_{timestamp}.csv",
+    # #                          ])
+    # # # # # # # Step 5
+    # time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
+
+    # try:
+    #     aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
+    # except FileNotFoundError as fne:
+    #     print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
+
+    # try:
+    #     aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
+    # except FileNotFoundError as fne:
+    #     print(f"File could not be found to aggregate please make sure it exists !")
+    # run_in_parallel_generic(
+    #     function=aggregate_data,
+    #     args=[
+    #         (f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
+    #         (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
+    #     ],
+    # )
+
+    # run_in_parallel_generic(
+    #     function=post_process_data,
+    #     args=[
+    #         f"orbis_aggregated_data_{timestamp}.xlsx",
+    #         f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
+    #         f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
+    #         f"orbis_aggregated_data_{timestamp}_guo.xlsx",
+    #         f"orbis_data_guo_{timestamp}.xlsx",
+    #         f"orbis_data_licensee_{timestamp}_ish.xlsx",
+    #         f"orbis_data_licensor_{timestamp}_ish.xlsx",
+    #         f"orbis_data_licensee_{timestamp}.xlsx",
+    #         f"orbis_data_licensee_{timestamp}_guo.xlsx",
+    #         f"orbis_data_licensor_{timestamp}.xlsx",
+    #         f"orbis_data_licensor_{timestamp}_guo.xlsx",
+    #     ],
+    # )
