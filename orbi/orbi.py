@@ -1901,28 +1901,42 @@ def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee
     :param output_csv_file (str): File path of the csv file to save the extracted data to.
     :param is_licensee (bool): If True, extract licensee data. Otherwise, extract licensor data.
     """
+    # in case there are multiple Licensee information in the given excel file
+    # combine them into one column
+    # search in columns for names which starts with Licensee and ends with cleaned
+    # if there are multiple columns, combine them into one column
 
     df = pd.read_excel(excel_file, engine="openpyxl")
+    # create resulting df with one column
+    df_result = pd.DataFrame(columns=["Company name"])
+    # searching
+    licensee_columns = [
+        col for col in df.columns if col.startswith("Licensee") and col.endswith("cleaned") and "CIK" not in col
+    ]
+    licensor_columns = [
+        col for col in df.columns if col.startswith("Licensor") and col.endswith("cleaned") and "CIK" not in col
+    ]
+    series = []
+
     if is_licensee:
-        df = df.drop_duplicates(subset=["Licensee 1_cleaned"])
-        df = df[["Licensee 1_cleaned"]]
-        df.rename(columns={"Licensee 1_cleaned": "Company name"}, inplace=True)
+        # combine all col values into df_result in one column called Company name
+        for col in licensee_columns:
+            series += df[col].tolist()
     else:
-        df = df.drop_duplicates(subset=["Licensor 1_cleaned"])
-        df = df[["Licensor 1_cleaned"]]
-        df.rename(columns={"Licensor 1_cleaned": "Company name"}, inplace=True)
+        for col in licensor_columns:
+            series += df[col].tolist()
+
+    df_result["Company name"] = pd.Series(series)
+
+    df_result = df_result.dropna()
+    df_result = df_result.drop_duplicates()
 
     # remove string quotes from any column
-
-    df = df.apply(lambda x: x.str.strip())
+    df_result = df_result.apply(lambda x: x.str.strip())
 
     # apply unidecode to remove special characters to the language
-    df = df["Company name"].apply(unidecode.unidecode)
-    # remove string quotes from any column
-    df = df.apply(lambda x: x.str.replace('"', "", regex=True))
-    # remove new line characters from any column
-    df = df.apply(lambda x: x.str.replace(r"\r", "", regex=True))
-    df.to_csv(output_csv_file, sep=";", index=False)
+    df_result = df_result["Company name"].apply(unidecode.unidecode)
+    df_result.to_csv(output_csv_file, sep=";", index=False)
 
 
 def get_data_dir_from_config():
@@ -1943,7 +1957,7 @@ def get_data_dir_from_config():
 if __name__ == "__main__":
     # initial checks
     if environ.get("LOCAL_DEV") == "True":
-        environ["DATA_SOURCE"] = "sample_data_small.xlsx"
+        environ["DATA_SOURCE"] = "latest_big_data.xlsx"
         environ["DATA_DIR"] = get_data_dir_from_config()["data"]["path"]
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
