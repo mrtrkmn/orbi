@@ -1020,10 +1020,10 @@ async def main():
     )
     # if no arguments are provided, print the help message
     if len(sys.argv) == 1:
-        print("Example usage:\n python3 orbi/crawl.py --source_file sample_data.xlsx --output_file company_facts.csv --is_licensee True")
-        sys.exit(1) 
-    
-
+        print(
+            "Example usage:\n python3 orbi/crawl.py --source_file sample_data.xlsx --output_file company_facts.csv --is_licensee True"
+        )
+        sys.exit(1)
 
     args = parser.parse_args()
     source_file = args.source_file
