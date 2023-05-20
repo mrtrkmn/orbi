@@ -9,3 +9,4 @@ slack-sdk
 aiohttp
 matplotlib
 unidecode
+pytz
