@@ -113,10 +113,13 @@ jobs:
       run: |
         echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
 
-    - name: Run crawler
+    - name: Crawl data from SEC.GOV for licensee
       run: |
-        python orbi/crawl.py
-
+        python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ env.DEFAULT_DATA_SOURCE }} --is_licensee True
+      
+    - name: Crawl data from SEC.GOV for licensor
+      run: |
+        python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ env.DEFAULT_DATA_SOURCE }} --is_licensee False
 
     # upload csv and json files to azure blob storage
     
