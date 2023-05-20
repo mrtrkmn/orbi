@@ -14,6 +14,7 @@ import time
 from datetime import datetime
 from threading import Thread
 
+import pytz
 import aiohttp
 import pandas as pd
 import requests
@@ -30,7 +31,8 @@ from bs4 import BeautifulSoup
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 
-
+LOCAL_TZ = pytz.timezone("Europe/Berlin")
+NOT_FOUND_COMPANIES = {}
 NUMBER_OF_EMPLOYEES = "EntityNumberOfEmployees"
 OPERATING_INCOME_LOSS = "OperatingIncomeLoss"
 NET_INCOME_LOSS = "NetIncomeLoss"
@@ -266,42 +268,58 @@ class Crawler:
         :param excel_file: excel file with the data
         :param is_licensee: True if the excel file contains licensee data, False otherwise
         """
-
-        df = pd.read_excel(excel_file)
+        complete_df = pd.read_excel(excel_file)
+        final_df = pd.DataFrame()
+        licensee_columns = [
+            col
+            for col in complete_df.columns
+            if col.startswith("Licensee") and col.endswith("cleaned") and "CIK" not in col
+        ]
+        licensor_columns = [
+            col
+            for col in complete_df.columns
+            if col.startswith("Licensor") and col.endswith("cleaned") and "CIK" not in col
+        ]
+        number_of_licensee_columns = len(licensee_columns)
+        number_of_licensor_columns = len(licensor_columns)
         if is_licensee:
-            df = df[["Licensee 1_cleaned", "Licensee CIK 1_cleaned", "Agreement Date"]]
-            df["Agreement Date"] = pd.to_datetime(df["Agreement Date"])
-            # df["Agreement Date"] = df["Agreement Date"].dt.year - 1
-            df = df.rename(
-                columns={
-                    "Licensee CIK 1_cleaned": "CIK Number",
-                    "Licensee 1_cleaned": "Company Name",
-                }
-            )
-            # drop the rows with invalid CIK Number
-            df = df[df["CIK Number"].apply(self.check_cik_number_format)]
+            for i in range(0, number_of_licensee_columns):
+                df = complete_df[[f"Licensee {i+1}_cleaned", f"Licensee CIK {i+1}_cleaned", "Agreement Date"]]
+                df["Agreement Date"] = pd.to_datetime(df["Agreement Date"])
+                # df["Agreement Date"] = df["Agreement Date"].dt.year - 1
+                df = df.rename(
+                    columns={
+                        f"Licensee CIK {i+1}_cleaned": "CIK Number",
+                        f"Licensee {i+1}_cleaned": "Company Name",
+                    }
+                )
+                # drop the rows with invalid CIK Number
+                df = df[df["CIK Number"].apply(self.check_cik_number_format)]
+                # df = df.reset_index(drop=True)
+                final_df = final_df.append(df)
         else:
-            df = df[["Licensor 1_cleaned", "Licensor CIK 1_cleaned", "Agreement Date"]]
-            df["Agreement Date"] = pd.to_datetime(df["Agreement Date"])
-            # df["Agreement Date"] = df["Agreement Date"].dt.year - 1
-            df = df.rename(
-                columns={
-                    "Licensee CIK 1_cleaned": "CIK Number",
-                    "Licensor 1_cleaned": "Company Name",
-                }
-            )
-        # convert the CIK Number to int
+            for i in range(0, number_of_licensor_columns):
+                df = complete_df[[f"Licensor {i+1}_cleaned", f"Licensor CIK {i+1}_cleaned", "Agreement Date"]]
+                df["Agreement Date"] = pd.to_datetime(df["Agreement Date"])
+                # df["Agreement Date"] = df["Agreement Date"].dt.year - 1
+                df = df.rename(
+                    columns={
+                        f"Licensor CIK {i+1}_cleaned": "CIK Number",
+                        f"Licensor {i+1}_cleaned": "Company Name",
+                    }
+                )
+            # convert the CIK Number to int
 
-        df = df[["CIK Number", "Agreement Date", "Company Name"]].dropna(subset=["CIK Number"])
-        # drop duplicates
+            df = df[["CIK Number", "Agreement Date", "Company Name"]].dropna(subset=["CIK Number"])
 
-        df = df.drop_duplicates(subset=["CIK Number"])
-        # strip company name
-        df["Company Name"] = df["Company Name"].str.strip()
+            df = df[df["CIK Number"].apply(self.check_cik_number_format)]
+            # df = df.drop_duplicates(subset=["CIK Number"])
+            # strip company name
+            df["Company Name"] = df["Company Name"].str.strip()
+            final_df = final_df.append(df)
 
         # df["CIK Number"] = df["CIK Number"].astype(int)
-        print(f"Columns in the dataframe: {df.columns}")
-        return df
+        return final_df
 
     def write_to_file(self, file_name, info):
         """
@@ -414,7 +432,7 @@ class Crawler:
         # for instance like this Revenues    |      Revenues reporting date        |       GrossProfit       |        GrossProfit reporting date etc
 
         all_header_info = self.not_financial_columns + self.kpi_variables
-
+        output_file = os.path.join(os.path.abspath("data"), output_file)
         with open(output_file, "w") as f:
             writer = csv.writer(f, delimiter=delimeter)
             writer.writerow(all_header_info)
@@ -467,16 +485,18 @@ class Crawler:
                     json_data = await response.json()
                     return json_data
                 else:
-                    print(
-                        f"No response: [  {company_name} | {cik_number} | reason: {response.reason} | status: {response.status} ]"
-                    )
-                    timestamp = datetime.now().strftime("%d_%m_%Y")
-                    self.write_to_file(
-                        file_name=os.path.join(os.path.abspath("data"), f"no_response_{timestamp}.txt"),
-                        # info=f"{company_name}, {cik_number}"
-                        info=f"company: {company_name} | cik: {cik_number} | status: {response.status} | reason: {response.reason}\n \t ---> {url}",
-                    )
-                    return None
+                    if company_name not in NOT_FOUND_COMPANIES:
+                        timestamp_with_hour_minute = datetime.now(tz=LOCAL_TZ).strftime("%d_%m_%Y_%H_%M")
+                        NOT_FOUND_COMPANIES[company_name] = {
+                            "cik": cik_number,
+                            "status": response.status,
+                            "reason": response.reason,
+                            "link": url,
+                            "timestamp": timestamp_with_hour_minute,
+                        }
+                        print(
+                            f"No response: [  {company_name} | {cik_number} | reason: {response.reason} | status: {response.status} ]"
+                        )
 
     async def get_company_facts_data(self, df):
         """
@@ -1008,7 +1028,6 @@ async def main():
     parser.add_argument(
         "--output_file",
         type=str,
-        default=f"company_facts_{timestamp}_big.csv",
         help="path to the output file",
         required=False,
     )
@@ -1020,10 +1039,10 @@ async def main():
     )
     # if no arguments are provided, print the help message
     if len(sys.argv) == 1:
-        print("Example usage:\n python3 orbi/crawl.py --source_file sample_data.xlsx --output_file company_facts.csv --is_licensee True")
-        sys.exit(1) 
-    
-
+        print(
+            "Example usage:\n python3 orbi/crawl.py --source_file sample_data.xlsx --output_file company_facts.csv --is_licensee True"
+        )
+        sys.exit(1)
 
     args = parser.parse_args()
     source_file = args.source_file
@@ -1036,6 +1055,17 @@ async def main():
     crawler = Crawler()
     fy_cik_df = crawler.get_cik_number_fy_columns(source_file, is_licensee=is_licensee)
     company_info = await crawler.get_company_facts_data(fy_cik_df)
+
+    if is_licensee:
+        not_found_file_name = f"no_response_licensee_{timestamp}.json"
+        if not args.output_file:
+            output_file = f"company_facts_{timestamp}_licensee.csv"
+    else:
+        not_found_file_name = f"no_response_licensor_{timestamp}.json"
+        if not args.output_file:
+            output_file = f"company_facts_{timestamp}_licensor.csv"
+    with open(os.path.join(os.path.abspath("data"), not_found_file_name), "w") as f:
+        json.dump(NOT_FOUND_COMPANIES, f, indent=4)
 
     # save company facts
     crawler.parse_export_data_to_csv(company_info, output_file)
