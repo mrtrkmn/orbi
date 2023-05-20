@@ -11,12 +11,13 @@ import os
 import re
 import sys
 import time
+from ast import dump
 from datetime import datetime
 from threading import Thread
 
-import pytz
 import aiohttp
 import pandas as pd
+import pytz
 import requests
 import yaml
 from bs4 import BeautifulSoup
@@ -33,6 +34,8 @@ sys.path.append(root_path)
 
 LOCAL_TZ = pytz.timezone("Europe/Berlin")
 NOT_FOUND_COMPANIES = {}
+MISSING_KPI_VARS = {}
+
 NUMBER_OF_EMPLOYEES = "EntityNumberOfEmployees"
 OPERATING_INCOME_LOSS = "OperatingIncomeLoss"
 NET_INCOME_LOSS = "NetIncomeLoss"
@@ -321,16 +324,6 @@ class Crawler:
         # df["CIK Number"] = df["CIK Number"].astype(int)
         return final_df
 
-    def write_to_file(self, file_name, info):
-        """
-        Write the info to the file
-        :param file_name: name of the file
-        :param info: info to be written to the file
-        """
-        # write the info to the file
-        with open(file_name, "a") as f:
-            f.write(info + "\n")
-
     def parse_export_data_to_csv(self, json_data: dict, file_path: str):
         """
         Parse the json data and export it to a csv file
@@ -538,11 +531,23 @@ class Crawler:
                 if kpi_information:
                     kpi_data[kpi_var] = kpi_information
                 else:
-                    timestamp = datetime.now().strftime("%d_%m_%Y")
-                    self.write_to_file(
-                        file_name=os.path.join(os.path.abspath("data"), f"missing_kpi_vars_{timestamp}.txt"),
-                        info=f"{company_name} | {cik_number} | {kpi_var}",
-                    )
+                    timestamp_with_hour_minute = datetime.now(tz=LOCAL_TZ).strftime("%d_%m_%Y_%H_%M")
+
+                    if company_name not in MISSING_KPI_VARS:
+                        MISSING_KPI_VARS[company_name] = {
+                            "cik": cik_number,
+                            "kpi_vars": [kpi_var],
+                            "timestamp_eu": timestamp_with_hour_minute,
+                        }
+                    else:
+                        if kpi_var not in MISSING_KPI_VARS[company_name]["kpi_vars"]:
+                            MISSING_KPI_VARS[company_name]["kpi_vars"].append(kpi_var)
+                        print(f"Missing KPI variable: [ {company_name} | {cik_number} | {kpi_var} ]")
+
+                    # self.write_to_file(
+                    #     file_name=os.path.join(os.path.abspath("data"), f"missing_kpi_vars_{timestamp}.txt"),
+                    #     info=f"{company_name} | {cik_number} | {kpi_var}",
+                    # )
             return (cik_number, agreement_date, company_facts_data["entityName"], kpi_data)
 
     async def run_parallel_requests(self, tasks):
@@ -765,6 +770,19 @@ class Crawler:
             except yaml.YAMLError as exc:
                 raise exc
         return config
+
+
+def dump_to_json_file(data, file_name):
+    """
+    Dumps the JSON data to a file
+    :param file_name: name of the file
+    :param data: JSON variable which contains the data
+    """
+    full_path_to_file = os.path.join(os.path.abspath("data"), file_name)
+    with open(full_path_to_file, "w") as f:
+        json.dump(data, f, indent=4)
+
+    print(f"{file_name} saved to {full_path_to_file}")
 
 
 def generate_unique_id(
@@ -1058,14 +1076,20 @@ async def main():
 
     if is_licensee:
         not_found_file_name = f"no_response_licensee_{timestamp}.json"
+        missing_kpi_var_file_name = f"missing_kpi_vars_licensee_{timestamp}.json"
         if not args.output_file:
             output_file = f"company_facts_{timestamp}_licensee.csv"
     else:
         not_found_file_name = f"no_response_licensor_{timestamp}.json"
+        missing_kpi_var_file_name = f"missing_kpi_vars_licensor_{timestamp}.json"
         if not args.output_file:
             output_file = f"company_facts_{timestamp}_licensor.csv"
-    with open(os.path.join(os.path.abspath("data"), not_found_file_name), "w") as f:
-        json.dump(NOT_FOUND_COMPANIES, f, indent=4)
+
+    for k, v in MISSING_KPI_VARS.items():
+        MISSING_KPI_VARS[k]["number_of_missing_kpi_vars"] = len(v["kpi_vars"])
+
+    dump_to_json_file(data=NOT_FOUND_COMPANIES, file_name=not_found_file_name)
+    dump_to_json_file(data=MISSING_KPI_VARS, file_name=missing_kpi_var_file_name)
 
     # save company facts
     crawler.parse_export_data_to_csv(company_info, output_file)
