@@ -57,6 +57,7 @@ $ LOCAL_DEV=True CONFIG_PATH=./config/config.yaml CHECK_ON_SEC=False python orbi
 
 - To add data from sec.gov website, you can set `CHECK_ON_SEC=True` in the command above. ( In our experiment this decreases hit rate of companies, preferred to be not used. This is added at first stages of the project and later discovered that it is not necessary. )
 
+**Make sure that you are defining the path to the config file correctly.**
 
 #### Crawl (scraping data from sec.gov website)
 
@@ -93,13 +94,6 @@ Example call:
 ```bash 
 python orbi/crawl.py --source_file data/latest_big_data.xlsx --is_licensee True
 ```
-
-
-
-
-
-Make sure that you are defining the path to the config file correctly.
-
 
 ### On Remote
 
