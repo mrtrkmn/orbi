@@ -27,18 +27,76 @@ All process is automated by using selenium and chromedriver.
 Since on Github actions, the script is using environment variables, it is required to have the environment variables set on your local machine.
 Providing all environment variables through commandline would be a bit tedious, so I have created a config file which is used by the script to load the environment variables. Check sample config file from [here](./config/config-sample.yaml).
 
-- Setup the requirements 
+- Setup the requirements: 
 
 ```bash 
 $ python3 -m venv venv
 $ source venv/bin/activate
 $ pip install -r requirements.txt
 ```
-- After setting up virtual environment, and installing requirements you can run the script by running the following command:
+
+- There are three main components of the program, which are `orbi/orbi.py`, `orbi/crawl.py` and `utils/visualize.py`.
+
+    - `orbi/orbi.py` is the main script which is used to start batch search on Orbis database by generated csv file from given XLSX file. 
+
+    - `orbi/crawl.py` is the script which is used to crawl data from sec.gov website. 
+
+    - `utils/visualize.py` is the script which is used to visualize the data. 
+
+#### Orbi (batch search on orbis database)
+
+> This part explains running it on local machine. For running it on remote, check out the [On Remote](#on-remote) section.
+
+- After setting up virtual environment, and installing requirements you can run the script by running the following command to start batch search on local machine. Before starting the process, make sure there is a `config.yaml` file in `config` folder, which includes all required credentials. 
 
 ```bash
-$ LOCAL_DEV=True CONFIG_PATH=./config/config.yaml python orbi/orbi.py
+$ LOCAL_DEV=True CONFIG_PATH=./config/config.yaml CHECK_ON_SEC=False python orbi/orbi.py
 ```
+
+- The given command above will launch chrome browser not in headless mode, and will not check the companies on sec.gov website. It will take cleaned company names, merge it in one column, then feed it to Orbis database to get the results.
+
+- To add data from sec.gov website, you can set `CHECK_ON_SEC=True` in the command above. ( In our experiment this decreases hit rate of companies, preferred to be not used. This is added at first stages of the project and later discovered that it is not necessary. )
+
+
+#### Crawl (scraping data from sec.gov website)
+
+- Crawl class is used to scrape data from sec.gov website. It makes requests to API endpoint (https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json) where company's financial figures are given as JSON response. From this point,  based on licensee agreement date for all companies financial figures are fetched and saved to a csv file.
+
+- Not found companies and missing KPI values are stored in a seperate file. 
+
+- To run the crawler, you can run the following command:
+
+```bash
+python orbi/crawl.py --help
+usage: crawl.py [-h] --source_file SOURCE_FILE [--output_file OUTPUT_FILE] --is_licensee IS_LICENSEE
+
+Get the company facts from the SEC.gov website
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --source_file SOURCE_FILE
+                        path to the input file
+  --output_file OUTPUT_FILE
+                        path to the output file
+  --is_licensee IS_LICENSEE
+                        boolean value to indicate if the source file is for licensee or licensor
+```
+
+- `--source_file`: (**required**)  is the path to the input file. The same file which is used as input file ( XLSX) for Orbis batch search.
+
+- `--output_file`: (**optional**) is the path to the output file. If not provided, it will be saved to `./data/` folder with the name `company_facts_{timestamp}_licensee.csv` or `"company_facts_{timestamp}_licensor.csv`.
+
+- `--is_licensee`: (**required**) is the boolean value to indicate if the source file is for licensee or licensor.
+
+Example call: 
+
+```bash 
+python orbi/crawl.py --source_file data/latest_big_data.xlsx --is_licensee True
+```
+
+
+
+
 
 Make sure that you are defining the path to the config file correctly.
 
