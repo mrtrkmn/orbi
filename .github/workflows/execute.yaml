@@ -34,7 +34,7 @@ on:
         default: false
 
       notify:
-        description: 'To receive notifications and all search result files in zip on Slack channel, check this option'
+        description: 'To receive notifications and all search result files in one zip file on Slack channel, check this option'
         type: boolean
         required: false
         default: false
@@ -113,17 +113,17 @@ jobs:
       run: |
         echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
 
-    - name: Crawl data from SEC.GOV for licensee
+    - name: [LICENSEE] Crawl data from SEC.GOV
       run: |
         python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ env.DEFAULT_DATA_SOURCE }} --is_licensee True
       
-    - name: Crawl data from SEC.GOV for licensor
+    - name: [LICENSOR] Crawl data from SEC.GOV
       run: |
         python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ env.DEFAULT_DATA_SOURCE }} --is_licensee False
 
     # upload csv and json files to azure blob storage
     
-    # THIS PART NEEDS TO BE UPDATED WITH AN ACTIVE AZURE ACCOUNT AND STORAGE CONTAINER
+    # THIS PART NEEDS TO BE UPDATED WITH AN ACTIVE AZURE ACCOUNT CREDENTIALS 
 
     # python utils/upload_to_azure.py <file/dir> <container> <blob>
     # - name: Upload to Azure Blob
