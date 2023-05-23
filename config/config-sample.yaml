@@ -1,21 +1,21 @@
-orbis: 
-  email: "<email address>"
-  password: "<password>"
+orbis:
+  email: "<email address>" # TUM account email address
+  password: "<password>"  # TUM account password
   urls:
     access: "https://login.eaccess.ub.tum.de/login?qurl=https://dbis.uni-regensburg.de%2fwarpto.php%3fbib_id%3dtum%26color%3d16%26titel_id%3d12630%26url%3dhttps%253A%2f%2forbis4.bvdinfo.com%2fip%2520"
     batch: "https://orbis-bvdinfo-com.eaccess.ub.tum.de/version-20221117/Orbis/1/Companies/BatchSearch/Start"
     logout: "https://orbis-bvdinfo-com.eaccess.ub.tum.de/version-20221117/Orbis/1/Companies/Login/LogOut/ext?setLanguage=en"
-log: 
-  dir: "<path to log directory>"
+log:
+  dir: "<path to log directory>" # [OPTIINAL] absolute path to log directory
 
-data: 
+data:
   path: "<absolute-path-to-data-dir>"  # [REQUIRED] Path to data directory better to define it as absolute path
   file: "< >" #  [OPTIONAL] program is generating this file automatically
   orbis: "< > " # [OPTIONAL] Program is generating this file automatically
-  source: "< >" # [REQUIRED] Contains license information 
+  source: "< >" # [REQUIRED] Contains license information
 
 slack:
-  notify: 'False'
-  send_on_demand: 'False'
-  channel: 'orbis-data'
-  token: '<hidden-token-received-from-slack-app>'
+  notify: 'False' # by default set to False can be adjusted to True
+  send_on_demand: 'False' # by default set to False can be adjusted to True
+  channel: 'orbis-data' # [REQUIRED] channel name to send notification and data on demand
+  token: '<hidden-token-received-from-slack-app>' # slack app token for authentication
