@@ -113,13 +113,19 @@ jobs:
       run: |
         echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
 
+    - name: Get file name
+      if: ${{ github.event.inputs.data != '${{ env.DEFAULT_DATA_SOURCE }}' }}
+      id: get-file-name
+      run: |
+        echo "file_name=$(basename ${{ github.event.inputs.data }})" >> $GITHUB_OUTPUT
+
     - name: (LICENSEE) Crawl data from SEC.GOV
       run: |
-        python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ env.DEFAULT_DATA_SOURCE }} --is_licensee True
+        python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --is_licensee True
       
     - name: (LICENSOR) Crawl data from SEC.GOV
       run: |
-        python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ env.DEFAULT_DATA_SOURCE }} --is_licensee False
+        python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --is_licensee False
 
     # upload csv and json files to azure blob storage
     
