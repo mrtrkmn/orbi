@@ -299,7 +299,7 @@ class Crawler:
                 # drop the rows with invalid CIK Number
                 df = df[df["CIK Number"].apply(self.check_cik_number_format)]
                 # df = df.reset_index(drop=True)
-                final_df = final_df.append(df)
+                final_df = pd.concat([final_df, df])
         else:
             for i in range(0, number_of_licensor_columns):
                 df = complete_df[[f"Licensor {i+1}_cleaned", f"Licensor CIK {i+1}_cleaned", "Agreement Date"]]
@@ -319,7 +319,7 @@ class Crawler:
             # df = df.drop_duplicates(subset=["CIK Number"])
             # strip company name
             df["Company Name"] = df["Company Name"].str.strip()
-            final_df = final_df.append(df)
+            final_df = pd.concat([final_df, df])
 
         # df["CIK Number"] = df["CIK Number"].astype(int)
         return final_df
@@ -772,6 +772,16 @@ class Crawler:
         return config
 
 
+def is_full_path(path):
+    """
+    Check if the path is a full path or not
+    :param path: path to the file
+    """
+    if os.path.isabs(path):
+        return True
+    return False
+
+
 def dump_to_json_file(data, file_name):
     """
     Dumps the JSON data to a file
@@ -779,6 +789,8 @@ def dump_to_json_file(data, file_name):
     :param data: JSON variable which contains the data
     """
     full_path_to_file = os.path.join(os.path.abspath("data"), file_name)
+    # check file_name is whether a full path or file name
+
     with open(full_path_to_file, "w") as f:
         json.dump(data, f, indent=4)
 
@@ -1066,6 +1078,13 @@ async def main():
     source_file = args.source_file
     output_file = args.output_file
     is_licensee = args.is_licensee
+
+    if is_absolute_path(source_file):
+        # if the path is absolute, do nothing
+        pass
+    else:
+        # if not absolute path, point to the data folder
+        source_file = os.path.join(os.path.abspath("data"), source_file)
 
     if not os.path.exists(source_file):
         raise Exception("The source file does not exist")
