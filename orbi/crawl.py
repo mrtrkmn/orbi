@@ -884,6 +884,16 @@ def save_raw_data(
                 continue
 
 
+def is_absolute_path(path):
+    """
+    Check if the path is a full path or not
+    :param path: path to the file
+    """
+    if os.path.isabs(path):
+        return True
+    return False
+
+
 def get_company_facts(source_file, output_file, is_licensee=False):
     """
     Get the company facts from the SEC.gov website
