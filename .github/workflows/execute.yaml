@@ -122,11 +122,14 @@ jobs:
     - name: (LICENSEE) Crawl data from SEC.GOV
       run: |
         python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --is_licensee True
+      env:
+        DATA_DIR: /home/runner/work/orbi/orbi/data/
 
     - name: (LICENSOR) Crawl data from SEC.GOV
       run: |
         python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --is_licensee False
-
+      env:
+        DATA_DIR: /home/runner/work/orbi/orbi/data/
     # upload csv and json files to azure blob storage
 
     # THIS PART NEEDS TO BE UPDATED WITH AN ACTIVE AZURE ACCOUNT CREDENTIALS 
