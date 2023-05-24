@@ -1085,13 +1085,12 @@ async def main():
         sys.exit(1)
 
     args = parser.parse_args()
-    source_file = args.source_file
     output_file = args.output_file
     is_licensee = args.is_licensee
 
-    if is_absolute_path(source_file):
+    if is_absolute_path(args.source_file):
         # if the path is absolute, do nothing
-        pass
+        source_file = args.source_file
     else:
         # if not absolute path, point to the data folder
         source_file = os.path.join(os.path.abspath("data"), source_file)
