@@ -1093,7 +1093,7 @@ async def main():
         source_file = args.source_file
     else:
         # if not absolute path, point to the data folder
-        source_file = os.path.join(os.path.abspath("data"), source_file)
+        source_file = os.path.join(os.path.abspath("data"), args.source_file)
 
     crawler = Crawler()
     fy_cik_df = crawler.get_cik_number_fy_columns(source_file, is_licensee=is_licensee)
