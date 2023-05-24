@@ -1095,9 +1095,6 @@ async def main():
         # if not absolute path, point to the data folder
         source_file = os.path.join(os.path.abspath("data"), source_file)
 
-    if not os.path.exists(source_file):
-        raise Exception("The source file does not exist")
-
     crawler = Crawler()
     fy_cik_df = crawler.get_cik_number_fy_columns(source_file, is_licensee=is_licensee)
     company_info = await crawler.get_company_facts_data(fy_cik_df)
