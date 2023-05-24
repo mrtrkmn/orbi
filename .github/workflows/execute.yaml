@@ -15,7 +15,7 @@ on:
       data: 
         description: '
           The data link which contains list of licensee/licensor info. (e.g sample_data.xlsx)
-          The link should be a public link which can be downloaded by wget command.          
+          The link should be a public link which can be downloaded by wget command.
           **** ONLY XLSX FILE IS SUPPORTED ! ****
           '
         required: false
@@ -122,13 +122,13 @@ jobs:
     - name: (LICENSEE) Crawl data from SEC.GOV
       run: |
         python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --is_licensee True
-      
+
     - name: (LICENSOR) Crawl data from SEC.GOV
       run: |
         python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --is_licensee False
 
     # upload csv and json files to azure blob storage
-    
+
     # THIS PART NEEDS TO BE UPDATED WITH AN ACTIVE AZURE ACCOUNT CREDENTIALS 
 
     # python utils/upload_to_azure.py <file/dir> <container> <blob>
@@ -161,6 +161,7 @@ jobs:
 # -----------------------RUN ON ORBIS JOB-------------------------------------------
   search_on_orbis: # default working directory
     runs-on: self-hosted
+    needs: search_on_sec_gov
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.10
