@@ -1,6 +1,7 @@
 orbis:
   email: "<email address>" # TUM account email address
   password: "<password>"  # TUM account password
+  parallel_execution: False # [OPTIONAL] by default set to False can be adjusted to True in case parallel execution is needed in local machine
   urls:
     access: "https://login.eaccess.ub.tum.de/login?qurl=https://dbis.uni-regensburg.de%2fwarpto.php%3fbib_id%3dtum%26color%3d16%26titel_id%3d12630%26url%3dhttps%253A%2f%2forbis4.bvdinfo.com%2fip%2520"
     batch: "https://orbis-bvdinfo-com.eaccess.ub.tum.de/version-20221117/Orbis/1/Companies/BatchSearch/Start"
