@@ -2135,19 +2135,19 @@ if __name__ == "__main__":
         ],
     )
 
-    run_in_parallel_generic(
-        function=post_process_data,
-        args=[
-            f"orbis_aggregated_data_{timestamp}.xlsx",
-            f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
-            f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
-            f"orbis_aggregated_data_{timestamp}_guo.xlsx",
-            f"orbis_data_guo_{timestamp}.xlsx",
-            f"orbis_data_licensee_{timestamp}_ish.xlsx",
-            f"orbis_data_licensor_{timestamp}_ish.xlsx",
-            f"orbis_data_licensee_{timestamp}.xlsx",
-            f"orbis_data_licensee_{timestamp}_guo.xlsx",
-            f"orbis_data_licensor_{timestamp}.xlsx",
-            f"orbis_data_licensor_{timestamp}_guo.xlsx",
-        ],
-    )
+    # run_in_parallel_generic(
+    #     function=post_process_data,
+    #     args=[
+    #         f"orbis_aggregated_data_{timestamp}.xlsx",
+    #         f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
+    #         f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
+    #         f"orbis_aggregated_data_{timestamp}_guo.xlsx",
+    #         f"orbis_data_guo_{timestamp}.xlsx",
+    #         f"orbis_data_licensee_{timestamp}_ish.xlsx",
+    #         f"orbis_data_licensor_{timestamp}_ish.xlsx",
+    #         f"orbis_data_licensee_{timestamp}.xlsx",
+    #         f"orbis_data_licensee_{timestamp}_guo.xlsx",
+    #         f"orbis_data_licensor_{timestamp}.xlsx",
+    #         f"orbis_data_licensor_{timestamp}_guo.xlsx",
+    #     ],
+    # )
