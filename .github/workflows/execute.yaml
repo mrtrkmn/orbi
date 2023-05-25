@@ -64,11 +64,10 @@ env:
   DEFAULT_DATA_SOURCE: sample_data.xlsx
   MAX_RUN_ATTEMPTS: 3  # if it is unable to successfull in this number tries, the crawler will exit with failure
   RUN_TIMEOUT_IN_MN: 240 # If it is unable to fetch all data in 4 hours, the crawler will face with timeout
-  
-  
+
   #  DATA_DIR: /home/runner/work/orbi/orbi/data/
   #  LOG_DIR: /home/runner/work/orbi/orbi/logs/    
-  
+
   # # aws specific
   # AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
   # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
@@ -136,9 +135,10 @@ jobs:
         zip -r ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip ${{ env.DATA_DIR }} -x '*.xlsx' 
       env:
         DATA_DIR: /home/runner/work/orbi/orbi/data/
+    
     - name: Send LICENSEE/LICENSOR files to Slack
       run: |
-        python utils/send_to_slack.py --file_path ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --slack_channel ${{ env.SLACK_CHANNEL }} --message "LICENSEE/LICENSOR files are created from SEC API"
+        python utils/send_to_slack.py --file_path ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip --slack_channel ${{ env.SLACK_CHANNEL }} --message "LICENSEE/LICENSOR files are created from SEC API"
       env:
         DATA_DIR: /home/runner/work/orbi/orbi/data/
    
