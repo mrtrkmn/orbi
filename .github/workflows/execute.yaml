@@ -130,6 +130,18 @@ jobs:
         python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --is_licensee False
       env:
         DATA_DIR: /home/runner/work/orbi/orbi/data/
+
+    - name: ZIP JSON and CSV files 
+      run: |
+        zip -r ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip ${{ env.DATA_DIR }} -x '*.xlsx' 
+      env:
+        DATA_DIR: /home/runner/work/orbi/orbi/data/
+    - name: Send LICENSEE/LICENSOR files to Slack
+      run: |
+        python utils/send_to_slack.py --file_path ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --slack_channel ${{ env.SLACK_CHANNEL }} --message "LICENSEE/LICENSOR files are created from SEC API"
+      env:
+        DATA_DIR: /home/runner/work/orbi/orbi/data/
+   
     # upload csv and json files to azure blob storage
 
     # THIS PART NEEDS TO BE UPDATED WITH AN ACTIVE AZURE ACCOUNT CREDENTIALS 
@@ -159,6 +171,8 @@ jobs:
            !'${{ env.DATA_DIR }}sample_data_big.xlsx'
         retention-days: ${{ env.RETENTION_PERIOD }}
       continue-on-error: true
+      env:
+        DATA_DIR: /home/runner/work/orbi/orbi/data/
 
 
 # -----------------------RUN ON ORBIS JOB-------------------------------------------
