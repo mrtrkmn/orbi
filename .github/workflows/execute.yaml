@@ -138,10 +138,11 @@ jobs:
     
     - name: Send LICENSEE/LICENSOR files to Slack
       run: |
-        python utils/send_to_slack.py --file_path ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip --slack_channel ${{ env.SLACK_CHANNEL }} --message "LICENSEE/LICENSOR files are created from SEC API"
+        python utils/send_to_slack.py --file_path ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip --slack_channel orbis-data --message "LICENSEE/LICENSOR files are created from SEC API"
       env:
         DATA_DIR: /home/runner/work/orbi/orbi/data/
-   
+      continue-on-error: true
+
     # upload csv and json files to azure blob storage
 
     # THIS PART NEEDS TO BE UPDATED WITH AN ACTIVE AZURE ACCOUNT CREDENTIALS 
