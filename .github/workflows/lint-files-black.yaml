@@ -2,19 +2,17 @@ name: Lint
 on:
   push:
     paths:
+    # On changes to the following directories, run the workflow
       - 'orbi/**'
       - 'utils/**'
 
   workflow_dispatch:
-    inputs:
-      message:
-        description: 'Commit message'
-        required: false
-        default: 'Format python code'
+    # Enable manual triggering of the workflow
 
 jobs:
 
   remove_unused_imports:
+  # Removes any unused imports from the python files on given paths 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -23,20 +21,26 @@ jobs:
         with:
           python-version: "3.10"
           cache: "pip" # cache pip dependencies
+
       - name: Install isort
+        # isort is a python library that removes unused imports
         run: |
           pip install isort
 
       - name: Get timestamp
+        # Get the current timestamp and store it in a variable
         id: get-timestamp
         run: |
           echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
 
       - name: Remove unused imports
+        # Remove unused imports from the python files on given paths
         run: |
           isort --recursive orbi/*.py
+          isort --recursive utils/*.py
 
       - name: Check if there are any changes
+        # Check if there are any changes to the files
         id: check-changes
         run: |
           if [[ -z $(git status --porcelain orbi) ]]; then
@@ -46,8 +50,16 @@ jobs:
             echo "Changes to commit"
             echo "changes=true" >> $GITHUB_OUTPUT
           fi
+          if [[ -z $(git status --porcelain utils) ]]; then
+            echo "No changes to commit"
+            echo "changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes to commit"
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Commit changes
+        # If there are changes the files, commit them
         if: ${{ steps.check-changes.outputs.changes == 'true' }}
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -56,6 +68,7 @@ jobs:
           git commit -m "[${{ steps.get-timestamp.outputs.timestamp }}] Remove unused imports."
 
       - name: Create Pull Request
+        # Create a pull request with the changes
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -66,6 +79,7 @@ jobs:
           delete-branch: true
 
   format_files_with_black:
+    # Format the python files on given paths with black
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -74,21 +88,28 @@ jobs:
         with:
           python-version: "3.10"
           cache: "pip" # cache pip dependencies
+
+
       - name: Install black 
+        # black is a python library that formats python files
         run: |
           pip install black
 
       - name: Get timestamp
+        # Get the current timestamp and store it in a variable
         id: get-timestamp
         run: |
           echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
 
       - name: Format python code
+        # Format the python files on given paths with black
         run: |
           black --line-length 120 orbi/*.py
+          black --line-length 120 utils/*.py
 
 
       - name: Check if there are any changes
+        # Check if there are any changes to the files
         id: check-changes
         run: |
           if [[ -z $(git status --porcelain orbi) ]]; then
@@ -98,6 +119,14 @@ jobs:
             echo "Changes to commit"
             echo "changes=true" >> $GITHUB_OUTPUT
           fi
+          if [[ -z $(git status --porcelain utils) ]]; then
+            echo "No changes to commit"
+            echo "changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes to commit"
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
+
   
       - name: Commit changes
         if: ${{ steps.check-changes.outputs.changes == 'true' }}
@@ -108,6 +137,7 @@ jobs:
           git commit -m "[${{ steps.get-timestamp.outputs.timestamp }}] Python files are formatted by black."
           
       - name: Create Pull Request
+        # Create a pull request with the changes
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
