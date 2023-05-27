@@ -1963,8 +1963,12 @@ if __name__ == "__main__":
             # exit with an error message
             exit(f"Config file {path.abspath(environ.get('CONFIG_PATH'))} does not exist")
 
-    is_parallel_exeuction_active = environ.get("PARALLEL_EXECUTION")
+    is_parallel_execution_active = environ.get("PARALLEL_EXECUTION")
 
+    if is_parallel_execution_active.lower() == "true":
+        print(f"Parellel execution is activated.")
+    else:
+        print(f"Parellel execution is not activated.")
     # start to work
 
     timestamp = datetime.now().strftime("%d_%m_%Y")
@@ -2042,7 +2046,7 @@ if __name__ == "__main__":
     # run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file
     # needs to come from crawl_data.py
 
-    if is_parallel_exeuction_active:
+    if is_parallel_execution_active.lower() == "true":
         run_in_parallel_generic(function=run_batch_search, args=files_to_apply_batch_search)
     else:
         # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
@@ -2068,7 +2072,7 @@ if __name__ == "__main__":
 
     input_files_with_guo_info = [f"orbis_data_licensee_{timestamp}_guo.csv", f"orbis_data_licensor_{timestamp}_guo.csv"]
 
-    if is_parallel_exeuction_active:
+    if is_parallel_execution_active.lower() == "true":
         run_in_parallel_generic(function=run_batch_search, args=input_files_with_guo_info)
     else:
         for guo_input_file in input_files_with_guo_info:
@@ -2095,7 +2099,7 @@ if __name__ == "__main__":
         ],
     )
 
-    if is_parallel_exeuction_active:
+    if is_parallel_execution_active.lower() == "true":
         run_in_parallel_generic(function=run_batch_search, args=input_files_with_ish_info)
     else:
         for ish_input_file in input_files_with_ish_info:
