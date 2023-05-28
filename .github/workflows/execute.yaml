@@ -67,7 +67,7 @@ env:
   DEFAULT_DATA_SOURCE: sample_data.xlsx
   
   # Try to run the program 3 times if it fails
-  MAX_RUN_ATTEMPTS: 3 
+  MAX_RUN_ATTEMPTS: 1
   
   # If it is unable to fetch all data in 4 hours, the crawler will face with timeout
   RUN_TIMEOUT_IN_MN: 240 
