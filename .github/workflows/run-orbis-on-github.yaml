@@ -1,4 +1,4 @@
-name: Crawl Data
+name: Run Orbis search on Github instance
 on:
   # workflow_dispatch enables to trigger the workflow manually from Github Actions UI.
   # Refer to https://docs.github.com/en/actions/reference/events-that-trigger-workflows#workflow_dispatch for more information.
