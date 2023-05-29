@@ -97,7 +97,7 @@ env:
   # Reference for SLACK CHANNEL: https://slack.com/intl/en-tr/help/articles/201402297-Create-a-channel
 
   SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-  SLACK_DATA_CHANNEL: ${{ secrets.SLACK_DATA_CHANNEL }}
+  SLACK_DATA_CHANNEL: orbis-data
   SLACK_USERNAME: orbi
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
   SLACK_FOOTER: '🤓 automated bot Orbi'
