@@ -167,7 +167,7 @@ jobs:
       
         # Zipping crawled data 
       - name: ZIP JSON and CSV files
-        run: "zip -r ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip ${{ env.DATA_DIR }} -x '*.xlsx' \n"
+        run: "zip -j -r ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip ${{ env.DATA_DIR }} -x '*.xlsx' \n"
         env:
           DATA_DIR: /home/runner/work/orbi/orbi/data/
       
