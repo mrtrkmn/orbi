@@ -1519,10 +1519,14 @@ class Orbis:
         self.wait_for_data_to_be_downloaded(excel_output_file_name, process_name)
 
         time.sleep(2)
-
-        if self.send_data_on_completion.lower() == "true":
-            message = f"Search for {input_file} is complete. Output of the batch search on orbis is attached."
-            send_file_to_slack(path.join(self.data_dir, f"{excel_output_file_name}.xlsx"), self.slack_channel, message)
+        
+        # disabled temporarily
+        # if self.send_data_on_completion.lower() == "true":
+        #     message = f"Search for {input_file} is complete. Output of the batch search on orbis is attached."
+        #     try:
+        #         send_file_to_slack(path.join(self.data_dir, f"{excel_output_file_name}.xlsx"), self.slack_channel, message)
+        #     except Exception as e:
+        #         print(e)
 
     # create a file likewe have data.csv file
     # company name;city;country;identifier
