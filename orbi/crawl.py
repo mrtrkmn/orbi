@@ -262,7 +262,7 @@ class Crawler:
 
         return json_data
 
-    def get_cik_number_fy_columns(self, excel_file, is_licensee=False):
+    def get_cik_number_fy_columns(self, excel_file, is_licensee):
         # get Licensee CIK 1_cleaned and Agreement Date
         # substract one year from the Agreement Date
 
@@ -311,15 +311,15 @@ class Crawler:
                         f"Licensor {i+1}_cleaned": "Company Name",
                     }
                 )
-            # convert the CIK Number to int
+                # convert the CIK Number to int
 
-            df = df[["CIK Number", "Agreement Date", "Company Name"]].dropna(subset=["CIK Number"])
+                # df = df[["CIK Number", "Agreement Date", "Company Name"]].dropna(subset=["CIK Number"])
 
-            df = df[df["CIK Number"].apply(self.check_cik_number_format)]
-            # df = df.drop_duplicates(subset=["CIK Number"])
-            # strip company name
-            df["Company Name"] = df["Company Name"].str.strip()
-            final_df = pd.concat([final_df, df])
+                df = df[df["CIK Number"].apply(self.check_cik_number_format)]
+                # df = df.drop_duplicates(subset=["CIK Number"])
+                # strip company name
+                df["Company Name"] = df["Company Name"].str.strip()
+                final_df = pd.concat([final_df, df])
 
         # df["CIK Number"] = df["CIK Number"].astype(int)
         return final_df
@@ -1072,22 +1072,26 @@ async def main():
         required=False,
     )
     parser.add_argument(
-        "--is_licensee",
+        "--licensee",
         type=bool,
         help="boolean value to indicate if the source file is for licensee or licensor",
         required=True,
+        action=argparse.BooleanOptionalAction,
     )
     # if no arguments are provided, print the help message
     if len(sys.argv) == 1:
         print(
-            "Example usage:\n python3 orbi/crawl.py --source_file sample_data.xlsx --output_file company_facts.csv --is_licensee True"
+            """
+            Example usage:\n
+            \t python orbi/crawl.py --source_file sample_data.xlsx --output_file company_facts.csv --licensee  # searching over licensee information 
+            \t python orbi/crawl.py --source_file sample_data.xlsx --output_file company_facts.csv --no-licensee # searching over licensor information 
+            """
         )
         sys.exit(1)
 
     args = parser.parse_args()
     output_file = args.output_file
-    is_licensee = args.is_licensee
-
+    is_licensee = args.licensee
     if is_absolute_path(args.source_file):
         # if the path is absolute, do nothing
         source_file = args.source_file
@@ -1096,6 +1100,7 @@ async def main():
         source_file = os.path.join(os.path.abspath("data"), args.source_file)
 
     crawler = Crawler()
+    print(f"is licensee information {is_licensee}")
     fy_cik_df = crawler.get_cik_number_fy_columns(source_file, is_licensee=is_licensee)
     company_info = await crawler.get_company_facts_data(fy_cik_df)
 
