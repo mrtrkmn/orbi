@@ -153,7 +153,7 @@ jobs:
         # Crawling data for licensee
       - name: (LICENSEE) Crawl data from SEC.GOV
         run: |
-          python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --is_licensee True
+          python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --licensee
         env:
           DATA_DIR: /home/runner/work/orbi/orbi/data/
         
@@ -161,7 +161,7 @@ jobs:
         # Crawling data for licensor
       - name: (LICENSOR) Crawl data from SEC.GOV
         run: |
-          python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --is_licensee False
+          python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --no-licensee
         env:
           DATA_DIR: /home/runner/work/orbi/orbi/data/
       
