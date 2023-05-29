@@ -577,7 +577,10 @@ class Orbis:
             ## execute js script
             self.driver.execute_script("window.location.reload()")
             time.sleep(10)
-            d[progress_text.text] = 0
+            if progress_text.text in d:
+                d[progress_text.text] = 0
+            else:
+                d[progress_text.text] += 1
             self.check_search_progress_bar()
 
         print(f"Message : {progress_text.text}")
@@ -1962,14 +1965,9 @@ if __name__ == "__main__":
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
             exit(f"Config file {path.abspath(environ.get('CONFIG_PATH'))} does not exist")
-
-    is_parallel_execution_active = environ.get("PARALLEL_EXECUTION")
-
-    if is_parallel_execution_active.lower() == "true":
-        print(f"Parellel execution is activated.")
+        is_parallel_execution_active = get_data_dir_from_config()["orbis"]["parallel_execution"]
     else:
-        print(f"Parellel execution is not activated.")
-    # start to work
+        is_parallel_execution_active = environ.get("PARALLEL_EXECUTION")
 
     timestamp = datetime.now().strftime("%d_%m_%Y")
     # Step 1
