@@ -23,7 +23,7 @@ def send_file_to_slack(file_path, channel, message):
     None
     """
     slack_client = WebClient(token=environ.get("SLACK_TOKEN"))
-    slack_client.files_upload(
+    slack_client.files_upload_v2(
         channels=channel,
         file=file_path,
         initial_comment=message,
