@@ -1,0 +1,301 @@
+name: Crawl Data
+on:
+  # workflow_dispatch enables to trigger the workflow manually from Github Actions UI.
+  # Refer to https://docs.github.com/en/actions/reference/events-that-trigger-workflows#workflow_dispatch for more information.
+  workflow_dispatch:
+    inputs:
+      data:
+        # This is the input parameter which contains full downloadable link to a XLSX file with 
+        # the same format of the files under data/ folder in this repo.
+        # The input can be name of the file under data/ folder or a full downloadable link to a XLSX file.
+        description: ' The data link which contains list of licensee/licensor info. (e.g sample_data.xlsx) The link should be a public link which can be downloaded by wget command. **** ONLY XLSX FILE IS SUPPORTED ! **** '
+        required: false
+        default: sample_data.xlsx
+      send_data_on_completion:
+        # If this option is not enabled, all files retrieved from Orbis database batch result will be delivered as ZIP file. 
+        # If not enabled, in case of a failure, already downlodaded files will be lost.
+        # If enabled, as soon as a file is downloaded from Orbis database, it will be sent to Slack channel.
+        # No need to wait for the entire process to be completed.
+        description: 'To receive data on search completion, check this option'
+        type: boolean
+        required: false
+        default: false
+      activate_parallel_exec:
+        # If this option is enabled, the program will run in parallel mode.
+        # It means that the program will spin up multiple chrome instances. 
+        # Then, uploads licensee/licensor files to Orbis database and fetches the results in parallel.
+        # This option is not adviced to be enabled during working hours since the maximum number of simultaneous user access to Orbis database is 5.
+        description: 'Enable to run the program in parallel. [ NOT ADVICED DURING WORKING HOURS - SINCE # OF MAX SIMULTANEOUS USER ACCESS IS 5 ]'
+        type: boolean
+        required: false
+        default: false
+      notify:
+        # When this option is checked, the program will send a notification to Slack channel when the program is started/failed or completed.
+        description: 'To receive notifications and all search result files in one zip file on Slack channel, check this option'
+        type: boolean
+        required: false
+        default: false
+      check_on_sec:
+        # When this option is checked, the program will check SEC.GOV website for additional data to aggregate.
+        # This option is not adviced at the time of writing this document since SEC.GOV website does not provide data in stable way.
+        # There is a distinguish between SEC API and SEC.GOV website. SEC API is stable and provides data in a structured way.
+        # SEC.GOV website is not stable and does not provide data in a structured way, parsing of variety of HTML structures are required. 
+        # Main reasoning behind still keeping this option is that providing option to experiment with SEC.GOV website.
+        # If you are not sure about this option, please keep it unchecked.
+        description: 'SEC.GOV website will be checked for additional data to aggregate. Check this option to enable it.'
+        type: boolean
+        required: false
+        default: false
+  repository_dispatch:
+    # This event is placed to trigger the workflow from Slack channel. 
+    types: crawl-data
+env:
+  # Confidential credentials and data are stored in Github Secrets.
+  # Please refer to https://docs.github.com/en/actions/reference/encrypted-secrets for more information.
+  ORBIS_EMAIL_ADDRESS: ${{ secrets.ORBIS_EMAIL_ADDRESS }}
+  ORBIS_PASSWORD: ${{ secrets.ORBIS_PASSWORD }}
+  ORBIS_ACCESS_URL: ${{ secrets.ORBIS_ACCESS_URL }}
+  ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_SEARCH_URL }}
+  ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
+  
+  # Directories to store data and logs in Github Actions runner.
+  # Following variables are used in self-hosted Github instance. 
+  # Refer to self-hosted Github instances, https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners
+  # DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
+  # LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
+  LOCAL_DEV: False
+  DEFAULT_DATA_SOURCE: sample_data.xlsx
+  
+  # Try to run the program 3 times if it fails
+  MAX_RUN_ATTEMPTS: 1
+  
+  # If it is unable to fetch all data in 4 hours, the crawler will face with timeout
+  RUN_TIMEOUT_IN_MN: 240 
+  # Following DATA_DIR, LOG_DIR variables are used when using Github instances. 
+  # Refer to Github instances, https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
+  # Uncomment the lines inside the block below if you are using Github instances.
+
+  # -------------------------------------------------------
+  DATA_DIR: /home/runner/work/orbi/orbi/data/
+  LOG_DIR: /home/runner/work/orbi/orbi/logs/    
+  # -------------------------------------------------------
+  
+  # This part is used to upload the result to AWS S3 bucket.
+  # Enable following variables if you want to upload the result to AWS S3 bucket.
+  # For setting secrets in Github Actions, please refer to https://docs.github.com/en/actions/reference/encrypted-secrets
+  
+  #-------------------------------------------------------
+  # AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
+  # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
+  # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
+  # SOURCE_DIR: /home/runner/work/orbi/orbi/
+  #-------------------------------------------------------
+
+  # This part is used to send notification to Slack channel and upload the result to Slack channel.
+  # Reference for SLACK WEBHOOK URL: https://api.slack.com/messaging/webhooks
+  # Reference for SLACK TOKEN: https://api.slack.com/authentication/token-types#granular_bot
+  # Reference for SLACK CHANNEL: https://slack.com/intl/en-tr/help/articles/201402297-Create-a-channel
+
+  SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+  SLACK_DATA_CHANNEL: ${{ secrets.SLACK_DATA_CHANNEL }}
+  SLACK_USERNAME: orbi
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+  SLACK_FOOTER: '🤓 automated bot Orbi'
+  SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+
+  # At the end of the program, available data is uplodaded to Github artifactory and stored for 20 days.
+  # This part is defining the retention period of the data in Github artifactory.
+  # Refer to https://docs.github.com/en/actions/guides/storing-workflow-data-as-artifacts for more information.
+  RETENTION_PERIOD: 20 # in days
+
+  # Receiving value of CHECK_ON_SEC from the user input in the workflow 
+  CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
+
+
+permissions:
+  contents: read
+jobs:  
+  # -----------------------RUN ON ORBIS JOB-------------------------------------------
+  search_on_orbis:
+   # This job is running on self-hosted instance with Python 3.10 and Ubuntu 20.04
+   # Main reasoning behind this to avoid time limitations of Github hosted runners.
+   # Refer to https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration for more information.
+   # This job is running after search_on_sec_gov job is completed.
+    runs-on: self-hosted
+    needs: search_on_sec_gov
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+          cache: "pip" # cache pip dependencies
+      #**********************************************************************************************************************
+      # PRECHECKS
+      #**********************************************************************************************************************
+      - name: Check input file name
+        id: check_input_file_name
+        # check if the input file name is referring to a file or url 
+        run: |
+          if [[ ${{ github.event.inputs.data }} == http* ]]; then
+            echo "is_url=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_url=false" >> $GITHUB_OUTPUT
+          fi
+     
+      - name: Get input file name
+        if: ${{ github.event.inputs.data != '${{ env.DEFAULT_DATA_SOURCE }}' }}
+        id: get-file-name
+        run: |
+          echo "file_name=$(basename ${{ github.event.inputs.data }})" >> $GITHUB_OUTPUT
+      
+      - name: Check file existence
+        if: ${{ steps.check_input_file_name.outputs.is_url == 'false' }}
+        run: |
+          if [ ! -f ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} ]; then
+            echo "File ${{ steps.get-file-name.outputs.file_name }} does not exist in ${{ env.DATA_DIR }}. Exiting..."
+            exit 1
+          fi
+
+
+      - name: Download data if provided
+        # If the input is a url, download the file and move it to data directory
+        if: ${{ steps.check_input_file_name.outputs.is_url == 'true' }}
+        run: "wget ${{ github.event.inputs.data }}\nmv  ${{ steps.get-file-name.outputs.file_name }} ${{ env.DATA_DIR }} \n"
+      
+      
+      - name: Check file existence
+        # Check if the file exists in data directory
+        if: ${{ steps.check_input_file_name.outputs.is_url == 'false' }}
+        run: |
+          if [ ! -f ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} ]; then
+            echo "File ${{ steps.get-file-name.outputs.file_name }} does not exist in ${{ env.DATA_DIR }}. Exiting..."
+            exit 1
+          fi
+       
+        
+      - name: Get timestamp
+        # Get timestamp in format DD-MM-YYYY
+        id: get-timestamp
+        run: |
+          echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
+
+
+      #**********************************************************************************************************************
+      # INSTALL DEPENDENCIES
+      #**********************************************************************************************************************
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      
+
+      - name: Send Job Started Notification to Slack
+        # Notify on Slack that the job has started if notify input is true
+        if: ${{ github.event.inputs.notify == 'true' }}
+        uses: rtCamp/action-slack-notify@v2.2.0
+        env:
+          SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+          SLACK_MESSAGE: ':bell: Orbi is started crawl data from Orbis database on  Github using the file ${{ github.event.inputs.data }}  as input data.'
+          SLACK_TITLE: ':bell: Orbi is working on crawling data from Orbis database on Github'
+      
+      
+      #**********************************************************************************************************************
+      # RUN Orbi for batch search on Orbis
+      #**********************************************************************************************************************
+      - name: Execute the script
+        uses: nick-fields/retry@v2
+        # Uses retry action to retry the script if it fails
+        id: batch_search
+        with:
+          timeout_minutes: ${{ env.RUN_TIMEOUT_IN_MN }} # 2 hours
+          max_attempts: ${{ env.MAX_RUN_ATTEMPTS }} # 3 times retry if failed
+          command: |
+            python orbi/orbi.py 
+        env:
+          # Pass the environment variables to the script 
+          DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
+          SEND_DATA_ON_COMPLETION: ${{ github.event.inputs.send_data_on_completion }}
+          CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
+          PARALLEL_EXECUTION: ${{ github.event.inputs.activate_parallel_exec }}
+      
+        #**********************************************************************************************************************
+        #  POST PROCESSING STEPS
+        #**********************************************************************************************************************      
+      - name: Send Job Failed Notification to Slack
+        # Notify on Slack that the job has failed if notify input is true
+        if: ${{ failure() && steps.batch_search.conclusion == 'failure' && github.event.inputs.notify == 'true' }}
+        uses: rtCamp/action-slack-notify@v2.2.0
+        env:
+          SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+          SLACK_MESSAGE: ':x: Failed to run batch search, please check on Github. '
+          SLACK_TITLE: ':x: Batch search failed at some point, in most cases this is caused due to slowness in the network (since it causes slow rendering of the page and leads to have no element we are looking for) !'
+      
+      
+    # ENABLE THIS STEP IF YOU WANT TO UPLOAD THE DATA TO AZURE BLOB
+    # SET YOUR OWN CREDENTIALS IN THE SECRETS OF THE REPO
+    # Example usage locally:  python utils/upload_to_azure.py <file/dir> <container> <blob>
+    # 
+
+    #-------------------------------------------------------
+      # - name: Upload to Azure Blob
+      #   run: |
+      #     pip install azure-storage-blob
+      #     python utils/upload_to_azure.py --dir_file_path ${{ env.DATA_DIR }} --container_name ${{ env.AZURE_CONTAINER_NAME }} --blob_name orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
+      #   env:
+      #     ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+      #     ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+      #     RETENTION_DAYS: 7
+      #     AZURE_CONTAINER_NAME: ${{ secrets.AZURE_CONTAINER_NAME }}
+      #   continue-on-error: true
+    #-------------------------------------------------------
+
+      - name: Zip data
+        # zip the data except sample_data.xlsx
+        run: |
+          zip -j -r orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip '${{ env.DATA_DIR }}' -x '${{ env.DATA_DIR }}sample_data.xlsx' -x '${{ env.DATA_DIR }}sample_data_big.xlsx' -x '${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }}'
+      
+      - name: Send data to slack channel
+        # If input notify is true, send the data to slack channel
+        if: ${{ success() && github.event.inputs.notify == 'true' }}
+        run: |
+          python utils/send_to_slack.py --file_path orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip is attached.'
+        continue-on-error: true
+      
+      - name: Send data to Telegram
+        # Sends the data to telegram channel
+        # Set your own credentials in the secrets of the repo
+        # Attach the file to the message
+        run: |
+          curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -F document=@orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+        continue-on-error: true
+      
+      
+      - name: Upload data to artifact
+        # Upload the data to Github artifact
+        # Refer: https://github.com/actions/upload-artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
+          path: |
+            ${{ env.DATA_DIR }}
+            !'${{ env.DATA_DIR }}sample_data.xlsx'
+            !'${{ env.DATA_DIR }}sample_data_big.xlsx'
+            !'${{ env.DATA_DIR }}sample_data_big_v2.xlsx'
+          retention-days: ${{ env.RETENTION_PERIOD }}
+        continue-on-error: true
+
+
+
+      - name: Send Job Success Notification to Slack
+        # Notify on SLACK that the job has completed successfully if notify input is true
+        if: ${{ success() && github.event.inputs.notify == 'true' }}
+        uses: rtCamp/action-slack-notify@v2.2.0
+        env:
+          SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+          SLACK_MESSAGE: ':rocket: Data is available to download from artifacts: link to artifacts: htttps://github.com/mrtrkmn/orbi/actions/runs/${{ github.run_id }}'
+          # SLACK_MESSAGE: ':rocket: Operation is completed data link: https://${{ secrets.AWS_S3_BUCKET }}.s3.${{ secrets.AWS_REGION }}.amazonaws.com/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}/ For more information check README page of the project: https://github.com/mrtrkmn/orbi'
+          SLACK_TITLE: Data is ready to download append file name to the link !
+          SLACK_USERNAME: orbi
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_FOOTER: '🤓 automated bot Orbi'
