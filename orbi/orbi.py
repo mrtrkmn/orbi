@@ -560,7 +560,8 @@ class Orbis:
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
         except Exception as e:
             print(f"Exception on finding progress text {e}")
-            self.refresh_page_at_stuck()
+            # self.refresh_page_at_stuck()
+            time.sleep(3)
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
             self.check_search_progress_bar()
 
@@ -694,7 +695,8 @@ class Orbis:
                 pop_up_window = self.driver.find_element(By.XPATH, SEARCHING_POP_UP)
             except Exception as e:
                 print(f"Refresh page as search is not finished")
-                self.refresh_page_at_stuck()
+                # self.refresh_page_at_stuck()
+                time.sleep(3)
                 self.check_search_progress_bar()
 
     def view_search_results(self):
