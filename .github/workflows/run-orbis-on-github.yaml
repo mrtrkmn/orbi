@@ -117,12 +117,11 @@ permissions:
 jobs:  
   # -----------------------RUN ON ORBIS JOB-------------------------------------------
   search_on_orbis:
-   # This job is running on self-hosted instance with Python 3.10 and Ubuntu 20.04
+   # This job is running on ubuntu-latest instance with Python 3.10 and Ubuntu 20.04
    # Main reasoning behind this to avoid time limitations of Github hosted runners.
    # Refer to https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration for more information.
    # This job is running after search_on_sec_gov job is completed.
-    runs-on: self-hosted
-    needs: search_on_sec_gov
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
