@@ -23,8 +23,6 @@ SEARCH_PROGRESS_BAR = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[1
 # PROGRESS_TEXT_XPATH = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]/div[1]/div[2]/p"
 PROGRESS_TEXT_XPATH='//*[@id="CountDown"]'
 
-//*[@id="Cancel"]
-
 
 
 VIEW_RESULTS_BUTTON = "/html/body/section[2]/div[1]/div[2]/ul/li[1]/a"
