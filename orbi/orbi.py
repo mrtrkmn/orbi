@@ -524,8 +524,7 @@ class Orbis:
 
         try:
             if (
-                not self.driver.find_element(By.LINK_TEXT, "Continue later").is_displayed()
-                and not self.count_total_search()
+                not self.count_total_search()
             ):
                 continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
                 action = ActionChains(self.driver)
@@ -619,11 +618,11 @@ class Orbis:
 
         if current_item_number + 1 != total_count:
             print("Search is not finished yet")
-            if not self.check_continue_later_button():
-                print("clicking Continue later button")
-                # refresh page with js
-                self.driver.execute_script("window.location.reload();")
-            time.sleep(10)
+            # if not self.check_continue_later_button():
+            #     print("clicking Continue later button")
+            #     # refresh page with js
+            #     self.driver.execute_script("window.location.reload();")
+            time.sleep(5)
             return True
         else:
             return False
