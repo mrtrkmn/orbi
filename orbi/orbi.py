@@ -157,8 +157,8 @@ class Orbis:
             print("-" * 50)
             print(f"DATA_DIR is:  {self.data_dir}")
             print("-" * 50)
-            # if environ.get("LOCAL_DEV") != "True":
-            self.chrome_options.add_argument("--headless=new")
+            if environ.get("LOCAL_DEV") != "True":
+                self.chrome_options.add_argument("--headless=new")
 
             self.chrome_options.add_argument("--disable-dev-shm-usage")
             self.chrome_options.add_argument("--window-size=1920,1080")
@@ -2210,7 +2210,6 @@ if __name__ == "__main__":
         print(f"File could not be found to aggregate please make sure it exists !")
         sys.exit(0)
 
-        
     # run_in_parallel_generic(
     #     function=aggregate_data,
     #     args=[
