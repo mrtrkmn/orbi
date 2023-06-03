@@ -573,9 +573,10 @@ class Orbis:
             d[progress_text.text] = 1
 
         if d[progress_text.text] > 10:
-            print("Seems search is stuck, refreshing the page")
-            ## execute js script
-            self.driver.execute_script("window.location.reload()")
+            # print("Seems search is stuck, refreshing the page")
+            # ## execute js script
+            # self.driver.execute_script("window.location.reload()")
+            self.click_continue_search()
             time.sleep(10)
             if progress_text.text in d:
                 d[progress_text.text] = 0
