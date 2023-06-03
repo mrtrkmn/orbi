@@ -157,8 +157,8 @@ class Orbis:
             print("-" * 50)
             print(f"DATA_DIR is:  {self.data_dir}")
             print("-" * 50)
-            if environ.get("LOCAL_DEV") != "True":
-                self.chrome_options.add_argument("--headless=new")
+            # if environ.get("LOCAL_DEV") != "True":
+            self.chrome_options.add_argument("--headless=new")
 
             self.chrome_options.add_argument("--disable-dev-shm-usage")
             self.chrome_options.add_argument("--window-size=1920,1080")
@@ -167,7 +167,6 @@ class Orbis:
             prefs = {"download.default_directory": self.data_dir}
             # add user agent to avoid bot detection
             self.chrome_options.add_argument(self.headers)
-            self.chrome_options.add_argument("--window-size=1920,1080")
             self.chrome_options.add_argument("--start-maximized")
             self.chrome_options.add_experimental_option("prefs", prefs)
             self.chrome_options.add_experimental_option("detach", True)
@@ -243,17 +242,23 @@ class Orbis:
         # Log a message to indicate that the login is in progress
         logger.debug("Logging in to Orbis...")
         time.sleep(4)
-
+        retry_count = 0
         ERROR_MESSAGE = "/html/body/section[2]/div[2]/form/div[1]"
         try:
             response = self.driver.find_element(By.XPATH, ERROR_MESSAGE)
             # notify slack that logging is not successful to Orbis  database
+            while retry_count < 3 and response.text == "This page isn’t working":
+                self.driver.refresh()
+                time.sleep(5)
+                retry_count += 1
+
             print(f"Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {response.text}")
             self.driver.quit()
-            send_message_to_slack(
-                message=f"Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {response.text}",
-                channel="#idp-data-c",
-            )
+
+            # send_message_to_slack(
+            #     message=f"Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {response.text}",
+            #     channel="#idp-data-c",
+            # )
             sys.exit(0)
 
             # self.slack_client.chat_postMessage(channel="#idp-data-c", text=f"Error on logging into Orbis ... ERR_MSG: {response.text}")
@@ -331,11 +336,19 @@ class Orbis:
 
         :raises TimeoutException: If the element is not clickable after 30 minutes.
         """
+        number_of_calls = 0
+
         try:
-            WebDriverWait(self.driver, 30 * 60).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+            WebDriverWait(self.driver, 5 * 60).until(EC.element_to_be_clickable((By.XPATH, xpath)))
         except Exception as e:
             print("Exception occurred in wait_until_clickable, logging out from sessions")
-            self.logout()
+            self.driver.refresh()
+            time.sleep(7)
+            number_of_calls += 1
+            if number_of_calls > 10:
+                self.logout()
+            self.wait_until_clickable(xpath)
+            # self.logout()
 
     def read_xlxs_file(self, file_path, sheet_name=""):
         """
@@ -523,13 +536,12 @@ class Orbis:
         CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
 
         try:
-            if (
-                not self.count_total_search()
-            ):
+            if not self.count_total_search():
+                print("Clicking continue search button")
                 continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
                 action = ActionChains(self.driver)
                 action.click(on_element=continue_search_button).perform()
-                time.sleep(0.5)
+                time.sleep(1)
             else:
                 pass
         except Exception as e:
@@ -547,8 +559,22 @@ class Orbis:
         except Exception as e:
             print(f"Exception on refreshing page {e}")
 
-    def check_progress_text(self, d):
+    def add_to_dict(self, d, progress_text):
         """
+        Adds the progress text to a dictionary.
+        :param d: A dictionary to keep count of the progress text.
+        :param progress_text: The progress text to be added to the dictionary.
+        """
+        try:
+            if progress_text.text in d:
+                d[progress_text.text] += 1
+            else:
+                d[progress_text.text] = 1
+        except Exception as e:
+            print(f"Exception on progress text ")
+
+    def check_progress_text(self, d):
+        """f
         Checks the progress text in the batch search page and refreshes the page if the search is stuck.
         Additionally, it calls check_search_progress_bar() method to check the progress bar.
         :param d: A dictionary to keep count of the progress text.
@@ -560,31 +586,38 @@ class Orbis:
         except Exception as e:
             print(f"Exception on finding progress text {e}")
             # self.refresh_page_at_stuck()
-            time.sleep(3)
+            self.click_continue_search()
+            time.sleep(5)
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
             self.check_search_progress_bar()
 
-        if len(progress_text.text.strip()) < 1:
-            self.click_continue_search()
+        try:
+            if len(progress_text.text.strip()) < 1:
+                self.click_continue_search()
+        except Exception as e:
+            print(f"Exception on progress_text check")
 
-        if progress_text.text in d:
-            d[progress_text.text] += 1
-        else:
-            d[progress_text.text] = 1
+        self.add_to_dict(d, progress_text)
 
-        if d[progress_text.text] > 10:
-            # print("Seems search is stuck, refreshing the page")
-            # ## execute js script
-            # self.driver.execute_script("window.location.reload()")
-            self.click_continue_search()
-            time.sleep(10)
-            if progress_text.text in d:
-                d[progress_text.text] = 0
-            else:
-                d[progress_text.text] += 1
-            self.check_search_progress_bar()
+        try:
+            if d[progress_text.text] > 10:
+                # print("Seems search is stuck, refreshing the page")
+                # ## execute js script
+                # self.driver.execute_script("window.location.reload()")
+                self.click_continue_search()
+                time.sleep(10)
+                self.add_to_dict(d, progress_text)
+                self.check_search_progress_bar()
+        except Exception as e:
+            print(f"Exception on progress text check")
 
-        print(f"Message : {progress_text.text}")
+        try:
+            print(f"Message : {progress_text.text}")
+            if len(str(progress_text.text).strip()) == 0 and self.count_total_search():
+                self.driver.refresh()
+                time.sleep(7)
+        except Exception as e:
+            print(f"Exception on printing progress text, progress text does not include text")
 
     def check_continue_later_button(self):
         """
@@ -619,11 +652,12 @@ class Orbis:
 
         if current_item_number + 1 != total_count:
             print("Search is not finished yet")
-            # if not self.check_continue_later_button():
-            #     print("clicking Continue later button")
-            #     # refresh page with js
-            #     self.driver.execute_script("window.location.reload();")
-            time.sleep(5)
+            if not self.check_continue_later_button() and self.check_warning_message_header():
+                #     print("clicking Continue later button")
+                #     # refresh page with js
+                self.click_continue_search()
+                # self.driver.execute_script("window.location.reload();")
+                time.sleep(10)
             return True
         else:
             return False
@@ -652,18 +686,19 @@ class Orbis:
         if self.check_warning_message_header() and not self.check_continue_later_button():
             time.sleep(5)
             # self.click_continue_search()
-            self.driver.execute_script("document.getElementById('batchMatch').click()")
+            self.click_continue_search()
+            # self.driver.execute_script("document.getElementById('batchMatch').click()")
 
-        try:
-            search_status = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
-            is_search_status_displayed = search_status.is_displayed()
-            print(f"is_search_status_displayed: {is_search_status_displayed}")
-        except Exception as e:
-            self.driver.refresh()
-            time.sleep(5)
-            pass
+        # try:
+        #     search_status = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
+        #     is_search_status_displayed = search_status.is_displayed()
+        #     print(f"is_search_status_displayed: {is_search_status_displayed}")
+        # except Exception as e:
+        #     self.driver.refresh()
+        #     time.sleep(5)
+        #     pass
 
-        if not is_search_status_displayed and self.check_warning_message_header():
+        if self.check_warning_message_header() and not self.check_continue_later_button():
             print("search is not finished yet, clicking continue search button")
             self.click_continue_search()
             time.sleep(7)
@@ -703,6 +738,9 @@ class Orbis:
         """
         Clicks the view results button in the batch search page when the search is finished.
         """
+
+        # wait 10 seconds for VIEW_RESULTS_BUTTON to be clickable
+        # if not clickable, refresh the page
 
         self.wait_until_clickable(VIEW_RESULTS_BUTTON)
         view_result_sub_url = self.driver.find_element(By.XPATH, VIEW_RESULTS_BUTTON)
@@ -1289,7 +1327,7 @@ class Orbis:
             companies = companies_table.find_elements(By.TAG_NAME, "tr")
         except Exception as e:
             print("Not possible to find no matched companies")
-            return
+            # return
 
         with open(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), "a") as f:
             for company in companies:
@@ -1326,6 +1364,18 @@ class Orbis:
             return False
         return True
 
+    def fill_page_number(self, current_page, input_field_xpath):
+        """
+        Fills the page number in the input field
+        :param input_field_xpath: xpath of the input field
+        """
+        try:
+            self.driver.find_element(By.XPATH, input_field_xpath).clear()
+            self.driver.find_element(By.XPATH, input_field_xpath).send_keys(current_page)
+            self.driver.find_element(By.XPATH, input_field_xpath).send_keys(Keys.RETURN)
+        except Exception as e:
+            print("Not possible to fill page number ", current_page)
+
     def go_to_page(self, current_page):
         """
         Iterates over pages in the search result
@@ -1333,15 +1383,18 @@ class Orbis:
         """
         if self.check_exists_by_xpath(INPUT_FIELD_VALUE):
             try:
-                self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).clear()
-                self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(str(current_page))
-                self.driver.find_element(By.XPATH, INPUT_FIELD_VALUE).send_keys(Keys.RETURN)
+                self.fill_page_number(current_page, INPUT_FIELD_VALUE)
             except Exception as e:
-                print("Setting up input field value to 1 failed")
-                return
+                time.sleep(2)
+                print("Not possible to go to page ", current_page)
+                print("retrying ... ")
+                retry = 0
+                while retry < 3:
+                    self.fill_page_number(current_page, INPUT_FIELD_VALUE)
+                    retry += 1
         else:
             print("Current page is already set to ", current_page)
-            return
+            # return
 
     def is_search_continuing(self):
         """
@@ -1417,7 +1470,7 @@ class Orbis:
             print(f"{process_name}: input file {input_file} does not exist")
             self.logout()
             sys.exit(1)
-        
+
         time.sleep(5)
         OVERLAY_XPATH = "/html/body/div[9]/div[4]/div[2]/span"
         if self.check_exists_by_xpath(OVERLAY_XPATH):
@@ -1428,7 +1481,6 @@ class Orbis:
                 overlay.click()
                 print("Exception on overlay click: ", e)
             time.sleep(2)
-
 
         excel_output_file_name = path.basename(input_file).split(".")[0]
 
@@ -1465,13 +1517,12 @@ class Orbis:
         else:
             self.check_search_progress_bar()
 
-        # todo: 
-        try: 
+        # todo:
+        try:
             self.driver.find_element(By.XPATH, VIEW_RESULTS_BUTTON)
             self.view_search_results()
         except Exception as e:
             print("View results button is not displayed, continuing with next step")
-            
 
         self.add_remove_additional_columns(process_name)
 
@@ -1542,7 +1593,7 @@ class Orbis:
         self.wait_for_data_to_be_downloaded(excel_output_file_name, process_name)
 
         time.sleep(2)
-        
+
         # disabled temporarily
         # if self.send_data_on_completion.lower() == "true":
         #     message = f"Search for {input_file} is complete. Output of the batch search on orbis is attached."
@@ -2004,7 +2055,7 @@ if __name__ == "__main__":
     # crawl_data: prepare_data
     # generates csv file for licensee
     files_to_apply_batch_search = [
-        f"orbis_data_licensee_{timestamp}.csv",
+        # f"orbis_data_licensee_{timestamp}.csv",
         f"orbis_data_licensor_{timestamp}.csv",
     ]
 
@@ -2152,11 +2203,13 @@ if __name__ == "__main__":
         aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
     except FileNotFoundError as fne:
         print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
-
+        sys.exit(0)
     try:
         aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
     except FileNotFoundError as fne:
         print(f"File could not be found to aggregate please make sure it exists !")
+        sys.exit(0)
+
         
     # run_in_parallel_generic(
     #     function=aggregate_data,
