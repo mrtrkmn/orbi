@@ -1413,7 +1413,21 @@ class Orbis:
 
         if not path.exists(input_file):
             logger.debug(f"{process_name}: input file {input_file} does not exist")
-            return
+            print(f"{process_name}: input file {input_file} does not exist")
+            self.logout()
+            sys.exit(1)
+        
+        time.sleep(5)
+        OVERLAY_XPATH = "/html/body/div[9]/div[4]/div[2]/span"
+        if self.check_exists_by_xpath(OVERLAY_XPATH):
+            overlay = self.driver.find_element(By.XPATH, OVERLAY_XPATH)
+            try:
+                self.driver.execute_script("arguments[0].click();", overlay)
+            except Exception as e:
+                overlay.click()
+                print("Exception on overlay click: ", e)
+            time.sleep(2)
+
 
         excel_output_file_name = path.basename(input_file).split(".")[0]
 
@@ -1449,6 +1463,14 @@ class Orbis:
             self.view_search_results()
         else:
             self.check_search_progress_bar()
+
+        # todo: 
+        try: 
+            self.driver.find_element(By.XPATH, VIEW_RESULTS_BUTTON)
+            self.view_search_results()
+        except Exception as e:
+            print("View results button is not displayed, continuing with next step")
+            
 
         self.add_remove_additional_columns(process_name)
 
@@ -2134,13 +2156,14 @@ if __name__ == "__main__":
         aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
     except FileNotFoundError as fne:
         print(f"File could not be found to aggregate please make sure it exists !")
-    run_in_parallel_generic(
-        function=aggregate_data,
-        args=[
-            (f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
-            (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
-        ],
-    )
+        
+    # run_in_parallel_generic(
+    #     function=aggregate_data,
+    #     args=[
+    #         (f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
+    #         (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
+    #     ],
+    # )
 
     # run_in_parallel_generic(
     #     function=post_process_data,
