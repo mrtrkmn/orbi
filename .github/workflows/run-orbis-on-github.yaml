@@ -311,7 +311,7 @@ jobs:
         # Uses retry action to retry the script if it fails
         id: batch_search
         with:
-          timeout_minutes: ${{ env.RUN_TIMEOUT_IN_MN }} # 2 hours
+          # timeout_minutes: ${{ env.RUN_TIMEOUT_IN_MN }} # 2 hours
           max_attempts: ${{ env.MAX_RUN_ATTEMPTS }} # 3 times retry if failed
           command: |
             python orbi/orbi.py 
