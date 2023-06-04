@@ -21,8 +21,7 @@ FIELD_SEPERATOR = "/html/body/section[2]/div[3]/div/form/div[1]/table/tbody/tr[2
 APPLY_BUTTON = "/html/body/section[2]/div[3]/div/form/div[3]/div[2]/input"
 SEARCH_PROGRESS_BAR = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[1]"
 # PROGRESS_TEXT_XPATH = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]/div[1]/div[2]/p"
-PROGRESS_TEXT_XPATH='//*[@id="CountDown"]'
-
+PROGRESS_TEXT_XPATH = '//*[@id="CountDown"]'
 
 
 VIEW_RESULTS_BUTTON = "/html/body/section[2]/div[1]/div[2]/ul/li[1]/a"
