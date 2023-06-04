@@ -115,6 +115,109 @@ env:
 permissions:
   contents: read
 jobs:  
+  search_on_sec_gov:
+    # This job is used to fetch data from SEC API using crawl.py file in the repository.
+    # Running on Github hosted environment.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+          cache: "pip" # cache pip dependencies
+
+      # Installing dependencies of the project
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        
+        # get timestamp in format DD-MM-YYYY
+      - name: Get timestamp
+        id: get-timestamp
+        run: |
+          echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
+
+        # Receives file name from the user input in the workflow and stores it in the GITHUB_OUTPUT file.
+        # GITHUB_OUTPUT file is used to pass variables between jobs.
+        # Refer to https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-output-parameter for more information.
+      - name: Get input file name
+        if: ${{ github.event.inputs.data != '${{ env.DEFAULT_DATA_SOURCE }}' }}
+        id: get-file-name
+        run: |
+          echo "file_name=$(basename ${{ github.event.inputs.data }})" >> $GITHUB_OUTPUT
+
+        # Crawling data from SEC API using crawl.py file in the repository.
+        # Crawling data for licensee
+      - name: (LICENSEE) Crawl data from SEC.GOV
+        run: |
+          python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --licensee
+        env:
+          DATA_DIR: /home/runner/work/orbi/orbi/data/
+        
+        # Crawling data from SEC API using crawl.py file in the repository.
+        # Crawling data for licensor
+      - name: (LICENSOR) Crawl data from SEC.GOV
+        run: |
+          python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --no-licensee
+        env:
+          DATA_DIR: /home/runner/work/orbi/orbi/data/
+      
+        # Zipping crawled data 
+      - name: ZIP JSON and CSV files
+        run: "zip -j -r ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip ${{ env.DATA_DIR }} -x '*.xlsx' \n"
+        env:
+          DATA_DIR: /home/runner/work/orbi/orbi/data/
+      
+        # Send crawled data to Slack channel
+
+      - name: Send LICENSEE/LICENSOR files to Slack
+        run: |
+          python utils/send_to_slack.py --file_path ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip --slack_channel orbis-data --message "LICENSEE/LICENSOR files are created from SEC API"
+        env:
+          DATA_DIR: /home/runner/work/orbi/orbi/data/
+        continue-on-error: true # in case of error, continue to next step
+        
+      
+        # THIS PART NEEDS TO BE UPDATED WITH AN ACTIVE AZURE ACCOUNT CREDENTIALS AND CONTAINER NAME
+        # General usage from local:  python utils/upload_to_azure.py <file/dir> <container> <blob>
+        # Refer Azure Storage Account: https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python
+        # Uncomment the part inside dotted lines and set the environment variables to upload data to Azure Blob.
+      
+        #-------------------------------------------------------
+        # - name: Upload to Azure Blob
+        #   run: |
+        #     pip install azure-storage-blob
+        #     python utils/upload_to_azure.py --dir_file_path /home/runner/work/orbi/orbi/data --container_name ${{ env.AZURE_CONTAINER_NAME }} --blob_name orbis-data-${{ steps.get-timestamp.outputs.timestamp }}
+        #   env:
+        #     ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+        #     ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+        #     RETENTION_DAYS: 30
+        #     AZURE_CONTAINER_NAME: sec-gov-data
+        #     SLACK_CHANNEL: ${{ secrets.SLACK_DATA_CHANNEL }}
+        #   continue-on-error: true
+        #-------------------------------------------------------
+      
+
+        # Uploading data to Github artifactory with the retention period defined above.
+        # Refer to https://docs.github.com/en/actions/guides/storing-workflow-data-as-artifacts for more information.
+        # Consider limitations of Github artifactory: https://docs.github.com/en/actions/reference/usage-limits-billing-and-administration#usage-limits
+        # excludes 
+      - name: Upload data to artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
+          path: |
+            ${{ env.DATA_DIR }}
+            !'${{ env.DATA_DIR }}sample_data.xlsx' 
+            !'${{ env.DATA_DIR }}sample_data_big.xlsx' 
+            !'${{ env.DATA_DIR }}sample_data_big_v2.xlsx'
+          retention-days: ${{ env.RETENTION_PERIOD }}
+        continue-on-error: true
+        env:
+          DATA_DIR: /home/runner/work/orbi/orbi/data/
+
   # -----------------------RUN ON ORBIS JOB-------------------------------------------
   search_on_orbis:
    # This job is running on ubuntu-latest instance with Python 3.10 and Ubuntu 20.04
@@ -122,6 +225,7 @@ jobs:
    # Refer to https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration for more information.
    # This job is running after search_on_sec_gov job is completed.
     runs-on: ubuntu-latest
+    needs: search_on_sec_gov
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
