@@ -3,22 +3,15 @@
 # This file uploads given file to Azure Blob Storage
 # Usage: python azure-blob-storage.py <file/dir> <container> <blob>
 
-import sys
+import argparse
 import os
-from azure.storage.blob import (
-    BlobServiceClient,
-)
-from datetime import datetime
-from datetime import timedelta
-
-from send_to_slack import send_message_to_slack
+import sys
+from datetime import datetime, timedelta
 
 # import public_access
-from azure.storage.blob import PublicAccess
-from azure.storage.blob import AccessPolicy, ContainerSasPermissions
-
-
-import argparse
+from azure.storage.blob import (AccessPolicy, BlobServiceClient,
+                                ContainerSasPermissions, PublicAccess)
+from send_to_slack import send_message_to_slack
 
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)

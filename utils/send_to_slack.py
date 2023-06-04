@@ -2,10 +2,10 @@
 # description: This file contains several functions to send message/file for given slack channel
 
 import argparse
-from os import environ
-from os import path
-from slack_sdk import WebClient
 import sys
+from os import environ, path
+
+from slack_sdk import WebClient
 
 root_path = path.dirname(path.abspath(__file__))
 sys.path.append(root_path)
