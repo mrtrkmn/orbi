@@ -9,12 +9,12 @@ root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 sys.path.append("utils")
 
-
 import ast
 import concurrent.futures
 import hashlib
 import logging
 import pathlib
+import re
 import time
 from datetime import datetime
 from os import environ, path
@@ -33,11 +33,11 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from slack_sdk import WebClient
+from webdriver_manager.chrome import ChromeDriverManager
 
 # from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
 from variables import *
-from webdriver_manager.chrome import ChromeDriverManager
 
 import send_to_slack  # isort:skip
 from send_to_slack import send_file_to_slack  # isort:skip
@@ -2018,6 +2018,21 @@ def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee
 
     # apply unidecode to remove special characters to the language
     df_result = df_result["Company name"].apply(unidecode.unidecode)
+    # remove Unkown company names
+    df_result = df_result[~df_result.str.contains("Unknown", flags=re.IGNORECASE, regex=True)]
+    # remove Inventor company names
+    df_result = df_result[~df_result.str.contains("Inventor", flags=re.IGNORECASE, regex=True)]
+    # remove https company names
+    df_result = df_result[~df_result.str.contains("https", flags=re.IGNORECASE, regex=True)]
+    # sort alphabetically based on company name
+    df_result = df_result.sort_values()
+    # convert to dataframe
+    df_result = pd.DataFrame(df_result)
+    # add ID column
+    df_result["ID"] = df_result.index + 1
+    # make the ID column the first column
+    df_result = df_result[["ID", "Company name"]]
+    # save to csv
     df_result.to_csv(output_csv_file, sep=";", index=False)
 
 
