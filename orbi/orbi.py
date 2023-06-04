@@ -2055,7 +2055,7 @@ if __name__ == "__main__":
     # crawl_data: prepare_data
     # generates csv file for licensee
     files_to_apply_batch_search = [
-        # f"orbis_data_licensee_{timestamp}.csv",
+        f"orbis_data_licensee_{timestamp}.csv",
         f"orbis_data_licensor_{timestamp}.csv",
     ]
 
