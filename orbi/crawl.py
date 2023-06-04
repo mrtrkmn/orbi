@@ -314,12 +314,12 @@ class Crawler:
                 # convert the CIK Number to int
 
                 # df = df[["CIK Number", "Agreement Date", "Company Name"]].dropna(subset=["CIK Number"])
-                df_result = df_result[df["Company Name"]].apply(unidecode.unidecode)
+                df = df[df["Company Name"]].apply(unidecode.unidecode)
                 df = df[df["CIK Number"].apply(self.check_cik_number_format)]
                 # df = df.drop_duplicates(subset=["CIK Number"])
                 # strip company name
                 df = df.dropna()
-                df = df.drop_duplicates()
+                # df = df.drop_duplicates()
                 df["Company Name"] = df["Company Name"].str.strip()
                 df = df[~df.str.contains("Unknown", flags=re.IGNORECASE, regex=True)]
                 # remove Inventor company names
