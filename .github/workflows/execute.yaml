@@ -70,7 +70,7 @@ env:
   MAX_RUN_ATTEMPTS: 1
   
   # If it is unable to fetch all data in 4 hours, the crawler will face with timeout
-  RUN_TIMEOUT_IN_MN: 240 
+  RUN_TIMEOUT_IN_MN: 360
   # Following DATA_DIR, LOG_DIR variables are used when using Github instances. 
   # Refer to Github instances, https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
   # Uncomment the lines inside the block below if you are using Github instances.
@@ -322,6 +322,7 @@ jobs:
             python orbi/orbi.py 
         env:
           # Pass the environment variables to the script 
+          timeout_minutes: ${{ env.RUN_TIMEOUT_IN_MN }}
           DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
           SEND_DATA_ON_COMPLETION: ${{ github.event.inputs.send_data_on_completion }}
           CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
