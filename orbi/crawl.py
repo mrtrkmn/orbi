@@ -313,19 +313,14 @@ class Crawler:
                 )
                 # convert the CIK Number to int
 
-                # df = df[["CIK Number", "Agreement Date", "Company Name"]].dropna(subset=["CIK Number"])
-                df = df[df["Company Name"]].apply(unidecode.unidecode)
+                # apply check cik number format to the CIK Number
                 df = df[df["CIK Number"].apply(self.check_cik_number_format)]
-                # df = df.drop_duplicates(subset=["CIK Number"])
-                # strip company name
-                df = df.dropna()
-                # df = df.drop_duplicates()
-                df["Company Name"] = df["Company Name"].str.strip()
-                df = df[~df.str.contains("Unknown", flags=re.IGNORECASE, regex=True)]
+                # df["Company Name"] = df["Company Name"].str.strip()
+                df = df[~df["Company Name"].str.contains("Unknown", flags=re.IGNORECASE, regex=True)]
                 # remove Inventor company names
-                df = df[~df.str.contains("Inventor", flags=re.IGNORECASE, regex=True)]
+                df = df[~df["Company Name"].str.contains("Inventor", flags=re.IGNORECASE, regex=True)]
                 # remove https company names
-                df = df[~df.str.contains("https", flags=re.IGNORECASE, regex=True)]
+                df = df[~df["Company Name"].str.contains("https", flags=re.IGNORECASE, regex=True)]
 
                 final_df = pd.concat([final_df, df])
 
