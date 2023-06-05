@@ -103,7 +103,7 @@ class Orbis:
             self.check_on_sec = environ.get("CHECK_ON_SEC")
             self.parallel_execution = environ.get("PARALLEL_EXECUTION")
             self.send_data_on_completion = environ.get("SEND_DATA_ON_COMPLETION")
-            self.slack_channel = environ.get("SLACK_DATA_CHANNEL")
+            self.slack_channel = environ.get("SLACK_CHANNEL")
             self.slack_token = environ.get("SLACK_TOKEN")
             self.orbis_batch_search_url = environ.get("ORBIS_BATCH_SEARCH_URL")
             self.orbis_logout_url = environ.get("ORBIS_LOGOUT_URL")
