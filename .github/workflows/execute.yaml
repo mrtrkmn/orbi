@@ -317,12 +317,12 @@ jobs:
         # Uses retry action to retry the script if it fails
         id: batch_search
         with:
+          timeout_minutes: ${{ env.RUN_TIMEOUT_IN_MN }}
           max_attempts: ${{ env.MAX_RUN_ATTEMPTS }} # 3 times retry if failed
           command: |
             python orbi/orbi.py 
         env:
           # Pass the environment variables to the script 
-          timeout_minutes: ${{ env.RUN_TIMEOUT_IN_MN }}
           DATA_SOURCE: ${{ steps.get-file-name.outputs.file_name }}
           SEND_DATA_ON_COMPLETION: ${{ github.event.inputs.send_data_on_completion }}
           CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
