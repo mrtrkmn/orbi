@@ -225,7 +225,7 @@ jobs:
    # Refer to https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration for more information.
    # This job is running after search_on_sec_gov job is completed.
     runs-on: ubuntu-latest
-    needs: search_on_sec_gov
+    # needs: search_on_sec_gov
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
