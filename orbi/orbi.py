@@ -1312,8 +1312,9 @@ class Orbis:
             self.wait_until_clickable(NUMBER_OF_ROWS_DROP_DOWN)
             # set data-default-value to 100
             drop = Select(self.driver.find_element(By.XPATH, NUMBER_OF_ROWS_DROP_DOWN))
-            # todo: make this part dynamic
-            drop.select_by_visible_text("10")
+            select_drop_len = len(drop.options)
+            # selects the last option which is available in the dropdown menu 
+            drop.select_by_index(select_drop_len - 1)
         except Exception as e:
             print("Not possible to set 100 in the page size dropdown")
             pass
