@@ -96,7 +96,7 @@ env:
   # Reference for SLACK TOKEN: https://api.slack.com/authentication/token-types#granular_bot
   # Reference for SLACK CHANNEL: https://slack.com/intl/en-tr/help/articles/201402297-Create-a-channel
 
-  SLACK_CHANNEL: orbis-data
+  SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }} # keep in mind not name of the channel but ID of the channel
   SLACK_USERNAME: orbi
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
   SLACK_FOOTER: '🤓 automated bot Orbi'
