@@ -22,6 +22,7 @@ from os import environ, path
 import pandas as pd
 import unidecode
 import yaml
+from retrying import retry
 
 # from crawl import create_input_file_for_orbis_batch_search
 from selenium import webdriver
@@ -247,7 +248,7 @@ class Orbis:
         try:
             response = self.driver.find_element(By.XPATH, ERROR_MESSAGE)
             # notify slack that logging is not successful to Orbis  database
-            while retry_count < 3 and response.text == "This page isn’t working":
+            while retry_count < 10 and response.text == "This page isn’t working":
                 self.driver.refresh()
                 time.sleep(5)
                 retry_count += 1
@@ -1313,7 +1314,7 @@ class Orbis:
             # set data-default-value to 100
             drop = Select(self.driver.find_element(By.XPATH, NUMBER_OF_ROWS_DROP_DOWN))
             select_drop_len = len(drop.options)
-            # selects the last option which is available in the dropdown menu 
+            # selects the last option which is available in the dropdown menu
             drop.select_by_index(select_drop_len - 1)
         except Exception as e:
             print("Not possible to set 100 in the page size dropdown")
@@ -1752,6 +1753,7 @@ class Orbis:
         df.to_excel(file_name)
 
 
+@retry(stop_max_attempt_number=4)
 def run_batch_search(input_file):
     # join path to input file
     """
@@ -2132,6 +2134,11 @@ if __name__ == "__main__":
                 is_licensee=False,
             )
 
+    for i in files_to_apply_batch_search:
+        send_file_to_slack(
+            path.join(environ.get("DATA_DIR"), i), environ.get("SLACK_CHANNEL"), f"File {i} created for batch search"
+        )
+
     time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
 
     # # Step 2
@@ -2150,6 +2157,11 @@ if __name__ == "__main__":
             run_batch_search(file_to_search)
             time.sleep(5)
             print(f"Search is done for file {file_to_search}")
+            send_file_to_slack(
+                path.join(environ.get("DATA_DIR"), f"orbis_data_{path.basename(file_to_search).split('.')[0]}.xlsx"),
+                environ.get("SLACK_CHANNEL"),
+                f"File {path.basename(file_to_search).split('.')[0]}.xlsx downloaded from Orbis after batch search",
+            )
 
     # # # # Step 3
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
@@ -2157,6 +2169,13 @@ if __name__ == "__main__":
         f"orbis_data_licensee_{timestamp}.xlsx",
         f"orbis_data_licensor_{timestamp}.xlsx",
     ]
+
+    for i in input_files_with_company_raw_info:
+        send_file_to_slack(
+            path.join(environ.get("DATA_DIR"), i),
+            environ.get("SLACK_CHANNEL"),
+            f"File {i} downloaded from Orbis after batch search",
+        )
 
     run_in_parallel_generic(
         function=generate_data_for_guo,
@@ -2173,7 +2192,14 @@ if __name__ == "__main__":
             run_batch_search(guo_input_file)
             time.sleep(4)
             print(f"Search is done for guo file {guo_input_file}")
+            send_file_to_slack(
+                path.join(environ.get("DATA_DIR"), f"{path.basename(guo_input_file).split('.')[0]}.xlsx"),
+                environ.get("SLACK_CHANNEL"),
+                f"File {path.basename(guo_input_file).split('.')[0]}.xslx created for GUO batch search",
+            )
 
+    # for i in input_files_with_guo_info:
+    #     send_file_to_slack(path.join(environ.get("DATA_DIR"),i), environ.get("SLACK_CHANNEL"),  f"File {i} created for GUO batch search")
     # # # Step 3
     # # # --> generate_data_for_guo to generate data by considering GUO of companies
 
@@ -2184,13 +2210,23 @@ if __name__ == "__main__":
 
     time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
 
-    run_in_parallel_generic(
-        function=generate_data_for_ish,
-        args=[
-            f"orbis_data_licensee_{timestamp}.xlsx",
-            f"orbis_data_licensor_{timestamp}.xlsx",
-        ],
-    )
+    for i in input_files_with_company_raw_info:
+        generate_data_for_ish(i)
+
+    for i in input_files_with_ish_info:
+        send_file_to_slack(
+            path.join(environ.get("DATA_DIR"), i),
+            environ.get("SLACK_CHANNEL"),
+            f"File {i} created for ISH batch search",
+        )
+
+    # run_in_parallel_generic(
+    #     function=generate_data_for_ish,
+    #     args=[
+    #         f"orbis_data_licensee_{timestamp}.xlsx",
+    #         f"orbis_data_licensor_{timestamp}.xlsx",
+    #     ],
+    # )
 
     if is_parallel_execution_active.lower() == "true":
         run_in_parallel_generic(function=run_batch_search, args=input_files_with_ish_info)
@@ -2200,6 +2236,11 @@ if __name__ == "__main__":
             run_batch_search(ish_input_file)
             time.sleep(4)
             print(f"Search is done for ish file {ish_input_file}")
+            send_file_to_slack(
+                path.join(environ.get("DATA_DIR"), f"{path.basename(ish_input_file).split('.')[0]}.xlsx"),
+                environ.get("SLACK_CHANNEL"),
+                f"File {path.basename(ish_input_file).split('.')[0]}.xlsx is downloaded from batch search",
+            )
 
     # run_in_parallel_generic(function=run_batch_search,
     #                         args=[f"orbis_data_licensee_{timestamp}_guo.csv",
