@@ -2027,14 +2027,15 @@ def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee
     df_result = df_result[~df_result.str.contains("Inventor", flags=re.IGNORECASE, regex=True)]
     # remove https company names
     df_result = df_result[~df_result.str.contains("https", flags=re.IGNORECASE, regex=True)]
+    # -----------> NO NEED TO ADD ID COLUMN HOWEVER IF REQUIRED IN FUTURE FOLLOWING PART CAN BE ENABLED <----------------
     # sort alphabetically based on company name
-    df_result = df_result.sort_values()
+    # df_result = df_result.sort_values()
     # convert to dataframe
-    df_result = pd.DataFrame(df_result)
+    # df_result = pd.DataFrame(df_result)
     # add ID column
-    df_result["ID"] = df_result.index + 1
+    # df_result["ID"] = df_result.index + 1
     # make the ID column the first column
-    df_result = df_result[["ID", "Company name"]]
+    # df_result = df_result[["ID", "Company name"]]
     # save to csv
     df_result.to_csv(output_csv_file, sep=";", index=False)
 
@@ -2067,6 +2068,7 @@ if __name__ == "__main__":
         is_parallel_execution_active = environ.get("PARALLEL_EXECUTION")
 
     timestamp = datetime.now().strftime("%d_%m_%Y")
+    timestamp_with_time = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
     # Step 1
     # --> crawl_data.py should generate data in data/data.csv
 
@@ -2135,8 +2137,9 @@ if __name__ == "__main__":
             )
 
     for i in files_to_apply_batch_search:
+        
         send_file_to_slack(
-            path.join(environ.get("DATA_DIR"), i), environ.get("SLACK_CHANNEL"), f"File {i} created for batch search"
+            path.join(environ.get("DATA_DIR"), i), environ.get("SLACK_CHANNEL"), f"[{timestamp_with_time}] File {i} created for batch search"
         )
 
     time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
@@ -2160,7 +2163,7 @@ if __name__ == "__main__":
             send_file_to_slack(
                 path.join(environ.get("DATA_DIR"), f"orbis_data_{path.basename(file_to_search).split('.')[0]}.xlsx"),
                 environ.get("SLACK_CHANNEL"),
-                f"File {path.basename(file_to_search).split('.')[0]}.xlsx downloaded from Orbis after batch search",
+                f"[{timestamp_with_time}] File {path.basename(file_to_search).split('.')[0]}.xlsx downloaded from Orbis after batch search",
             )
 
     # # # # Step 3
@@ -2174,7 +2177,7 @@ if __name__ == "__main__":
         send_file_to_slack(
             path.join(environ.get("DATA_DIR"), i),
             environ.get("SLACK_CHANNEL"),
-            f"File {i} downloaded from Orbis after batch search",
+            f"[{timestamp_with_time}] File {i} downloaded from Orbis after batch search",
         )
 
     run_in_parallel_generic(
@@ -2195,7 +2198,7 @@ if __name__ == "__main__":
             send_file_to_slack(
                 path.join(environ.get("DATA_DIR"), f"{path.basename(guo_input_file).split('.')[0]}.xlsx"),
                 environ.get("SLACK_CHANNEL"),
-                f"File {path.basename(guo_input_file).split('.')[0]}.xslx created for GUO batch search",
+                f"[{timestamp_with_time}] File {path.basename(guo_input_file).split('.')[0]}.xslx created for GUO batch search",
             )
 
     # for i in input_files_with_guo_info:
@@ -2217,7 +2220,7 @@ if __name__ == "__main__":
         send_file_to_slack(
             path.join(environ.get("DATA_DIR"), i),
             environ.get("SLACK_CHANNEL"),
-            f"File {i} created for ISH batch search",
+            f"[{timestamp_with_time}] File {i} created for ISH batch search",
         )
 
     # run_in_parallel_generic(
@@ -2239,7 +2242,7 @@ if __name__ == "__main__":
             send_file_to_slack(
                 path.join(environ.get("DATA_DIR"), f"{path.basename(ish_input_file).split('.')[0]}.xlsx"),
                 environ.get("SLACK_CHANNEL"),
-                f"File {path.basename(ish_input_file).split('.')[0]}.xlsx is downloaded from batch search",
+                f"[{timestamp_with_time}] File {path.basename(ish_input_file).split('.')[0]}.xlsx is downloaded from batch search",
             )
 
     # run_in_parallel_generic(function=run_batch_search,
