@@ -54,5 +54,7 @@ if __name__ == "__main__":
     slack_channel = parser.add_argument("--slack_channel", type=str, help="The Slack channel to send the file to.")
     message = parser.add_argument("--message", type=str, help="The message to send with the file.")
     args = parser.parse_args()
-
-    send_file_to_slack(args.file_path, args.slack_channel, args.message)
+    if args.file_path is None or args.file_path == "":
+        send_message_to_slack(args.message, args.slack_channel)
+    else: 
+        send_file_to_slack(args.file_path, args.slack_channel, args.message)
