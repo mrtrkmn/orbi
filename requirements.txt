@@ -10,3 +10,4 @@ aiohttp
 matplotlib
 unidecode
 pytz
+retrying
