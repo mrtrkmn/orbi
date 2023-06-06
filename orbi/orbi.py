@@ -2161,7 +2161,7 @@ if __name__ == "__main__":
             time.sleep(5)
             print(f"Search is done for file {file_to_search}")
             send_file_to_slack(
-                path.join(environ.get("DATA_DIR"), f"orbis_data_{path.basename(file_to_search).split('.')[0]}.xlsx"),
+                path.join(environ.get("DATA_DIR"), f"{path.basename(file_to_search).split('.')[0]}.xlsx"),
                 environ.get("SLACK_CHANNEL"),
                 f"[{timestamp_with_time}] File {path.basename(file_to_search).split('.')[0]}.xlsx downloaded from Orbis after batch search",
             )
