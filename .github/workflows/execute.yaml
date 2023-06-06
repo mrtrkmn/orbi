@@ -96,8 +96,7 @@ env:
   # Reference for SLACK TOKEN: https://api.slack.com/authentication/token-types#granular_bot
   # Reference for SLACK CHANNEL: https://slack.com/intl/en-tr/help/articles/201402297-Create-a-channel
 
-  SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-  SLACK_DATA_CHANNEL: orbis-data
+  SLACK_CHANNEL: orbis-data
   SLACK_USERNAME: orbi
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
   SLACK_FOOTER: '🤓 automated bot Orbi'
@@ -199,7 +198,7 @@ jobs:
         #     ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
         #     RETENTION_DAYS: 30
         #     AZURE_CONTAINER_NAME: sec-gov-data
-        #     SLACK_CHANNEL: ${{ secrets.SLACK_DATA_CHANNEL }}
+        #     SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
         #   continue-on-error: true
         #-------------------------------------------------------
       
@@ -327,7 +326,7 @@ jobs:
           SEND_DATA_ON_COMPLETION: ${{ github.event.inputs.send_data_on_completion }}
           CHECK_ON_SEC: ${{ github.event.inputs.check_on_sec }}
           PARALLEL_EXECUTION: ${{ github.event.inputs.activate_parallel_exec }}
-      
+          SLACK_CHANNEL: ${{ env.SLACK_CHANNEL }}
         #**********************************************************************************************************************
         #  POST PROCESSING STEPS
         #**********************************************************************************************************************      
@@ -368,7 +367,7 @@ jobs:
         # If input notify is true, send the data to slack channel
         if: ${{ success() && github.event.inputs.notify == 'true' }}
         run: |
-          python utils/send_to_slack.py --file_path orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip is attached.'
+          python utils/send_to_slack.py --file_path orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip  --slack_channel ${{ env.SLACK_CHANNEL }} --message ' Prepared data from Orbis database search is done !. orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip is attached.'
         continue-on-error: true
       
       - name: Send data to Telegram
