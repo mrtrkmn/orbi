@@ -523,9 +523,7 @@ class Orbis:
         CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
 
         try:
-            if (
-                not self.count_total_search()
-            ):
+            if not self.count_total_search():
                 continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
                 action = ActionChains(self.driver)
                 action.click(on_element=continue_search_button).perform()
@@ -1519,7 +1517,7 @@ class Orbis:
         self.wait_for_data_to_be_downloaded(excel_output_file_name, process_name)
 
         time.sleep(2)
-        
+
         # disabled temporarily
         # if self.send_data_on_completion.lower() == "true":
         #     message = f"Search for {input_file} is complete. Output of the batch search on orbis is attached."
