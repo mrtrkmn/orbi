@@ -152,6 +152,9 @@ class Orbis:
         return None
 
     def __enter__(self):
+        if not path.exists(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME)):
+            with open(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), "w") as f:
+                f.write("")
         if not self.offline:
             logger.debug("Starting chrome driver...")
             self.chrome_options = webdriver.ChromeOptions()
@@ -542,7 +545,7 @@ class Orbis:
                 continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
                 action = ActionChains(self.driver)
                 action.click(on_element=continue_search_button).perform()
-                time.sleep(1)
+                time.sleep(2)
             else:
                 pass
         except Exception as e:
@@ -597,6 +600,9 @@ class Orbis:
                 self.click_continue_search()
         except Exception as e:
             print(f"Exception on progress_text check")
+            self.driver.refresh()
+            time.sleep(7)
+            progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
 
         self.add_to_dict(d, progress_text)
 
@@ -614,7 +620,7 @@ class Orbis:
 
         try:
             print(f"Message : {progress_text.text}")
-            if len(str(progress_text.text).strip()) == 0 and self.count_total_search():
+            if len(str(progress_text.text).strip()) < 2 and self.count_total_search():
                 self.driver.refresh()
                 time.sleep(7)
         except Exception as e:
@@ -656,9 +662,10 @@ class Orbis:
             if not self.check_continue_later_button() and self.check_warning_message_header():
                 #     print("clicking Continue later button")
                 #     # refresh page with js
-                self.click_continue_search()
-                # self.driver.execute_script("window.location.reload();")
+                # self.click_continue_search()
+                self.driver.execute_script("window.location.reload();")
                 time.sleep(10)
+                self.click_continue_search()
             return True
         else:
             return False
@@ -2137,9 +2144,10 @@ if __name__ == "__main__":
             )
 
     for i in files_to_apply_batch_search:
-        
         send_file_to_slack(
-            path.join(environ.get("DATA_DIR"), i), environ.get("SLACK_CHANNEL"), f"[{timestamp_with_time}] File {i} created for batch search"
+            path.join(environ.get("DATA_DIR"), i),
+            environ.get("SLACK_CHANNEL"),
+            f"[{timestamp_with_time}] File {i} created for batch search",
         )
 
     time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
