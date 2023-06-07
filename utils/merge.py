@@ -2,10 +2,12 @@
 # date: 07.06.2023
 # desc: This file contains helper functions to merge orbis and sec data
 
+import os
+import sys
+from argparse import ArgumentParser
+
 import pandas as pd
 from fuzzywuzzy import fuzz
-from argparse import ArgumentParser
-import os
 
 
 def parse_data_based_on_licensee_aggrement_data(excel_path_file):
@@ -121,14 +123,17 @@ def write_to_excel(df, file_name, sheet_name="ORBIS-SEC-MERGED"):
 
 # create main function init
 if __name__ == "__main__":
-    # argparser
-    parser = ArgumentParser(description="Post processing helper functions for Orbi project")
+    parser = ArgumentParser(
+        description="Usage: python3 merge.py --orbis_output_file <path_to_orbis_output_file> --sec_output_file <path_to_sec_output_file> --merged_output_file <path_to_merged_output_file>"
+    )
     parser.add_argument("--orbis_output_file", type=str, help="Path to orbis output file")
     parser.add_argument("--sec_output_file", type=str, help="Path to sec output file")
     parser.add_argument("--merged_output_file", type=str, help="Path to output file")
     args = parser.parse_args()
-    # orbis_output_file = "/Users/mrtrkmn/Documents/projects/idp-works/data/orbis_data_licensee_07_06_2023.xlsx"
-    # sec_output_file = "/Users/mrtrkmn/Documents/projects/idp-works/data/company_facts_07_06_2023_licensee.csv"
+    if len(sys.argv) == 1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+
     orbis_output_file = args.orbis_output_file
     sec_output_file = args.sec_output_file
     merged_output_file = args.merged_output_file
