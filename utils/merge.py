@@ -2,10 +2,11 @@
 # date: 07.06.2023
 # desc: This file contains helper functions to merge orbis and sec data
 
+import os
+from argparse import ArgumentParser
+
 import pandas as pd
 from fuzzywuzzy import fuzz
-from argparse import ArgumentParser
-import os
 
 
 def parse_data_based_on_licensee_aggrement_data(excel_path_file):
