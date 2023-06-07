@@ -542,7 +542,7 @@ class Orbis:
                 continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
                 action = ActionChains(self.driver)
                 action.click(on_element=continue_search_button).perform()
-                time.sleep(1)
+                time.sleep(2)
             else:
                 pass
         except Exception as e:
@@ -574,6 +574,16 @@ class Orbis:
         except Exception as e:
             print(f"Exception on progress text ")
 
+    def continue_search_on_exception(self, retry_count):
+        try:
+            self.click_continue_search()
+            retry_count = 3
+        except Exception as e:
+            print(f"Exception on clicking continue search {e}")
+            self.driver.refresh()
+            time.sleep(7)
+            retry_count += 1
+
     def check_progress_text(self, d):
         """f
         Checks the progress text in the batch search page and refreshes the page if the search is stuck.
@@ -592,11 +602,17 @@ class Orbis:
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
             self.check_search_progress_bar()
 
-        try:
+        retry_count = 0
+        while retry_count < 3:
             if len(progress_text.text.strip()) < 1:
-                self.click_continue_search()
-        except Exception as e:
-            print(f"Exception on progress_text check")
+                try:
+                    self.click_continue_search()
+                    retry_count = 3
+                except Exception as e:
+                    print(f"Exception on clicking continue search on check_progress_text {e}")
+                    self.driver.refresh()
+                    time.sleep(7)
+                    retry_count += 1
 
         self.add_to_dict(d, progress_text)
 
@@ -614,7 +630,7 @@ class Orbis:
 
         try:
             print(f"Message : {progress_text.text}")
-            if len(str(progress_text.text).strip()) == 0 and self.count_total_search():
+            if len(str(progress_text.text).strip()) < 2 and self.count_total_search():
                 self.driver.refresh()
                 time.sleep(7)
         except Exception as e:
@@ -656,9 +672,10 @@ class Orbis:
             if not self.check_continue_later_button() and self.check_warning_message_header():
                 #     print("clicking Continue later button")
                 #     # refresh page with js
-                self.click_continue_search()
-                # self.driver.execute_script("window.location.reload();")
+                # self.click_continue_search()
+                self.driver.execute_script("window.location.reload();")
                 time.sleep(10)
+                self.click_continue_search()
             return True
         else:
             return False
@@ -2137,9 +2154,10 @@ if __name__ == "__main__":
             )
 
     for i in files_to_apply_batch_search:
-        
         send_file_to_slack(
-            path.join(environ.get("DATA_DIR"), i), environ.get("SLACK_CHANNEL"), f"[{timestamp_with_time}] File {i} created for batch search"
+            path.join(environ.get("DATA_DIR"), i),
+            environ.get("SLACK_CHANNEL"),
+            f"[{timestamp_with_time}] File {i} created for batch search",
         )
 
     time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
