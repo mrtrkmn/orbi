@@ -76,7 +76,7 @@ env:
   # Uncomment the lines inside the block below if you are using Github instances.
 
   #-------------------------------------------------------
-  #  DATA_DIR: /home/runner/work/orbi/orbi/data/
+  #  DATA_DIR: /home/runner/work/orbi/data/
   #  LOG_DIR: /home/runner/work/orbi/orbi/logs/    
   #-------------------------------------------------------
   
@@ -155,7 +155,7 @@ jobs:
         run: |
           python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --licensee
         env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
+          DATA_DIR: /home/runner/work/orbi/data/
         
         # Crawling data from SEC API using crawl.py file in the repository.
         # Crawling data for licensor
@@ -163,13 +163,13 @@ jobs:
         run: |
           python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --no-licensee
         env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
+          DATA_DIR: /home/runner/work/orbi/data/
       
         # Zipping crawled data 
       - name: ZIP JSON and CSV files
         run: "zip -j -r ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip ${{ env.DATA_DIR }} -x '*.xlsx' \n"
         env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
+          DATA_DIR: /home/runner/work/orbi/data/
       
         # Send crawled data to Slack channel
 
@@ -177,7 +177,7 @@ jobs:
         run: |
           python utils/send_to_slack.py --file_path ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip --slack_channel orbis-data --message "LICENSEE/LICENSOR files are created from SEC API"
         env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
+          DATA_DIR: /home/runner/work/orbi/data/
         continue-on-error: true # in case of error, continue to next step
         
         
@@ -220,7 +220,7 @@ jobs:
           retention-days: ${{ env.RETENTION_PERIOD }}
         continue-on-error: true
         env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
+          DATA_DIR: /home/runner/work/orbi/data/
   
   
   # -----------------------RUN ON ORBIS JOB-------------------------------------------
