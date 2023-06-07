@@ -1347,7 +1347,10 @@ class Orbis:
         except Exception as e:
             print("Not possible to find no matched companies")
             # return
-
+        if not path.exists(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME)):
+            with open(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), "w") as f:
+                f.write("")
+                
         with open(path.join(self.data_dir, NOT_MATCHED_COMPANIES_FILE_NAME), "a") as f:
             for company in companies:
                 try:
