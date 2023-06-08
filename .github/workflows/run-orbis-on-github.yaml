@@ -404,8 +404,8 @@ jobs:
           SLACK_FOOTER: '🤓 automated bot Orbi'
   # -----------------------AGGREGATE DATA JOB-------------------------------------------
   aggregate_data:
-    runs-on: ubuntu-latest
     needs: [search_on_sec_gov, search_on_orbis]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
