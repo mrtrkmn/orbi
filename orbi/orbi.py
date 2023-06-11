@@ -173,7 +173,7 @@ class Orbis:
             # add user agent to avoid bot detection
             self.chrome_options.add_argument(self.headers)
             # refer to https://www.selenium.dev/documentation/webdriver/browsers/chrome/
-            self.chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
+            self.chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
             self.chrome_options.add_experimental_option("prefs", prefs)
             self.chrome_options.add_experimental_option("detach", True)
             chrome_service = ChromeService(ChromeDriverManager().install())
@@ -332,7 +332,6 @@ class Orbis:
         )
 
     def wait_until_clickable(self, xpath):
-        # wait until the element is clickable
         """
         Waits until an element located by the given XPath is clickable.
 
@@ -344,17 +343,17 @@ class Orbis:
         """
         number_of_calls = 0
 
-        try:
-            WebDriverWait(self.driver, 5 * 60).until(EC.element_to_be_clickable((By.XPATH, xpath)))
-        except Exception as e:
-            print("Exception occurred in wait_until_clickable, logging out from sessions")
-            self.driver.refresh()
-            time.sleep(7)
-            number_of_calls += 1
-            if number_of_calls > 10:
-                self.logout()
-            self.wait_until_clickable(xpath)
-            # self.logout()
+        while True:
+            try:
+                WebDriverWait(self.driver, 5 * 60).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+                break  # Element found and clickable, exit the loop
+            except Exception as e:
+                print("TimeoutException occurred in wait_until_clickable, logging out from sessions")
+                self.driver.refresh()
+                time.sleep(7)
+                number_of_calls += 1
+                if number_of_calls > 10:
+                    self.logout()
 
     def read_xlxs_file(self, file_path, sheet_name=""):
         """
@@ -453,22 +452,23 @@ class Orbis:
                     time.sleep(5)
 
     def check_processing_overlay(self, process_name):
-        # this is used to wait until processing overlay is gone
-        """Waits for the processing overlay to disappear.
+        """
+        Waits for the processing overlay to disappear.
 
         :param process_name (str): A string identifying the process being waited for.
 
-        :return:None
+        :return: None
         """
         try:
             main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
             main_content_style = main_content_div.value_of_css_property("max-width")
+
             while main_content_style != "none":
+                logger.debug(f"{process_name} - Main content style is {main_content_style}")
+                print(f"{process_name} - Main content style is still not 'none': {main_content_style}")
+                time.sleep(0.5)
                 main_content_div = self.driver.find_element(By.XPATH, MAIN_DIV)
                 main_content_style = main_content_div.value_of_css_property("max-width")
-                logger.debug(f"{process_name}main content style is {main_content_style}")
-                print(f"{process_name} main content style is still NOT NONE {main_content_style}")
-                time.sleep(0.5)
         except Exception as e:
             logger.debug(e)
 
@@ -580,18 +580,17 @@ class Orbis:
             print(f"Exception on progress text ")
 
     def check_progress_text(self, d):
-        """f
+        """
         Checks the progress text in the batch search page and refreshes the page if the search is stuck.
-        Additionally, it calls check_search_progress_bar() method to check the progress bar.
-        :param d: A dictionary to keep count of the progress text.
+        Additionally, it calls the `check_search_progress_bar()` method to check the progress bar.
 
+        :param d: A dictionary to keep count of the progress text.
         """
 
         try:
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
         except Exception as e:
-            print(f"Exception on finding progress text {e}")
-            # self.refresh_page_at_stuck()
+            print(f"Exception on finding progress text: {e}")
             self.click_continue_search()
             time.sleep(5)
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
@@ -610,9 +609,6 @@ class Orbis:
 
         try:
             if d[progress_text.text] > 10:
-                # print("Seems search is stuck, refreshing the page")
-                # ## execute js script
-                # self.driver.execute_script("window.location.reload()")
                 self.click_continue_search()
                 time.sleep(10)
                 self.add_to_dict(d, progress_text)
@@ -621,12 +617,12 @@ class Orbis:
             print(f"Exception on progress text check")
 
         try:
-            print(f"Message : {progress_text.text}")
+            print(f"Message: {progress_text.text}")
             if len(str(progress_text.text).strip()) < 2 and self.count_total_search():
                 self.driver.refresh()
                 time.sleep(7)
         except Exception as e:
-            print(f"Exception on printing progress text, progress text does not include text")
+            print("Exception on printing progress text: progress text does not include text")
 
     def check_continue_later_button(self):
         """
@@ -639,37 +635,6 @@ class Orbis:
             return True
         except Exception as e:
             print(f"Exception on finding continue later button {e}")
-            return False
-
-    def count_total_search(self):
-        """
-        This method counts the total number of searches performed in the batch search page.
-        This check enable us to know if the search is over or not, important !
-        """
-        # get parameters from batch widget
-        batch_search_info = self.driver.find_element(By.XPATH, BATCH_WIDGET_XPATH)
-        all_search_result_data = batch_search_info.get_attribute("data-parameters")
-        # convert string to dictionary
-        all_search_result_data = ast.literal_eval(all_search_result_data)
-        current_item_number = all_search_result_data["current"]
-        total_matched_count = all_search_result_data["totalMatchedCount"]
-        total_unmatched_count = all_search_result_data["totalUnMatchedCount"]
-        total_count = all_search_result_data["totalCount"]
-        print(
-            f"Info about batch search: current item number: {current_item_number}, total matched count: {total_matched_count}, total unmatched count: {total_unmatched_count}, total count: {total_count}"
-        )
-
-        if current_item_number + 1 != total_count:
-            print("Search is not finished yet")
-            if not self.check_continue_later_button() and self.check_warning_message_header():
-                #     print("clicking Continue later button")
-                #     # refresh page with js
-                # self.click_continue_search()
-                self.driver.execute_script("window.location.reload();")
-                time.sleep(10)
-                self.click_continue_search()
-            return True
-        else:
             return False
 
     def check_warning_message_header(self):
@@ -691,22 +656,54 @@ class Orbis:
     def check_search_progress_bar(self):
         """
         Checks the search progress bar to see if the search is finished.
-        :param process_name: The name of the process being performed.
         """
         if self.check_warning_message_header() and not self.check_continue_later_button():
             time.sleep(5)
             self.click_continue_search()
             time.sleep(7)
-            
+
         is_total_count_reached = self.count_total_search()
         print(f"is_total_count_reached: {is_total_count_reached}")
-        # waiting for the search to be finished
+
+        # Waiting for the search to be finished
         while is_total_count_reached:
             time.sleep(5)
             self.check_progress_text(self.count__entity_occurence)
             is_total_count_reached = self.count_total_search()
 
-        print(f"search is finished, continuing with the next step")
+        print("Search is finished, continuing with the next step")
+
+    def count_total_search(self):
+        """
+        This method counts the total number of searches performed in the batch search page.
+        This check enables us to know if the search is over or not.
+        """
+        # Get parameters from batch widget
+        batch_search_info = self.driver.find_element(By.XPATH, BATCH_WIDGET_XPATH)
+        all_search_result_data = batch_search_info.get_attribute("data-parameters")
+
+        # Convert string to dictionary
+        all_search_result_data = ast.literal_eval(all_search_result_data)
+        current_item_number = all_search_result_data["current"]
+        total_matched_count = all_search_result_data["totalMatchedCount"]
+        total_unmatched_count = all_search_result_data["totalUnMatchedCount"]
+        total_count = all_search_result_data["totalCount"]
+
+        print(
+            f"Info about batch search: current item number: {current_item_number}, "
+            f"total matched count: {total_matched_count}, total unmatched count: {total_unmatched_count}, "
+            f"total count: {total_count}"
+        )
+
+        if current_item_number + 1 != total_count:
+            print("Search is not finished yet")
+            if not self.check_continue_later_button() and self.check_warning_message_header():
+                self.driver.execute_script("window.location.reload();")
+                time.sleep(10)
+                self.click_continue_search()
+            return True
+        else:
+            return False
 
     def wait_until_data_is_processed(self, process_name=""):
         """
