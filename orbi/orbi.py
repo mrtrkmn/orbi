@@ -165,13 +165,15 @@ class Orbis:
                 self.chrome_options.add_argument("--headless=new")
 
             self.chrome_options.add_argument("--disable-dev-shm-usage")
-            self.chrome_options.add_argument("--window-size=1920,1080")
             self.chrome_options.add_argument("--disable-gpu")
             self.chrome_options.add_argument("--no-sandbox")
+            # make full screen
+            self.chrome_options.add_argument("--start-maximized")
             prefs = {"download.default_directory": self.data_dir}
             # add user agent to avoid bot detection
             self.chrome_options.add_argument(self.headers)
-            self.chrome_options.add_argument("--start-maximized")
+            # refer to https://www.selenium.dev/documentation/webdriver/browsers/chrome/
+            self.chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
             self.chrome_options.add_experimental_option("prefs", prefs)
             self.chrome_options.add_experimental_option("detach", True)
             chrome_service = ChromeService(ChromeDriverManager().install())
@@ -693,25 +695,9 @@ class Orbis:
         """
         if self.check_warning_message_header() and not self.check_continue_later_button():
             time.sleep(5)
-            # self.click_continue_search()
-            self.click_continue_search()
-            # self.driver.execute_script("document.getElementById('batchMatch').click()")
-
-        # try:
-        #     search_status = self.driver.find_element(By.XPATH, SEARCH_PROGRESS_BAR)
-        #     is_search_status_displayed = search_status.is_displayed()
-        #     print(f"is_search_status_displayed: {is_search_status_displayed}")
-        # except Exception as e:
-        #     self.driver.refresh()
-        #     time.sleep(5)
-        #     pass
-
-        if self.check_warning_message_header() and not self.check_continue_later_button():
-            print("search is not finished yet, clicking continue search button")
             self.click_continue_search()
             time.sleep(7)
-            self.check_search_progress_bar()
-
+            
         is_total_count_reached = self.count_total_search()
         print(f"is_total_count_reached: {is_total_count_reached}")
         # waiting for the search to be finished
