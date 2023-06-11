@@ -11,3 +11,4 @@ matplotlib
 unidecode
 pytz
 retrying
+fuzzywuzzy
