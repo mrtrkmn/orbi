@@ -1625,10 +1625,12 @@ class Orbis:
 
         logger.debug(f"Generating data for guo... ")
         df = self.read_xlxs_file(orig_orbis_data, sheet_name="Results")
-        df = df[["GUO - Name", "City\nLatin Alphabet", "Country", "Other company ID number"]]
+        # df = df[["GUO - Name", "City\nLatin Alphabet", "Country", "Other company ID number"]]
+        df = df[["GUO - Name"]]
         # drop rows where company name is null
         df = df[df["GUO - Name"].notna()]
-        df.to_csv(file, index=False, header=["company name", "city", "country", "identifier"], sep=";")
+        df.to_csv(file, index=False, header=["company name"], sep=";")
+        # df.to_csv(file, index=False, header=["company name", "city", "country", "identifier"], sep=";")
         logger.debug(f"Data for guo is generated... ")
 
     def generate_data_for_ish(self, orig_orbis_data, file):
@@ -1650,9 +1652,11 @@ class Orbis:
 
         logger.debug(f"Generating data for ish... ")
         df = self.read_xlxs_file(orig_orbis_data, sheet_name="Results")
-        df = df[["ISH - Name", "City\nLatin Alphabet", "Country", "Other company ID number"]]
+        # df = df[["ISH - Name", "City\nLatin Alphabet", "Country", "Other company ID number"]]
+        df = df[["ISH - Name"]]
         df = df[df["ISH - Name"].notna()]
-        df.to_csv(file, index=False, header=["company name", "city", "country", "identifier"], sep=";")
+        df.to_csv(file, index=False, header=["company name"], sep=";")
+        # df.to_csv(file, index=False, header=["company name", "city", "country", "identifier"], sep=";")
         logger.debug(f"Data for ish is generated... ")
 
     def strip_new_lines(self, df, colunm_name="Licensee"):
@@ -2080,82 +2084,82 @@ if __name__ == "__main__":
     ]
     orbis_data_licensee_file_name = f"orbis_data_licensee_{timestamp}.csv"
 
-    # check if file exists
-    if os.path.exists(path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name)):
-        print(f"Licensee file exists: {orbis_data_licensee_file_name}. Skipping to re-create it.")
-    else:
-        if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC") != "false":
-            pass
+    # # check if file exists
+    # if os.path.exists(path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name)):
+    #     print(f"Licensee file exists: {orbis_data_licensee_file_name}. Skipping to re-create it.")
+    # else:
+    #     if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC") != "false":
+    #         pass
 
-            ## ---> ****ATTENTION****: THIS PART IS DEACTIVATED AFTER SEEING THAT MERGED DATA
-            ## ---> FROM SEC.GOV ADDS NOISE TO THE DATA WHICH ONLY CONTAINS COMPANY NAME
+    #         ## ---> ****ATTENTION****: THIS PART IS DEACTIVATED AFTER SEEING THAT MERGED DATA
+    #         ## ---> FROM SEC.GOV ADDS NOISE TO THE DATA WHICH ONLY CONTAINS COMPANY NAME
 
-            # create_input_file_for_orbis_batch_search(
-            #     path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
-            #     path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
-            #     is_licensee=True,
-            # )
+    #         # create_input_file_for_orbis_batch_search(
+    #         #     path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+    #         #     path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
+    #         #     is_licensee=True,
+    #         # )
 
-        else:
-            extract_company_data_from_raw_excel(
-                path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
-                path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
-                is_licensee=True,
-            )
+    #     else:
+    #         extract_company_data_from_raw_excel(
+    #             path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+    #             path.join(environ.get("DATA_DIR"), orbis_data_licensee_file_name),
+    #             is_licensee=True,
+    #         )
 
-    orbis_data_licensor_file_name = f"orbis_data_licensor_{timestamp}.csv"
+    # orbis_data_licensor_file_name = f"orbis_data_licensor_{timestamp}.csv"
 
-    if os.path.exists(path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name)):
-        print(f"Licensor file exists: {orbis_data_licensor_file_name}. Skipping to re-create it.")
-    else:
-        # generates csv file for licensor
-        if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC") != "false":
-            pass
-            ## ---> ****ATTENTION****: THIS PART IS DEACTIVATED AFTER SEEING THAT MERGED DATA
-            ## ---> FROM SEC.GOV ADDS NOISE TO THE DATA WHICH ONLY CONTAINS COMPANY NAME
+    # if os.path.exists(path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name)):
+    #     print(f"Licensor file exists: {orbis_data_licensor_file_name}. Skipping to re-create it.")
+    # else:
+    #     # generates csv file for licensor
+    #     if environ.get("LOCAL_DEV") != "True" and environ.get("CHECK_ON_SEC") != "false":
+    #         pass
+    #         ## ---> ****ATTENTION****: THIS PART IS DEACTIVATED AFTER SEEING THAT MERGED DATA
+    #         ## ---> FROM SEC.GOV ADDS NOISE TO THE DATA WHICH ONLY CONTAINS COMPANY NAME
 
-            # create_input_file_for_orbis_batch_search(
-            #     path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
-            #     path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
-            #     is_licensee=False,
-            # )
-        else:
-            extract_company_data_from_raw_excel(
-                path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
-                path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
-                is_licensee=False,
-            )
+    #         # create_input_file_for_orbis_batch_search(
+    #         #     path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+    #         #     path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
+    #         #     is_licensee=False,
+    #         # )
+    #     else:
+    #         extract_company_data_from_raw_excel(
+    #             path.join(environ.get("DATA_DIR"), environ.get("DATA_SOURCE")),
+    #             path.join(environ.get("DATA_DIR"), orbis_data_licensor_file_name),
+    #             is_licensee=False,
+    #         )
 
-    for i in files_to_apply_batch_search:
-        send_file_to_slack(
-            path.join(environ.get("DATA_DIR"), i),
-            environ.get("SLACK_CHANNEL"),
-            f"[{timestamp_with_time}] File {i} created for batch search",
-        )
+    # for i in files_to_apply_batch_search:
+    #     send_file_to_slack(
+    #         path.join(environ.get("DATA_DIR"), i),
+    #         environ.get("SLACK_CHANNEL"),
+    #         f"[{timestamp_with_time}] File {i} created for batch search",
+    #     )
 
-    time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
+    # time.sleep(4)  # wait for 4 seconds for data to be saved in data folder
 
-    # # Step 2
-    # # --> data/data.csv needs to be uploaded to Orbis to start batch search
-    # run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file
-    # needs to come from crawl_data.py
+    # # # Step 2
+    # # # --> data/data.csv needs to be uploaded to Orbis to start batch search
+    # # run_batch_search(config_path, f"orbis_d.csv") # Todo: this csv file
+    # # needs to come from crawl_data.py
 
-    if is_parallel_execution_active.lower() == "true":
-        run_in_parallel_generic(function=run_batch_search, args=files_to_apply_batch_search)
-    else:
-        # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
-        # # # # --> after batch search is completed, data downloaded from Orbis
+    # if is_parallel_execution_active.lower() == "true":
+    #     run_in_parallel_generic(function=run_batch_search, args=files_to_apply_batch_search)
+    # else:
+    #     # run_batch_search(config_path, f"orbis_data_{timestamp}.csv") # Todo: this csv file needs to come from crawl_data.py
+    #     # # # # --> after batch search is completed, data downloaded from Orbis
 
-        for file_to_search in files_to_apply_batch_search:
-            print(f"Now searching for file {file_to_search}")
-            run_batch_search(file_to_search)
-            time.sleep(5)
-            print(f"Search is done for file {file_to_search}")
-            send_file_to_slack(
-                path.join(environ.get("DATA_DIR"), f"{path.basename(file_to_search).split('.')[0]}.xlsx"),
-                environ.get("SLACK_CHANNEL"),
-                f"[{timestamp_with_time}] File {path.basename(file_to_search).split('.')[0]}.xlsx downloaded from Orbis after batch search",
-            )
+    #     for file_to_search in files_to_apply_batch_search:
+    #         print(f"Now searching for file {file_to_search}")
+    #         run_batch_search(file_to_search)
+    #         time.sleep(5)
+    #         print(f"Search is done for file {file_to_search}")
+    #         send_file_to_slack(
+    #             path.join(environ.get("DATA_DIR"), f"{path.basename(file_to_search).split('.')[0]}.xlsx"),
+    #             environ.get("SLACK_CHANNEL"),
+    #             f"[{timestamp_with_time}] File {path.basename(file_to_search).split('.')[0]}.xlsx downloaded from Orbis after batch search",
+    #         )
 
     # # # # Step 3
     # # # # --> generate_data_for_guo to generate data by considering GUO of companies
