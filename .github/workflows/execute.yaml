@@ -211,11 +211,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
-          path: |
-            ${{ env.DATA_DIR }}
-            !'${{ env.DATA_DIR }}sample_data.xlsx' 
-            !'${{ env.DATA_DIR }}sample_data_big.xlsx' 
-            !'${{ env.DATA_DIR }}sample_data_big_v2.xlsx'
+          path: ${{ env.DATA_DIR }}sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
           retention-days: ${{ env.RETENTION_PERIOD }}
         continue-on-error: true
         env:
@@ -431,23 +427,40 @@ jobs:
         run: |
           echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
 
-      - name: Download data from artifact
+      - name: Download orbis data from artifact
         uses: actions/download-artifact@v2
         with:
           name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
           path: ${{ env.DATA_DIR }}
           retention-days: ${{ env.RETENTION_PERIOD }}
         continue-on-error: true
+        env:
+          DATA_DIR: /home/runner/work/orbi/orbi/data/
+
+      - name: Download SEC API data from artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
+          path: ${{ env.DATA_DIR }}
+          retention-days: ${{ env.RETENTION_PERIOD }}
+        continue-on-error: true
+        env:
+          DATA_DIR: /home/runner/work/orbi/orbi/data/
 
       - name: Unzip data
         run: |
           unzip -o orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
+          unzip -o sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
         continue-on-error: true
+        env:
+          DATA_DIR: /home/runner/work/orbi/orbi/data/
 
       - name: Aggregate data
         run: |
           python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}/orbis_data_licensee_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}/company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensee.csv" --merged_output_file "${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx"
           python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}/orbis_data_licensor_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}/company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensor.csv" --merged_output_file "${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx"
+        env:
+          DATA_DIR: /home/runner/work/orbi/orbi/data/
 
       - name: Send data to slack channel
         # If input notify is true, send the data to slack channel
@@ -456,3 +469,5 @@ jobs:
           python utils/send_to_slack.py --file_path "${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx" --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx is attached.'
           python utils/send_to_slack.py --file_path "${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx" --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx is attached.'
         continue-on-error: true
+        env:
+          DATA_DIR: /home/runner/work/orbi/orbi/data/
