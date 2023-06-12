@@ -168,7 +168,7 @@ class Orbis:
             self.chrome_options.add_argument("--disable-gpu")
             self.chrome_options.add_argument("--no-sandbox")
             # make full screen
-            self.chrome_options.add_argument("--start-maximized")
+            # self.chrome_options.add_argument("--start-maximized")
             prefs = {"download.default_directory": self.data_dir}
             # add user agent to avoid bot detection
             self.chrome_options.add_argument(self.headers)
@@ -179,6 +179,8 @@ class Orbis:
             chrome_service = ChromeService(ChromeDriverManager().install())
 
             self.driver = webdriver.Chrome(service=chrome_service, options=self.chrome_options)
+            self.driver.set_window_size(1920, 1080, self.driver.window_handles[0])
+
             logger.debug("Chrome driver started")
             # self.slack_client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
             time.sleep(1)
