@@ -61,8 +61,8 @@ env:
   # Directories to store data and logs in Github Actions runner.
   # Following variables are used in self-hosted Github instance. 
   # Refer to self-hosted Github instances, https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners
-  DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
-  LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
+  # DATA_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/data/
+  # LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
   
@@ -76,8 +76,8 @@ env:
   # Uncomment the lines inside the block below if you are using Github instances.
 
   #-------------------------------------------------------
-  #  DATA_DIR: /home/runner/work/orbi/orbi/data/
-  #  LOG_DIR: /home/runner/work/orbi/orbi/logs/    
+   DATA_DIR: /home/runner/work/orbi/orbi/data/
+   LOG_DIR: /home/runner/work/orbi/orbi/logs/
   #-------------------------------------------------------
   
   # This part is used to upload the result to AWS S3 bucket.
@@ -225,7 +225,7 @@ jobs:
    # Main reasoning behind this to avoid time limitations of Github hosted runners.
    # Refer to https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration for more information.
    # This job is running after search_on_sec_gov job is completed.
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     # needs: search_on_sec_gov
     steps:
       - uses: actions/checkout@v3
