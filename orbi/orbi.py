@@ -633,8 +633,8 @@ class Orbis:
         """
 
         try:
-            self.driver.find_element(By.XPATH, CONTINUE_LATER_BUTTON)
-            return True
+            continue_later_button = self.driver.find_element(By.XPATH, CONTINUE_LATER_BUTTON)
+            return continue_later_button.is_displayed() and continue_later_button.is_enabled()
         except Exception as e:
             print(f"Exception on finding continue later button {e}")
             return False
