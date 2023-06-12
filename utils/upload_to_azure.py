@@ -25,8 +25,14 @@ sys.path.append(root_path)
 
 ACCOUNT_NAME = os.environ.get("ACCOUNT_NAME")
 ACCOUNT_KEY = os.environ.get("ACCOUNT_KEY")
-RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS"))
+RETENTION_DAYS = os.environ.get("RETENTION_DAYS")
 SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL")
+
+# This is for pdoc documentation
+if not RETENTION_DAYS:
+    RETENTION_DAYS = 30
+
+RETENTION_DAYS = int(RETENTION_DAYS)
 
 
 def upload_dir_content_to_azure(dir_path, blob_service_client: BlobServiceClient, container_name):
