@@ -9,6 +9,9 @@ from argparse import ArgumentParser
 import pandas as pd
 from fuzzywuzzy import fuzz
 
+root_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(root_path)
+
 
 def parse_data_based_on_licensee_aggrement_data(excel_path_file):
     """

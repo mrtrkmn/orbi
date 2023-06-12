@@ -59,5 +59,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.file_path is None or args.file_path == "":
         send_message_to_slack(args.message, args.slack_channel)
-    else: 
+    else:
         send_file_to_slack(args.file_path, args.slack_channel, args.message)
