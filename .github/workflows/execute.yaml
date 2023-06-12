@@ -57,7 +57,7 @@ env:
   ORBIS_ACCESS_URL: ${{ secrets.ORBIS_ACCESS_URL }}
   ORBIS_BATCH_SEARCH_URL: ${{ secrets.ORBIS_BATCH_SEARCH_URL }}
   ORBIS_LOGOUT_URL: ${{ secrets.ORBIS_LOGOUT_URL }}
-  
+
   # Directories to store data and logs in Github Actions runner.
   # Following variables are used in self-hosted Github instance. 
   # Refer to self-hosted Github instances, https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners
@@ -65,10 +65,10 @@ env:
   # LOG_DIR: /home/thinkpad/Desktop/github-self-hosted/actions-runner/_study/orbi/orbi/logs/
   LOCAL_DEV: False
   DEFAULT_DATA_SOURCE: sample_data.xlsx
-  
+
   # Try to run the program 3 times if it fails
   MAX_RUN_ATTEMPTS: 1
-  
+
   # If it is unable to fetch all data in 4 hours, the crawler will face with timeout
   RUN_TIMEOUT_IN_MN: 360
   # Following DATA_DIR, LOG_DIR variables are used when using Github instances. 
@@ -79,11 +79,11 @@ env:
   DATA_DIR: /home/runner/work/orbi/orbi/data/
   LOG_DIR: /home/runner/work/orbi/orbi/logs/
   #-------------------------------------------------------
-  
+
   # This part is used to upload the result to AWS S3 bucket.
   # Enable following variables if you want to upload the result to AWS S3 bucket.
   # For setting secrets in Github Actions, please refer to https://docs.github.com/en/actions/reference/encrypted-secrets
-  
+
   #-------------------------------------------------------
   # AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }} 
   # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} 
