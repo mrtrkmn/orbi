@@ -345,7 +345,7 @@ class Orbis:
 
         while True:
             try:
-                WebDriverWait(self.driver, 5 * 60).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+                WebDriverWait(self.driver, 10 * 60).until(EC.element_to_be_clickable((By.XPATH, xpath)))
                 break  # Element found and clickable, exit the loop
             except Exception as e:
                 print("TimeoutException occurred in wait_until_clickable, logging out from sessions")
