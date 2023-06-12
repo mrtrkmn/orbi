@@ -41,7 +41,7 @@ jobs:
       - name: Generate docs 
         # Generate the documentation
         run: |
-          pdoc orbi/ '!orbi.variables' -o docs
+          pdoc orbi/ '!orbi.variables' utils/ -o docs
 
       - uses: actions/upload-pages-artifact@v1
         with:
