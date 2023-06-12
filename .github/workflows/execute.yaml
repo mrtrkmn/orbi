@@ -76,8 +76,8 @@ env:
   # Uncomment the lines inside the block below if you are using Github instances.
 
   #-------------------------------------------------------
-   DATA_DIR: /home/runner/work/orbi/orbi/data/
-   LOG_DIR: /home/runner/work/orbi/orbi/logs/
+  DATA_DIR: /home/runner/work/orbi/orbi/data/
+  LOG_DIR: /home/runner/work/orbi/orbi/logs/
   #-------------------------------------------------------
   
   # This part is used to upload the result to AWS S3 bucket.
