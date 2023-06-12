@@ -36,6 +36,13 @@ RETENTION_DAYS = int(RETENTION_DAYS)
 
 
 def upload_dir_content_to_azure(dir_path, blob_service_client: BlobServiceClient, container_name):
+    """
+    Uploads all files in given directory to Azure Blob Storage
+    :param dir_path: Directory path to upload
+    :param blob_service_client: BlobServiceClient object
+    :param container_name: Container name to upload
+    :return: None
+    """
     container_client = blob_service_client.get_container_client(container_name)
     # check suffix of file if it is .log then split it with '_' and take first part of it
     for file in os.listdir(dir_path):
@@ -51,6 +58,15 @@ def upload_dir_content_to_azure(dir_path, blob_service_client: BlobServiceClient
 
 
 def upload_blob_file(file_path, blob_service_client: BlobServiceClient, container_name, blob_name):
+    """
+    Uploads given file to Azure Blob Storage
+    :param file_path: File path to upload
+    :param blob_service_client: BlobServiceClient object
+    :param container_name: Container name to upload
+    :param blob_name: Blob name to upload
+    :return: None
+    """
+
     container_client = blob_service_client.get_container_client(container_name)
     container_client = blob_service_client.get_container_client(container=container_name)
     with open(file=file_path, mode="rb") as data:
@@ -58,6 +74,13 @@ def upload_blob_file(file_path, blob_service_client: BlobServiceClient, containe
 
 
 def create_container(blob_service_client: BlobServiceClient, container_name):
+    """
+    Creates container on Azure Blob Storage
+    :param blob_service_client: BlobServiceClient object
+    :param container_name: Container name to create
+    :return: None
+    """
+
     container_client = blob_service_client.get_container_client(container_name)
     # set container to public acces
     if not container_client.exists():
@@ -76,6 +99,13 @@ def create_container(blob_service_client: BlobServiceClient, container_name):
 
 
 def get_public_access_url(blob_service_client: BlobServiceClient, container_name):
+    """
+    Returns public access url of given container
+    :param blob_service_client: BlobServiceClient object
+    :param container_name: Container name to get public access url
+    :return: Public access url of given container
+    """
+    
     container_client = blob_service_client.get_container_client(container_name)
     return container_client.url
 
