@@ -166,7 +166,7 @@ jobs:
       
         # Zipping crawled data 
       - name: ZIP JSON and CSV files
-        run: "zip -j -r ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip ${{ env.DATA_DIR }} -x '*.xlsx' \n"
+        run: "zip -j -r ${{ env.DATA_DIR }}sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip ${{ env.DATA_DIR }} -x '*.xlsx' \n"
         env:
           DATA_DIR: /home/runner/work/orbi/orbi/data/
       
@@ -211,7 +211,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
-          path: ${{ env.DATA_DIR }}sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
+          path: ${{ env.DATA_DIR }}sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
           retention-days: ${{ env.RETENTION_PERIOD }}
         continue-on-error: true
         env:
