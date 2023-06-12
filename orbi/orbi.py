@@ -258,6 +258,7 @@ class Orbis:
             while retry_count < 10 and response.text == "This page isn’t working":
                 self.driver.refresh()
                 time.sleep(5)
+                response = self.driver.find_element(By.XPATH, ERROR_MESSAGE)
                 retry_count += 1
 
             print(f"Unfortunately, Logging to Orbis website is not successfull !\nERROR MESSAGE: {response.text}")
