@@ -580,8 +580,7 @@ class Orbis:
             else:
                 d[progress_text.text] = 1
         except Exception as e:
-            print(f"Exception on progress text ")
-
+            print(f"Exception on adding progress_text to the dictionary. Exception : {e}")
     def check_progress_text(self, d):
         """
         Checks the progress text in the batch search page and refreshes the page if the search is stuck.
