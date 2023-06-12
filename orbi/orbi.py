@@ -649,7 +649,7 @@ class Orbis:
 
         try:
             warning_message_info = self.driver.find_element(By.XPATH, WARNING_MESSAGE_HEADER)
-            is_search_going_on = warning_message_info.is_displayed()
+            is_search_going_on = warning_message_info.is_displayed() and warning_message_info.is_enabled()
             return is_search_going_on
         except Exception as e:
             print(f"Exception on finding warning message header {e}")
