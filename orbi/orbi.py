@@ -334,15 +334,36 @@ class Orbis:
             "document.getElementsByClassName('hierarchy-container')[0].scrollTo(0, document.getElementsByClassName('hierarchy-container')[0].scrollHeight)"
         )
 
+
+    def wait_until_visible(self, xpath):
+        """
+        Waits until an element located by the given XPath is visible.
+        :param xpath (str): The XPath of the element to wait for.
+        :raises TimeoutException: If the element is not visible after 30 minutes.
+        """
+        number_of_calls = 0
+
+        while True:
+            try:
+                WebDriverWait(self.driver, 5 * 60).until(EC.visibility_of_element_located((By.XPATH, xpath)))
+                break  # Element found and clickable, exit the loop
+            except Exception as e:
+                print(f"TimeoutException occurred in wait_until_visible {e}")
+                self.driver.refresh()
+                time.sleep(7)
+                number_of_calls += 1
+                if number_of_calls > 10:
+                    print("Maximum number of calls reached in wait_until_visible function, logging out from sessions")
+                    self.logout()
+
+
+
     def wait_until_clickable(self, xpath):
         """
-        Waits until an element located by the given XPath is clickable.
-
-        Raises a TimeoutException if the element is not clickable after 30 minutes.
+        Waits until an element located by the given XPath is clickable for 10 minutes max.
 
         :param xpath (str): The XPath of the element to wait for.
 
-        :raises TimeoutException: If the element is not clickable after 30 minutes.
         """
         number_of_calls = 0
 
@@ -580,7 +601,9 @@ class Orbis:
             else:
                 d[progress_text.text] = 1
         except Exception as e:
-            print(f"Exception on adding progress_text to the dictionary. Exception : {e}")
+            print(f"Exception on adding progress_text to the dictionary. Exception : {e}")\
+            
+
     def check_progress_text(self, d):
         """
         Checks the progress text in the batch search page and refreshes the page if the search is stuck.
@@ -590,11 +613,13 @@ class Orbis:
         """
 
         try:
+            self.wait_until_visible(PROGRESS_TEXT_XPATH)
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
+
         except Exception as e:
             print(f"Exception on finding progress text: {e}")
             self.click_continue_search()
-            time.sleep(5)
+            self.wait_until_visible(PROGRESS_TEXT_XPATH)
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
             self.check_search_progress_bar()
 
@@ -603,8 +628,8 @@ class Orbis:
                 self.click_continue_search()
         except Exception as e:
             print(f"Exception on progress_text check")
-            self.driver.refresh()
-            time.sleep(7)
+            self.click_continue_search()
+            self.wait_until_visible(PROGRESS_TEXT_XPATH)
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
 
         self.add_to_dict(d, progress_text)
