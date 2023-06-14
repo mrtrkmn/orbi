@@ -565,7 +565,7 @@ class Orbis:
 
         CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
 
-        try:
+        try:            
             if not self.count_total_search():
                 print("Clicking continue search button")
                 continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
@@ -611,6 +611,7 @@ class Orbis:
 
         :param d: A dictionary to keep count of the progress text.
         """
+        self.click_continue_search()
 
         try:
             self.wait_until_visible(PROGRESS_TEXT_XPATH)
@@ -694,7 +695,7 @@ class Orbis:
 
         # Waiting for the search to be finished
         while is_total_count_reached:
-            time.sleep(5)
+            time.sleep(10)
             self.check_progress_text(self.count__entity_occurence)
             is_total_count_reached = self.count_total_search()
 
