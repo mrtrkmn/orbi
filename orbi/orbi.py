@@ -334,30 +334,6 @@ class Orbis:
             "document.getElementsByClassName('hierarchy-container')[0].scrollTo(0, document.getElementsByClassName('hierarchy-container')[0].scrollHeight)"
         )
 
-
-    # def wait_until_visible(self, xpath):
-    #     """
-    #     Waits until an element located by the given XPath is visible.
-    #     :param xpath (str): The XPath of the element to wait for.
-    #     :raises TimeoutException: If the element is not visible after 30 minutes.
-    #     """
-    #     number_of_calls = 0
-
-    #     while True:
-    #         try:
-    #             WebDriverWait(self.driver, 5 * 60).until(EC.visibility_of_element_located((By.XPATH, xpath)))
-    #             break  # Element found and clickable, exit the loop
-    #         except Exception as e:
-    #             print(f"TimeoutException occurred in wait_until_visible {e}")
-    #             self.driver.refresh()
-    #             time.sleep(7)
-    #             number_of_calls += 1
-    #             if number_of_calls > 10:
-    #                 print("Maximum number of calls reached in wait_until_visible function, logging out from sessions")
-    #                 self.logout()
-
-
-
     def wait_until_clickable(self, xpath):
         """
         Waits until an element located by the given XPath is clickable for 10 minutes max.
@@ -565,18 +541,16 @@ class Orbis:
 
         CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
 
-        try:            
-            if not self.count_total_search():
-                print("Clicking continue search button")
-                continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
-                action = ActionChains(self.driver)
-                action.click(on_element=continue_search_button).perform()
-                time.sleep(2)
-            else:
-                print("Batch search is finished count_total_search is true")
+        try:
+            print("Clicking continue search button")
+            continue_search_button = self.driver.find_element(By.XPATH, CONTINUE_SEARCH_BUTTON)
+            action = ActionChains(self.driver)
+            action.click(on_element=continue_search_button).perform()
+            print("Clicked continue search button")
+            time.sleep(2)
         except Exception as e:
             print(f"Exception on clicking continue search button, seems search is finished")
-        
+
     def refresh_page_at_stuck(self):
         """
         Refreshes the page if the search is stuck, by Javascript method.
@@ -601,8 +575,7 @@ class Orbis:
             else:
                 d[progress_text.text] = 1
         except Exception as e:
-            print(f"Exception on adding progress_text to the dictionary. Exception : {e}")\
-            
+            print(f"Exception on adding progress_text to the dictionary. Exception : {e}")
 
     def check_progress_text(self, d):
         """
@@ -626,7 +599,7 @@ class Orbis:
         except Exception as e:
             print(f"Exception on progress_text check")
             self.click_continue_search()
-        
+
         try:
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
             self.add_to_dict(d, progress_text)
@@ -642,18 +615,10 @@ class Orbis:
         except Exception as e:
             print(f"Exception on progress text check")
 
-
         try:
             print(f"Message: {progress_text.text}")
         except Exception as e:
             print("Exception on printing progress text: progress text does not include text")
-        # try:
-        #     print(f"Message: {progress_text.text}")
-        #     if len(str(progress_text.text).strip()) < 2 and self.count_total_search():
-        #         self.driver.refresh()
-        #         time.sleep(7)
-        # except Exception as e:
-        #     print("Exception on printing progress text: progress text does not include text")
 
     def check_continue_later_button(self):
         """
@@ -679,8 +644,8 @@ class Orbis:
         """
 
         try:
-            self.driver.find_element(By.XPATH, WARNING_MESSAGE_HEADER)
-            # is_search_going_on = warning_message_info.is_displayed() and warning_message_info.is_enabled()
+            warning_message_info = self.driver.find_element(By.XPATH, WARNING_MESSAGE_HEADER)
+            is_search_going_on = warning_message_info.is_displayed()
             return True
         except Exception as e:
             print(f"Exception on finding warning message header {e}")
@@ -690,7 +655,7 @@ class Orbis:
         """
         Checks the search progress bar to see if the search is finished.
         """
-        if self.check_warning_message_header() and not self.check_continue_later_button():
+        if self.check_warning_message_header() or not self.check_continue_later_button():
             time.sleep(5)
             self.click_continue_search()
             time.sleep(7)
@@ -700,7 +665,7 @@ class Orbis:
 
         # Waiting for the search to be finished
         while is_total_count_reached:
-            time.sleep(10)
+            time.sleep(20)
             self.check_progress_text(self.count__entity_occurence)
             is_total_count_reached = self.count_total_search()
 
@@ -727,16 +692,8 @@ class Orbis:
             f"total matched count: {total_matched_count}, total unmatched count: {total_unmatched_count}, "
             f"total count: {total_count}"
         )
-
-        if current_item_number + 1 != total_count:
-            print("Search is not finished yet")
-            if not self.check_continue_later_button() and self.check_warning_message_header():
-                # self.driver.execute_script("window.location.reload();")
-                time.sleep(10)
-                self.click_continue_search()
-            return True
-        else:
-            return False
+        self.click_continue_search()
+        return current_item_number + 1 != total_count
 
     def wait_until_data_is_processed(self, process_name=""):
         """
@@ -1535,8 +1492,10 @@ class Orbis:
                     f"Not found companies for input file: {input_file}",
                 )
         except Exception as e:
-            print(e)
+            print("Exception on sending file to slack: ", e)
+
         # when search is finished, click on the search results button
+
         if not self.count_total_search():
             self.view_search_results()
         else:
