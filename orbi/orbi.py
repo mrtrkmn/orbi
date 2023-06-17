@@ -335,26 +335,26 @@ class Orbis:
         )
 
 
-    def wait_until_visible(self, xpath):
-        """
-        Waits until an element located by the given XPath is visible.
-        :param xpath (str): The XPath of the element to wait for.
-        :raises TimeoutException: If the element is not visible after 30 minutes.
-        """
-        number_of_calls = 0
+    # def wait_until_visible(self, xpath):
+    #     """
+    #     Waits until an element located by the given XPath is visible.
+    #     :param xpath (str): The XPath of the element to wait for.
+    #     :raises TimeoutException: If the element is not visible after 30 minutes.
+    #     """
+    #     number_of_calls = 0
 
-        while True:
-            try:
-                WebDriverWait(self.driver, 5 * 60).until(EC.visibility_of_element_located((By.XPATH, xpath)))
-                break  # Element found and clickable, exit the loop
-            except Exception as e:
-                print(f"TimeoutException occurred in wait_until_visible {e}")
-                self.driver.refresh()
-                time.sleep(7)
-                number_of_calls += 1
-                if number_of_calls > 10:
-                    print("Maximum number of calls reached in wait_until_visible function, logging out from sessions")
-                    self.logout()
+    #     while True:
+    #         try:
+    #             WebDriverWait(self.driver, 5 * 60).until(EC.visibility_of_element_located((By.XPATH, xpath)))
+    #             break  # Element found and clickable, exit the loop
+    #         except Exception as e:
+    #             print(f"TimeoutException occurred in wait_until_visible {e}")
+    #             self.driver.refresh()
+    #             time.sleep(7)
+    #             number_of_calls += 1
+    #             if number_of_calls > 10:
+    #                 print("Maximum number of calls reached in wait_until_visible function, logging out from sessions")
+    #                 self.logout()
 
 
 
@@ -573,10 +573,10 @@ class Orbis:
                 action.click(on_element=continue_search_button).perform()
                 time.sleep(2)
             else:
-                pass
+                print("Batch search is finished count_total_search is true")
         except Exception as e:
-            print(f"Exception on clicking continue search {e}")
-
+            print(f"Exception on clicking continue search button, seems search is finished")
+        
     def refresh_page_at_stuck(self):
         """
         Refreshes the page if the search is stuck, by Javascript method.
@@ -611,16 +611,12 @@ class Orbis:
 
         :param d: A dictionary to keep count of the progress text.
         """
-        self.click_continue_search()
-
         try:
-            self.wait_until_visible(PROGRESS_TEXT_XPATH)
+            # self.wait_until_visible(PROGRESS_TEXT_XPATH)
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
-
         except Exception as e:
             print(f"Exception on finding progress text: {e}")
             self.click_continue_search()
-            self.wait_until_visible(PROGRESS_TEXT_XPATH)
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
             self.check_search_progress_bar()
 
@@ -630,39 +626,48 @@ class Orbis:
         except Exception as e:
             print(f"Exception on progress_text check")
             self.click_continue_search()
-            self.wait_until_visible(PROGRESS_TEXT_XPATH)
+        
+        try:
             progress_text = self.driver.find_element(By.XPATH, PROGRESS_TEXT_XPATH)
-
-        self.add_to_dict(d, progress_text)
+            self.add_to_dict(d, progress_text)
+        except Exception as e:
+            print(f"Exception on adding progress_text to the dictionary. Exception : {e}")
 
         try:
             if d[progress_text.text] > 10:
                 self.click_continue_search()
-                time.sleep(10)
+                time.sleep(5)
                 self.add_to_dict(d, progress_text)
                 self.check_search_progress_bar()
         except Exception as e:
             print(f"Exception on progress text check")
 
+
         try:
             print(f"Message: {progress_text.text}")
-            if len(str(progress_text.text).strip()) < 2 and self.count_total_search():
-                self.driver.refresh()
-                time.sleep(7)
         except Exception as e:
             print("Exception on printing progress text: progress text does not include text")
+        # try:
+        #     print(f"Message: {progress_text.text}")
+        #     if len(str(progress_text.text).strip()) < 2 and self.count_total_search():
+        #         self.driver.refresh()
+        #         time.sleep(7)
+        # except Exception as e:
+        #     print("Exception on printing progress text: progress text does not include text")
 
     def check_continue_later_button(self):
         """
         Checks if the continue later button is present in the batch search page.
         If the pop up window is not present, then this method returns False.
         """
-
+        PROCESSING_POP_UP_WINDOW = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]"
         try:
-            continue_later_button = self.driver.find_element(By.XPATH, CONTINUE_LATER_BUTTON)
-            return continue_later_button.is_displayed() and continue_later_button.is_enabled()
+            # continue_later_button = self.driver.find_element(By.XPATH, CONTINUE_LATER_BUTTON)
+            processing_pop_up_window = self.driver.find_element(By.XPATH, PROCESSING_POP_UP_WINDOW)
+            return processing_pop_up_window.is_displayed()
+            # return continue_later_button.is_displayed()
         except Exception as e:
-            print(f"Exception on finding continue later button {e}")
+            print(f"Exception on finding processing div ")
             return False
 
     def check_warning_message_header(self):
@@ -674,9 +679,9 @@ class Orbis:
         """
 
         try:
-            warning_message_info = self.driver.find_element(By.XPATH, WARNING_MESSAGE_HEADER)
-            is_search_going_on = warning_message_info.is_displayed() and warning_message_info.is_enabled()
-            return is_search_going_on
+            self.driver.find_element(By.XPATH, WARNING_MESSAGE_HEADER)
+            # is_search_going_on = warning_message_info.is_displayed() and warning_message_info.is_enabled()
+            return True
         except Exception as e:
             print(f"Exception on finding warning message header {e}")
             return False
@@ -726,7 +731,7 @@ class Orbis:
         if current_item_number + 1 != total_count:
             print("Search is not finished yet")
             if not self.check_continue_later_button() and self.check_warning_message_header():
-                self.driver.execute_script("window.location.reload();")
+                # self.driver.execute_script("window.location.reload();")
                 time.sleep(10)
                 self.click_continue_search()
             return True
