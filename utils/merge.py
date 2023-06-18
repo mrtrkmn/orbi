@@ -11,6 +11,9 @@ from fuzzywuzzy import fuzz
 
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
+sys.path.append("orbi")
+
+from variables import SEC_DATA_HEADERS
 
 
 def parse_data_based_on_licensee_aggrement_data(excel_path_file):
@@ -124,6 +127,44 @@ def write_to_excel(df, file_name, sheet_name="ORBIS-SEC-MERGED"):
     df.to_excel(file_name, index=False, sheet_name=sheet_name)
 
 
+def aggregate_orbis_sec_data(orbis_data_file_path, sec_data_file_path):
+    """
+    Aggregates orbis and sec data
+    :param orbis_data_file_path: path to orbis data file
+    :param sec_data_file_path: path to sec data file
+    """
+
+    if not os.path.exists(orbis_data_file_path):
+        raise Exception(f"Orbis output file does not exist at {orbis_data_file_path}")
+
+    if not os.path.exists(sec_data_file_path):
+        raise Exception(f"SEC output file does not exist at {sec_data_file_path}")
+
+    orbis_data = pd.read_excel(orbis_output_file, sheet_name="Results")
+
+    # in case one column has multiple values, remove the values after the dot
+    columns_to_delete = orbis_data.filter(regex="\.\d+$").columns
+    orbis_data = orbis_data.drop(columns=columns_to_delete)
+    orbis_data["Company name Latin alphabet"] = orbis_data["Company name Latin alphabet"].str.upper()
+    orbis_data.dropna(subset=["Company name Latin alphabet"], inplace=True)
+
+    sec_data = pd.read_csv(sec_output_file, delimiter=";", usecols=SEC_DATA_HEADERS)
+    # change column name to match with orbis data
+    sec_data.rename(columns={"companyName": "Company name Latin alphabet"}, inplace=True)
+    # make all company names uppercase
+    sec_data["Company name Latin alphabet"] = sec_data["Company name Latin alphabet"].str.upper()
+    # remove /DE from company name
+    sec_data["Company name Latin alphabet"] = sec_data["Company name Latin alphabet"].str.replace("/DE", "")
+    # remove /NEW/ from company name
+    sec_data["Company name Latin alphabet"] = sec_data["Company name Latin alphabet"].str.replace("/NEW/", "")
+
+    merged_df = merge_dataframes_on(orbis_data, sec_data, "Company name Latin alphabet")
+    # write to excel
+    write_to_excel(merged_df, merged_output_file)
+    # add sec data as another sheet to the excel file
+    add_df_as_another_sheet(sec_data, merged_output_file, "SEC-API-DATA")
+
+
 # create main function init
 if __name__ == "__main__":
     parser = ArgumentParser(
@@ -141,27 +182,4 @@ if __name__ == "__main__":
     sec_output_file = args.sec_output_file
     merged_output_file = args.merged_output_file
 
-    if not os.path.exists(orbis_output_file):
-        raise Exception(f"Orbis output file does not exist at {orbis_output_file}")
-
-    if not os.path.exists(sec_output_file):
-        raise Exception(f"SEC output file does not exist at {sec_output_file}")
-
-    orbis_data = pd.read_excel(orbis_output_file, sheet_name="Results")
-    sec_data = pd.read_csv(sec_output_file, delimiter=";", on_bad_lines="skip")
-
-    # change column name to match with orbis data
-    sec_data.rename(columns={"companyName": "Company name Latin alphabet"}, inplace=True)
-    # make all company names uppercase
-    sec_data["Company name Latin alphabet"] = sec_data["Company name Latin alphabet"].str.upper()
-    # remove /DE from company name
-    sec_data["Company name Latin alphabet"] = sec_data["Company name Latin alphabet"].str.replace("/DE", "")
-    # remove /NEW/ from company name
-    sec_data["Company name Latin alphabet"] = sec_data["Company name Latin alphabet"].str.replace("/NEW/", "")
-
-    # merge dataframes on company name
-    merged_df = merge_dataframes_on(orbis_data, sec_data, "Company name Latin alphabet")
-    # write to excel
-    write_to_excel(merged_df, merged_output_file)
-    # add sec data as another sheet to the excel file
-    add_df_as_another_sheet(sec_data, merged_output_file, "SEC-API-DATA")
+    aggregate_orbis_sec_data(orbis_output_file, sec_output_file)
