@@ -1900,12 +1900,13 @@ def post_process_data(excel_file):
     df = df[df["Orbis ID number"].notna()]
     # drop Unnamed: 0 column and duplicate columns
     df = df.drop(columns=["Unnamed: 0"])
-
+    columns_to_delete = df.filter(regex="\.\d+$").columns
+    df = df.drop(columns=columns_to_delete)
     # remove duplicate columns however keep first occurance
     df = df.loc[:, ~df.columns.duplicated()]
 
     # fix lentgth uniquie identifier
-    df["Unique identifier"] = df["Orbis ID number"].apply(lambda x: generate_unique_id(str(x), 10))
+    # df["Unique identifier"] = df["Orbis ID number"].apply(lambda x: generate_unique_id(str(x), 10))
     df.to_excel(excel_file)
     logger.debug(f"post process data for {excel_file} completed")
 
@@ -2223,42 +2224,3 @@ if __name__ == "__main__":
                 environ.get("SLACK_CHANNEL"),
                 f"[{timestamp_with_time}] File {path.basename(ish_input_file).split('.')[0]}.xlsx is downloaded from batch search",
             )
-
-    # # # # # # Step 5
-    time.sleep(2)  # wait for 2 seconds for data to be saved in data folder
-
-    try:
-        aggregate_data(f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx")
-    except FileNotFoundError as fne:
-        print(f"File not found in aggregating the data: excp: {fne}. Please make sure it exists !")
-        sys.exit(0)
-    try:
-        aggregate_data(f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx")
-    except FileNotFoundError as fne:
-        print(f"File could not be found to aggregate please make sure it exists !")
-        sys.exit(0)
-
-    # run_in_parallel_generic(
-    #     function=aggregate_data,
-    #     args=[
-    #         (f"orbis_data_licensee_{timestamp}.xlsx", f"orbis_aggregated_data_licensee_{timestamp}.xlsx"),
-    #         (f"orbis_data_licensor_{timestamp}.xlsx", f"orbis_aggregated_data_licensor_{timestamp}.xlsx"),
-    #     ],
-    # )
-
-    # run_in_parallel_generic(
-    #     function=post_process_data,
-    #     args=[
-    #         f"orbis_aggregated_data_{timestamp}.xlsx",
-    #         f"orbis_aggregated_data_licensee_{timestamp}.xlsx",
-    #         f"orbis_aggregated_data_licensor_{timestamp}.xlsx",
-    #         f"orbis_aggregated_data_{timestamp}_guo.xlsx",
-    #         f"orbis_data_guo_{timestamp}.xlsx",
-    #         f"orbis_data_licensee_{timestamp}_ish.xlsx",
-    #         f"orbis_data_licensor_{timestamp}_ish.xlsx",
-    #         f"orbis_data_licensee_{timestamp}.xlsx",
-    #         f"orbis_data_licensee_{timestamp}_guo.xlsx",
-    #         f"orbis_data_licensor_{timestamp}.xlsx",
-    #         f"orbis_data_licensor_{timestamp}_guo.xlsx",
-    #     ],
-    # )
