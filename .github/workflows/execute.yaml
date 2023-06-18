@@ -463,6 +463,19 @@ jobs:
         env:
           DATA_DIR: /home/runner/work/orbi/orbi/data/
 
+      - name: Zip merged files 
+        run: |
+          zip -r merged_data_${{ steps.get-timestamp.outputs.timestamp }}.zip ${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx ${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx
+        continue-on-error: true
+
+      - name: Upload merged files to artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: merged-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
+          path: merged_data_${{ steps.get-timestamp.outputs.timestamp }}.zip
+          retention-days: ${{ env.RETENTION_PERIOD }}
+        continue-on-error: true
+
       - name: Send data to slack channel
         # If input notify is true, send the data to slack channel
         if: ${{ success() && github.event.inputs.notify == 'true' }}
