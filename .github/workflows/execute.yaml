@@ -118,7 +118,7 @@ jobs:
   search_on_sec_gov:
     # This job is used to fetch data from SEC API using crawl.py file in the repository.
     # Running on Github hosted environment.
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
@@ -153,30 +153,26 @@ jobs:
       - name: (LICENSEE) Crawl data from SEC.GOV
         run: |
           python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --licensee
-        env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
+
         
         # Crawling data from SEC API using crawl.py file in the repository.
         # Crawling data for licensor
       - name: (LICENSOR) Crawl data from SEC.GOV
         run: |
           python orbi/crawl.py --source_file ${{ env.DATA_DIR }}${{ steps.get-file-name.outputs.file_name }} --no-licensee
-        env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
+
       
         # Zipping crawled data 
       - name: ZIP JSON and CSV files
         run: "zip -j -r ${{ env.DATA_DIR }}sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip ${{ env.DATA_DIR }} -x '*.xlsx' \n"
-        env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
+
       
         # Send crawled data to Slack channel
 
       - name: Send LICENSEE/LICENSOR files to Slack
         run: |
           python utils/send_to_slack.py --file_path ${{ env.DATA_DIR }}/sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip --slack_channel orbis-data --message "LICENSEE/LICENSOR files are created from SEC API"
-        env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
+
         continue-on-error: true # in case of error, continue to next step
         
         
@@ -214,8 +210,7 @@ jobs:
           path: ${{ env.DATA_DIR }}sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
           retention-days: ${{ env.RETENTION_PERIOD }}
         continue-on-error: true
-        env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
+
   
   
   # -----------------------RUN ON ORBIS JOB-------------------------------------------
@@ -406,7 +401,7 @@ jobs:
   # -----------------------AGGREGATE DATA JOB-------------------------------------------
   aggregate_data:
     needs: [search_on_sec_gov, search_on_orbis]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
@@ -434,8 +429,6 @@ jobs:
           path: ${{ env.DATA_DIR }}
           retention-days: ${{ env.RETENTION_PERIOD }}
         continue-on-error: true
-        env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
 
       - name: Download SEC API data from artifact
         uses: actions/download-artifact@v2
@@ -444,24 +437,19 @@ jobs:
           path: ${{ env.DATA_DIR }}
           retention-days: ${{ env.RETENTION_PERIOD }}
         continue-on-error: true
-        env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
+
 
       - name: Unzip data
         run: |
           unzip -o orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
           unzip -o sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
         continue-on-error: true
-        env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
 
       - name: Aggregate data
         run: |
           
           python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}/orbis_data_licensee_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}/company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensee.csv" --merged_output_file "${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx"
           python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}/orbis_data_licensor_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}/company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensor.csv" --merged_output_file "${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx"
-        env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
 
       - name: Zip merged files 
         run: |
@@ -483,5 +471,3 @@ jobs:
           python utils/send_to_slack.py --file_path "${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx" --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx is attached.'
           python utils/send_to_slack.py --file_path "${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx" --slack_channel ${{ env.SLACK_DATA_CHANNEL }} --message ' Prepared data from Orbis database search is done !. merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx is attached.'
         continue-on-error: true
-        env:
-          DATA_DIR: /home/runner/work/orbi/orbi/data/
