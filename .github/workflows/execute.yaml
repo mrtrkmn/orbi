@@ -125,7 +125,6 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: "3.10"
-          cache: "pip" # cache pip dependencies
 
       # Installing dependencies of the project
       - name: Install dependencies
@@ -408,7 +407,6 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: "3.10"
-          cache: "pip" # cache pip dependencies
 
       # Installing dependencies of the project
       - name: Install dependencies
