@@ -21,8 +21,7 @@ FIELD_SEPERATOR = "/html/body/section[2]/div[3]/div/form/div[1]/table/tbody/tr[2
 APPLY_BUTTON = "/html/body/section[2]/div[3]/div/form/div[3]/div[2]/input"
 SEARCH_PROGRESS_BAR = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[1]"
 # PROGRESS_TEXT_XPATH = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]/div[1]/div[2]/p"
-PROGRESS_TEXT_XPATH='//*[@id="CountDown"]'
-
+PROGRESS_TEXT_XPATH = '//*[@id="CountDown"]'
 
 
 VIEW_RESULTS_BUTTON = "/html/body/section[2]/div[1]/div[2]/ul/li[1]/a"
@@ -114,37 +113,37 @@ WARNING_MESSAGE_HEADER = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]"
 NOT_MATCHED_COMPANIES_FILE_NAME = "not_matched_companies.txt"
 
 SEC_DATA_HEADERS = [
-    'cik_number',
-    'companyName',
-    'agreementDate',
-    'endDate',
-    'diffInDays',
-    'EntityNumberOfEmployees',
-    'EntityNumberOfEmployees Reporting date',
-    'OperatingIncomeLoss',
-    'OperatingIncomeLoss Reporting date',
-    'NetIncomeLoss',
-    'NetIncomeLoss Reporting date',
-    'NetCashProvidedByUsedInOperatingActivities',
-    'NetCashProvidedByUsedInOperatingActivities Reporting date',
-    'NetCashProvidedByUsedInInvestingActivities',
-    'NetCashProvidedByUsedInInvestingActivities Reporting date',
-    'NetCashProvidedByUsedInFinancingActivities',
-    'NetCashProvidedByUsedInFinancingActivities Reporting date',
-    'CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect',
-    'CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect Reporting date',
-    'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
-    'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest Reporting date',
-    'GrossProfit',
-    'GrossProfit Reporting date',
-    'Revenues',
-    'Revenues Reporting date',
-    'CostOfGoodsAndServicesSold',
-    'CostOfGoodsAndServicesSold Reporting date',
-    'Assets',
-    'Assets Reporting date',
-    'ComprehensiveIncomeNetOfTax',
-    'ComprehensiveIncomeNetOfTax Reporting date',
-    'CashAndCashEquivalentsPeriodIncreaseDecrease',
-    'CashAndCashEquivalentsPeriodIncreaseDecrease Reporting date'
+    "cik_number",
+    "companyName",
+    "agreementDate",
+    "endDate",
+    "diffInDays",
+    "EntityNumberOfEmployees",
+    "EntityNumberOfEmployees Reporting date",
+    "OperatingIncomeLoss",
+    "OperatingIncomeLoss Reporting date",
+    "NetIncomeLoss",
+    "NetIncomeLoss Reporting date",
+    "NetCashProvidedByUsedInOperatingActivities",
+    "NetCashProvidedByUsedInOperatingActivities Reporting date",
+    "NetCashProvidedByUsedInInvestingActivities",
+    "NetCashProvidedByUsedInInvestingActivities Reporting date",
+    "NetCashProvidedByUsedInFinancingActivities",
+    "NetCashProvidedByUsedInFinancingActivities Reporting date",
+    "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect",
+    "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect Reporting date",
+    "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+    "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest Reporting date",
+    "GrossProfit",
+    "GrossProfit Reporting date",
+    "Revenues",
+    "Revenues Reporting date",
+    "CostOfGoodsAndServicesSold",
+    "CostOfGoodsAndServicesSold Reporting date",
+    "Assets",
+    "Assets Reporting date",
+    "ComprehensiveIncomeNetOfTax",
+    "ComprehensiveIncomeNetOfTax Reporting date",
+    "CashAndCashEquivalentsPeriodIncreaseDecrease",
+    "CashAndCashEquivalentsPeriodIncreaseDecrease Reporting date",
 ]
