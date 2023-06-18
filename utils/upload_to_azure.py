@@ -105,7 +105,7 @@ def get_public_access_url(blob_service_client: BlobServiceClient, container_name
     :param container_name: Container name to get public access url
     :return: Public access url of given container
     """
-    
+
     container_client = blob_service_client.get_container_client(container_name)
     return container_client.url
 
