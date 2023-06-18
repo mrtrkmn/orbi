@@ -10,3 +10,6 @@ aiohttp
 matplotlib
 unidecode
 pytz
+retrying
+fuzzywuzzy
+azure-storage-blob
