@@ -137,7 +137,7 @@ jobs:
       - name: Get timestamp
         id: get-timestamp
         run: |
-          echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
+          echo "timestamp=$(date +'%d_%m_%Y')" >> $GITHUB_OUTPUT
 
         # Receives file name from the user input in the workflow and stores it in the GITHUB_OUTPUT file.
         # GITHUB_OUTPUT file is used to pass variables between jobs.
@@ -282,7 +282,7 @@ jobs:
         # Get timestamp in format DD-MM-YYYY
         id: get-timestamp
         run: |
-          echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
+          echo "timestamp=$(date +'%d_%m_%Y')" >> $GITHUB_OUTPUT
 
 
       #**********************************************************************************************************************
@@ -425,7 +425,7 @@ jobs:
       - name: Get timestamp
         id: get-timestamp
         run: |
-          echo "timestamp=$(date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
+          echo "timestamp=$(date +'%d_%m_%Y')" >> $GITHUB_OUTPUT
 
       - name: Download orbis data from artifact
         uses: actions/download-artifact@v2
@@ -457,6 +457,7 @@ jobs:
 
       - name: Aggregate data
         run: |
+          
           python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}/orbis_data_licensee_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}/company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensee.csv" --merged_output_file "${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx"
           python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}/orbis_data_licensor_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}/company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensor.csv" --merged_output_file "${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx"
         env:
