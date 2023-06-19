@@ -425,7 +425,6 @@ jobs:
         with:
           name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
           path: ${{ env.DATA_DIR }}
-          retention-days: ${{ env.RETENTION_PERIOD }}
         continue-on-error: true
 
       - name: Download SEC API data from artifact
@@ -433,14 +432,13 @@ jobs:
         with:
           name: sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
           path: ${{ env.DATA_DIR }}
-          retention-days: ${{ env.RETENTION_PERIOD }}
         continue-on-error: true
 
 
       - name: Unzip data
         run: |
-          unzip -o orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
-          unzip -o sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
+          unzip  ${{ env.DATA_DIR }}orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
+          unzip  ${{ env.DATA_DIR }}sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
         continue-on-error: true
 
       - name: Aggregate data
