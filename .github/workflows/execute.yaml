@@ -206,7 +206,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
-          path: downloaded-artifacts
+          path: ${{ env.DATA_DIR }}
           retention-days: ${{ env.RETENTION_PERIOD }}
         continue-on-error: true
 
@@ -424,21 +424,21 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
-          path: downloaded-artifacts
+          path: ${{ env.DATA_DIR }}
         continue-on-error: true
 
       - name: Download SEC API data from artifact
         uses: actions/download-artifact@v3
         with:
           name: sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
-          path: downloaded-artifacts
+          path: ${{ env.DATA_DIR }}
         continue-on-error: true
 
 
       - name: Unzip data
         run: |
-          unzip  downloaded-artifacts/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
-          unzip  downloaded-artifacts/sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
+          unzip  ${{ env.DATA_DIR }}/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
+          unzip  ${{ env.DATA_DIR }}/sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
         continue-on-error: true
 
       - name: Aggregate data
