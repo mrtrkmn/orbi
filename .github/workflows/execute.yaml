@@ -206,7 +206,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
-          path: ${{ env.DATA_DIR }}sec-api-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
+          path: downloaded-artifacts
           retention-days: ${{ env.RETENTION_PERIOD }}
         continue-on-error: true
 
@@ -421,35 +421,35 @@ jobs:
           echo "timestamp=$(date +'%d_%m_%Y')" >> $GITHUB_OUTPUT
 
       - name: Download orbis data from artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
-          path: ${{ env.DATA_DIR }}
+          path: downloaded-artifacts
         continue-on-error: true
 
       - name: Download SEC API data from artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
-          path: ${{ env.DATA_DIR }}
+          path: downloaded-artifacts
         continue-on-error: true
 
 
       - name: Unzip data
         run: |
-          unzip  ${{ env.DATA_DIR }}orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
-          unzip  ${{ env.DATA_DIR }}sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
+          unzip  downloaded-artifacts/orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
+          unzip  downloaded-artifacts/sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
         continue-on-error: true
 
       - name: Aggregate data
         run: |
           
-          python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}/orbis_data_licensee_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}/company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensee.csv" --merged_output_file "${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx"
-          python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}/orbis_data_licensor_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}/company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensor.csv" --merged_output_file "${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx"
+          python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}orbis_data_licensee_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensee.csv" --merged_output_file "${{ env.DATA_DIR }}merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx"
+          python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}orbis_data_licensor_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensor.csv" --merged_output_file "${{ env.DATA_DIR }}merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx"
 
       - name: Zip merged files 
         run: |
-          zip -r merged_data_${{ steps.get-timestamp.outputs.timestamp }}.zip ${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx ${{ env.DATA_DIR }}/merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx
+          zip -r merged_data_${{ steps.get-timestamp.outputs.timestamp }}.zip ${{ env.DATA_DIR }}merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx ${{ env.DATA_DIR }}merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx
         continue-on-error: true
 
       - name: Upload merged files to artifacts
