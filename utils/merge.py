@@ -159,9 +159,102 @@ def aggregate_orbis_sec_data(orbis_data_file_path, sec_data_file_path):
     sec_data["Company name Latin alphabet"] = sec_data["Company name Latin alphabet"].str.replace("/NEW/", "")
 
     merged_df = merge_dataframes_on(orbis_data, sec_data, "Company name Latin alphabet")
-    # write to excel
-    write_to_excel(merged_df, merged_output_file)
-    # add sec data as another sheet to the excel file
+
+    # drop Unnamed: 0
+    merged_df.drop(columns=["Unnamed: 0"], inplace=True)
+
+    # add entry column from raw input excel file to the merged excel file
+    add_entry_column(merged_df, sec_data)
+
+
+def create_company_dictionary(file_path, is_licensee=True):
+    """
+    Create a dictionary from an Excel file with company names as keys and corresponding entry values as dictionary values.
+
+    Args:
+        file_path (str): The path to the Excel file.
+
+    Returns:
+        dict: A dictionary where company names are keys and the values are lists of corresponding entry values.
+    """
+
+    # If path is not exists raise an exception
+    if not os.path.exists(file_path):
+        raise Exception(f"File does not exist at {file_path}")
+
+    # Read the Excel file
+    df = pd.read_excel(file_path)
+    if is_licensee:
+        company_name_columns = [
+            col for col in df.columns if col.startswith("Licensee") and col.endswith("cleaned") and "CIK" not in col
+        ]
+    else:
+        company_name_columns = [
+            col for col in df.columns if col.startswith("Licensor") and col.endswith("cleaned") and "CIK" not in col
+        ]
+    # Create an empty dictionary
+    company_dict = {}
+
+    # Iterate over each row in the DataFrame
+    for index, row in df.iterrows():
+        entry = row["Entry"]
+
+        # Iterate over each company name column
+        for column in company_name_columns:
+            print(row[column])
+            if not pd.isnull(row[column]):
+                company_name = row[column].strip().upper()  # Remove any leading/trailing whitespace
+
+                # Check if the company name is not empty
+                if company_name:
+                    # Check if the company name already exists in the dictionary
+                    if company_name in company_dict:
+                        # Append the entry value to the existing list of values for the company
+                        company_dict[company_name].append(entry)
+                    else:
+                        # Create a new entry in the dictionary with the company name as the key
+                        company_dict[company_name] = [entry]
+
+    return company_dict
+
+
+def add_entry_column(merged_df, sec_data):
+    """
+    Add a new 'Entry' column to an Excel file with values from the provided company dictionary.
+
+    Args:
+        file_path (str): The path to the Excel file.
+        company_dict (dict): A dictionary where company names are keys and the values are lists of corresponding entry values.
+    """
+    # Read the Excel file
+    # df = pd.read_excel(file_path)
+    entry_company_mapping = create_company_dictionary(
+        searched_raw_input_file, is_licensee="licensee" in merged_output_file.lower()
+    )
+    df = merged_df
+    # Create a new column 'Entry' and initialize it with NaN values
+    df.insert(0, "Entry", float("nan"))
+
+    # Iterate over each row in the DataFrame
+    for index, row in df.iterrows():
+        company_name = (
+            row["Company name Latin alphabet"].strip().upper()
+        )  # Assuming 'Company Name' is the existing column with dictionary keys
+
+        # Check if the company name exists in the dictionary
+        if company_name in entry_company_mapping:
+            # Get the entry values for the company
+            entry_values = entry_company_mapping[company_name]
+
+            # Combine the entry values into a string
+            entry_string = ", ".join(str(value) for value in entry_values)
+
+            # Update the 'Entry' column for the current row
+            df.at[index, "Entry"] = entry_string
+
+    # Save the updated DataFrame to the Excel file
+    write_to_excel(df, merged_output_file)
+
     add_df_as_another_sheet(sec_data, merged_output_file, "SEC-API-DATA")
 
 
@@ -173,6 +266,7 @@ if __name__ == "__main__":
     parser.add_argument("--orbis_output_file", type=str, help="Path to orbis output file")
     parser.add_argument("--sec_output_file", type=str, help="Path to sec output file")
     parser.add_argument("--merged_output_file", type=str, help="Path to output file")
+    parser.add_argument("--searched_raw_input_file", type=str, help="Path to searched raw excel input file")
     args = parser.parse_args()
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
@@ -181,5 +275,6 @@ if __name__ == "__main__":
     orbis_output_file = args.orbis_output_file
     sec_output_file = args.sec_output_file
     merged_output_file = args.merged_output_file
+    searched_raw_input_file = args.searched_raw_input_file
 
     aggregate_orbis_sec_data(orbis_output_file, sec_output_file)
