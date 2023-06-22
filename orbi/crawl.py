@@ -120,6 +120,20 @@ class Crawler:
 
         self.not_financial_columns = ["cik_number", "companyName", "agreementDate", "endDate", "diffInDays"]
 
+    def provide_complete_cik_number(self, incomplete_cik_number):
+        """
+        This function completes incomplete CIK number by appending zeros at the beginning
+        :param input_data: incomplete CIK number
+        :return: complete CIK number
+        """
+        if incomplete_cik_number is not None and str(incomplete_cik_number) != "nan":
+            # Check if input contains only numbers
+            if str(incomplete_cik_number).isdigit():
+                # Append zeros at the beginning to make it a 10-digit number
+                return str(incomplete_cik_number).zfill(10)
+        else:
+            return None
+
     def recursive_lookup(self, data, key):
         """
         Generic function to recursively lookup a key in a dictionary
@@ -271,7 +285,7 @@ class Crawler:
         :param excel_file: excel file with the data
         :param is_licensee: True if the excel file contains licensee data, False otherwise
         """
-        complete_df = pd.read_excel(excel_file)
+        complete_df = pd.read_excel(excel_file, dtype=str)
         final_df = pd.DataFrame()
         licensee_columns = [
             col
@@ -287,44 +301,47 @@ class Crawler:
         number_of_licensor_columns = len(licensor_columns)
         if is_licensee:
             for i in range(0, number_of_licensee_columns):
-                df = complete_df[[f"Licensee {i+1}_cleaned", f"Licensee CIK {i+1}_cleaned", "Agreement Date"]]
-                df["Agreement Date"] = pd.to_datetime(df["Agreement Date"])
+                LICENSEE_CLEANED_NAME = f"Licensee {i+1}_cleaned"
+                LICENSEE_CIK_CLEANED_NAME = f"Licensee CIK {i+1}_cleaned"
+                AGREEMENT_DATE_NAME = "Agreement Date"
+                # drop nan and invalid CIK Number from complete_df
+                complete_df = complete_df.dropna(subset=[LICENSEE_CIK_CLEANED_NAME])
+                # drop not valid CIK Number
+                complete_df = complete_df[complete_df[LICENSEE_CIK_CLEANED_NAME].apply(self.check_cik_number_format)]
+                # change the type of the column to str
+                df = complete_df[[LICENSEE_CLEANED_NAME, LICENSEE_CIK_CLEANED_NAME, AGREEMENT_DATE_NAME]]
+                df[AGREEMENT_DATE_NAME] = pd.to_datetime(df[AGREEMENT_DATE_NAME])
                 # df["Agreement Date"] = df["Agreement Date"].dt.year - 1
                 df = df.rename(
                     columns={
-                        f"Licensee CIK {i+1}_cleaned": "CIK Number",
-                        f"Licensee {i+1}_cleaned": "Company Name",
+                        LICENSEE_CIK_CLEANED_NAME: "CIK Number",
+                        LICENSEE_CLEANED_NAME: "Company Name",
                     }
                 )
-                # drop the rows with invalid CIK Number
-                df = df[df["CIK Number"].apply(self.check_cik_number_format)]
                 # df = df.reset_index(drop=True)
                 final_df = pd.concat([final_df, df])
         else:
             for i in range(0, number_of_licensor_columns):
-                df = complete_df[[f"Licensor {i+1}_cleaned", f"Licensor CIK {i+1}_cleaned", "Agreement Date"]]
-                df["Agreement Date"] = pd.to_datetime(df["Agreement Date"])
-                # df["Agreement Date"] = df["Agreement Date"].dt.year - 1
+                LICENSOR_CLEANED_NAME = f"Licensor {i+1}_cleaned"
+                LICENSOR_CIK_CLEANED_NAME = f"Licensor CIK {i+1}_cleaned"
+                AGREEMENT_DATE_NAME = "Agreement Date"
+                # drop nan and invalid CIK Number from complete_df
+                complete_df = complete_df.dropna(subset=[LICENSOR_CIK_CLEANED_NAME])
+                complete_df = complete_df[complete_df[LICENSEE_CIK_CLEANED_NAME].apply(self.check_cik_number_format)]
+
+                # change the type of the column to string
+                # complete_df[LICENSOR_CIK_CLEANED_NAME] = complete_df[LICENSOR_CIK_CLEANED_NAME].astype(str)
+                df = complete_df[[LICENSOR_CLEANED_NAME, LICENSOR_CIK_CLEANED_NAME, AGREEMENT_DATE_NAME]]
+                # apply complete check cik number format to the CIK Number
+                df[AGREEMENT_DATE_NAME] = pd.to_datetime(df[AGREEMENT_DATE_NAME])
                 df = df.rename(
                     columns={
-                        f"Licensor CIK {i+1}_cleaned": "CIK Number",
-                        f"Licensor {i+1}_cleaned": "Company Name",
+                        LICENSOR_CIK_CLEANED_NAME: "CIK Number",
+                        LICENSOR_CLEANED_NAME: "Company Name",
                     }
                 )
-                # convert the CIK Number to int
-
-                # apply check cik number format to the CIK Number
-                df = df[df["CIK Number"].apply(self.check_cik_number_format)]
-                # df["Company Name"] = df["Company Name"].str.strip()
-                df = df[~df["Company Name"].str.contains("Unknown", flags=re.IGNORECASE, regex=True)]
-                # remove Inventor company names
-                df = df[~df["Company Name"].str.contains("Inventor", flags=re.IGNORECASE, regex=True)]
-                # remove https company names
-                df = df[~df["Company Name"].str.contains("https", flags=re.IGNORECASE, regex=True)]
-
                 final_df = pd.concat([final_df, df])
 
-        # df["CIK Number"] = df["CIK Number"].astype(int)
         return final_df
 
     def parse_export_data_to_csv(self, json_data: dict, file_path: str):
