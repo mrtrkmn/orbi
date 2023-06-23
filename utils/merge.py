@@ -165,6 +165,11 @@ def aggregate_orbis_sec_data(orbis_data_file_path, sec_data_file_path):
 
     # add entry column from raw input excel file to the merged excel file
     add_entry_column(merged_df, sec_data)
+    merged_df = duplicate_values_companies(merged_df)
+    # Save the updated DataFrame to the Excel file
+    write_to_excel(merged_df, merged_output_file)
+
+    add_df_as_another_sheet(sec_data, merged_output_file, "SEC-API-DATA")
 
 
 def create_company_dictionary(file_path, is_licensee=True):
@@ -201,7 +206,6 @@ def create_company_dictionary(file_path, is_licensee=True):
 
         # Iterate over each company name column
         for column in company_name_columns:
-            print(row[column])
             if not pd.isnull(row[column]):
                 company_name = row[column].strip().upper()  # Remove any leading/trailing whitespace
 
@@ -240,22 +244,41 @@ def add_entry_column(merged_df, sec_data):
         company_name = (
             row["Company name Latin alphabet"].strip().upper()
         )  # Assuming 'Company Name' is the existing column with dictionary keys
-
-        # Check if the company name exists in the dictionary
-        if company_name in entry_company_mapping:
-            # Get the entry values for the company
+        try:
             entry_values = entry_company_mapping[company_name]
-
-            # Combine the entry values into a string
             entry_string = ", ".join(str(value) for value in entry_values)
-
-            # Update the 'Entry' column for the current row
             df.at[index, "Entry"] = entry_string
+        except KeyError as ke:
+            print(f"KeyError is {ke}")
+            pass
 
-    # Save the updated DataFrame to the Excel file
-    write_to_excel(df, merged_output_file)
 
-    add_df_as_another_sheet(sec_data, merged_output_file, "SEC-API-DATA")
+def duplicate_values_companies(df):
+    """
+    Duplicate rows in an Excel file based on the values in the 'Entry' column.
+    :param df: merged dataframe
+    """
+    # Create an empty list to store the duplicated rows
+    duplicated_rows = []
+    # df = pd.read_csv(merged_file, sep=";")
+
+    # Iterate over each row in the DataFrame
+    for _, row in df.iterrows():
+        entries = str(row["Entry"]).split(", ")  # Split the entries by comma and space
+        print(entries)
+        for entry in entries:
+            # Create a new row with the duplicated entry and company name
+            duplicated_row = row.copy()
+            duplicated_row["Entry"] = entry
+            duplicated_rows.append(duplicated_row)
+
+        # Remove the processed entry from the Entry column
+        row["Entry"] = ""
+
+    # Create a new DataFrame from the duplicated rows
+    duplicated_df = pd.DataFrame(duplicated_rows, columns=df.columns)
+
+    return duplicated_df
 
 
 # create main function init
