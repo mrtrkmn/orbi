@@ -715,10 +715,23 @@ class Orbis:
                 time.sleep(3)
                 self.check_search_progress_bar()
 
-    def view_search_results(self):
+    def export_mapped_data_with_own_id(self, file_name):
+        """
+        This function exports the mapped data with own id.
+        Crucial to map entire dataset at the end
+        """
+        self.wait_until_clickable(EXPORT_MAPPED_DATA_WITH_OWN_ID)
+        export_mapped_data_with_own_id = self.driver.find_element(By.XPATH, EXPORT_MAPPED_DATA_WITH_OWN_ID)
+        export_mapped_data_with_own_id.send_keys(Keys.RETURN)
+        time.sleep(5)
+        print(f"Mapped data with own id is exported as Excel_{file_name}.xlsx")
+
+    def view_search_results(self, excel_output_file_name):
         """
         Clicks the view results button in the batch search page when the search is finished.
         """
+
+        self.export_mapped_data_with_own_id(excel_output_file_name)
 
         # wait 10 seconds for VIEW_RESULTS_BUTTON to be clickable
         # if not clickable, refresh the page
@@ -1497,14 +1510,14 @@ class Orbis:
         # when search is finished, click on the search results button
 
         if not self.count_total_search():
-            self.view_search_results()
+            self.view_search_results(excel_output_file_name)
         else:
             self.check_search_progress_bar()
 
         # todo:
         try:
             self.driver.find_element(By.XPATH, VIEW_RESULTS_BUTTON)
-            self.view_search_results()
+            self.view_search_results(excel_output_file_name)
         except Exception as e:
             print("View results button is not displayed, continuing with next step")
 
@@ -2064,7 +2077,7 @@ def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee
     # sort alphabetically based on company name
     # df_result = df_result.sort_values()
     # convert to dataframe
-    # df_result = pd.DataFrame(df_result)
+    df_result = pd.DataFrame(df_result)
     # add ID column
     # df_result["ID"] = df_result.index + 1
     # make the ID column the first column

@@ -56,6 +56,10 @@ MILLION_UNITS = '//*[@id="id-currency-menu-popup"]/ul[1]/li[4]'
 USD_UNIT = '//*[@id="id-currency-menu-popup"]/ul[2]/li[13]'
 OP_REVENUE_OK_BUTTON = "/html/body/section[2]/div[6]/div[3]/a[2]"
 CURRENY_DROPDOWN = "/html/body/section[2]/div[1]/div[2]/div/div[2]/div[2]/ul/li[4]/a"
+# following button needs to be clicked to download mapped data before view results
+EXPORT_MAPPED_DATA_WITH_OWN_ID = "/html/body/section[2]/div[1]/div[2]/ul/li[2]/a"
+
+
 DROPDOWN_APPLY = '//*[@id="id-currency-menu-popup"]/div/a[2]'
 EXCEL_EXPORT_NAME_FIELD = '//*[@id="component_FileName"]'
 
