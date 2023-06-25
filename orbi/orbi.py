@@ -1966,6 +1966,52 @@ def save_screenshot(driver, file_name):
     logger.debug(f"Screenshot saved to {file_name}.png")
 
 
+def create_company_dictionary(file_path, is_licensee=True):
+    """
+    Create a dictionary from an Excel file with company names as keys and corresponding entry values as dictionary values.
+
+    Args:
+        file_path (str): The path to the Excel file.
+
+    Returns:
+        dict: A dictionary where company names are keys and the values are lists of corresponding entry values.
+    """
+
+    # If path is not exists raise an exception
+    if not os.path.exists(file_path):
+        raise Exception(f"File does not exist at {file_path}")
+
+    # Read the Excel file
+    df = pd.read_excel(file_path)
+    if is_licensee:
+        company_name_columns = [
+            col for col in df.columns if col.startswith("Licensee") and col.endswith("cleaned") and "CIK" not in col
+        ]
+    else:
+        company_name_columns = [
+            col for col in df.columns if col.startswith("Licensor") and col.endswith("cleaned") and "CIK" not in col
+        ]
+
+    # Create an empty dictionary
+    company_dict = {}
+
+    # Iterate over the rows of the DataFrame
+    for index, row in df.iterrows():
+        entry_id = row["Entry"]
+
+        # Iterate over the licensee columns
+        for column in company_name_columns:
+            company_name = str(row[column])  # Remove leading/trailing whitespace and convert to uppercase
+            if company_name != "NAN" or company_name != "":
+                if company_name in company_dict:
+                    # Append the entry ID to the existing list of values for the company
+                    company_dict[company_name].append(entry_id)
+                else:
+                    # Create a new entry in the dictionary with the company name as the key
+                    company_dict[company_name] = [entry_id]
+    return company_dict
+
+
 def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee):
     """
     Extracts company data from raw excel file and saves it to a csv file.
@@ -2024,6 +2070,10 @@ def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee
     # make the ID column the first column
     # df_result = df_result[["ID", "Company name"]]
     # save to csv
+    # add new column to the dataframe from the dictionary received from create_company_dictionary function
+    company_dict = create_company_dictionary(excel_file, is_licensee)
+    df_result["Own ID"] = df_result["Company name"].map(company_dict)
+
     df_result.to_csv(output_csv_file, sep=";", index=False)
 
 
