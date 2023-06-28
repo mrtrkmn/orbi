@@ -9,11 +9,32 @@ from argparse import ArgumentParser
 import pandas as pd
 from fuzzywuzzy import fuzz
 
+
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 sys.path.append("orbi")
 
 from variables import SEC_DATA_HEADERS
+
+
+def create_bvd_own_id_mapping(orbis_id_export_file):
+    data_path = str(os.path.join(root_path, "..", "data"))
+    orbis_id_export_file = os.path.join(data_path, orbis_id_export_file)
+
+    # check if file exists or not
+    if not os.path.exists(orbis_id_export_file):
+        raise Exception(f"Orbis ID export file does not exist at {orbis_id_export_file}")
+
+    print(f"Creating BVD own id mapping... ")
+    df_id_export = pd.read_excel(orbis_id_export_file)
+    df_id_export = df_id_export[["Matched BvD ID", "Own ID"]]
+
+    # map Matched BvD ID to Own ID
+    mapping = {}
+    for index, row in df_id_export.iterrows():
+        mapping[row["Matched BvD ID"]] = row["Own ID"]
+
+    return mapping
 
 
 def parse_data_based_on_licensee_aggrement_data(excel_path_file):
@@ -133,6 +154,7 @@ def aggregate_orbis_sec_data(orbis_data_file_path, sec_data_file_path):
     :param orbis_data_file_path: path to orbis data file
     :param sec_data_file_path: path to sec data file
     """
+    orbis_data_file_path = os.path.abspath(orbis_data_file_path)
 
     if not os.path.exists(orbis_data_file_path):
         raise Exception(f"Orbis output file does not exist at {orbis_data_file_path}")
@@ -141,16 +163,34 @@ def aggregate_orbis_sec_data(orbis_data_file_path, sec_data_file_path):
         raise Exception(f"SEC output file does not exist at {sec_data_file_path}")
 
     orbis_data = pd.read_excel(orbis_output_file, sheet_name="Results")
+    orbis_id_bvd_mapping_file_name = f"Export_{os.path.basename(orbis_data_file_path).split('.')[0]}.xlsx"
+
+    bvd_own_id_mapping = create_bvd_own_id_mapping(orbis_id_bvd_mapping_file_name)
 
     # in case one column has multiple values, remove the values after the dot
     columns_to_delete = orbis_data.filter(regex="\.\d+$").columns
     orbis_data = orbis_data.drop(columns=columns_to_delete)
     orbis_data["Company name Latin alphabet"] = orbis_data["Company name Latin alphabet"].str.upper()
     orbis_data.dropna(subset=["Company name Latin alphabet"], inplace=True)
+    # add Own ID column to first column
+    orbis_data.insert(0, "Own ID", "")
+
+    # fill Own ID column with mapping
+    for index, row in orbis_data.iterrows():
+        orbis_data.at[index, "Own ID"] = bvd_own_id_mapping[row["BvD ID number"]]
+
+    # orbis_data = pd.DataFrame(orbis_data)
+
+    orbis_data.drop(columns=["Unnamed: 0"], inplace=True)
+    # replace the coulmn name
+    # orbis_data.rename(columns={"Unnamed: 0": "Own ID"}, inplace=True)
+    # export the orbis data to excel fil
+    orbis_data.to_excel("orbis_data.xlsx", index=False)
 
     sec_data = pd.read_csv(sec_output_file, delimiter=";", usecols=SEC_DATA_HEADERS)
     # change column name to match with orbis data
     sec_data.rename(columns={"companyName": "Company name Latin alphabet"}, inplace=True)
+    sec_data.rename(columns={"entry": "Entry"}, inplace=True)
     # make all company names uppercase
     sec_data["Company name Latin alphabet"] = sec_data["Company name Latin alphabet"].str.upper()
     # remove /DE from company name
@@ -158,15 +198,12 @@ def aggregate_orbis_sec_data(orbis_data_file_path, sec_data_file_path):
     # remove /NEW/ from company name
     sec_data["Company name Latin alphabet"] = sec_data["Company name Latin alphabet"].str.replace("/NEW/", "")
 
-    merged_df = merge_dataframes_on(orbis_data, sec_data, "Company name Latin alphabet")
-
-    # drop Unnamed: 0
-    merged_df.drop(columns=["Unnamed: 0"], inplace=True)
-
-    # add entry column from raw input excel file to the merged excel file
-    add_entry_column(merged_df, sec_data)
-    merged_df = duplicate_values_companies(merged_df)
+    merged_df = duplicate_values_companies(orbis_data)
     # Save the updated DataFrame to the Excel file
+
+    # convert column Own ID to int64
+    sec_data["Entry"] = sec_data["Entry"].astype(str)
+    merged_df = merge_dataframes_on(merged_df, sec_data, "Entry")
     write_to_excel(merged_df, merged_output_file)
 
     add_df_as_another_sheet(sec_data, merged_output_file, "SEC-API-DATA")
@@ -222,37 +259,6 @@ def create_company_dictionary(file_path, is_licensee=True):
     return company_dict
 
 
-def add_entry_column(merged_df, sec_data):
-    """
-    Add a new 'Entry' column to an Excel file with values from the provided company dictionary.
-
-    Args:
-        file_path (str): The path to the Excel file.
-        company_dict (dict): A dictionary where company names are keys and the values are lists of corresponding entry values.
-    """
-    # Read the Excel file
-    # df = pd.read_excel(file_path)
-    entry_company_mapping = create_company_dictionary(
-        searched_raw_input_file, is_licensee="licensee" in merged_output_file.lower()
-    )
-    df = merged_df
-    # Create a new column 'Entry' and initialize it with NaN values
-    df.insert(0, "Entry", float("nan"))
-
-    # Iterate over each row in the DataFrame
-    for index, row in df.iterrows():
-        company_name = (
-            row["Company name Latin alphabet"].strip().upper()
-        )  # Assuming 'Company Name' is the existing column with dictionary keys
-        try:
-            entry_values = entry_company_mapping[company_name]
-            entry_string = ", ".join(str(value) for value in entry_values)
-            df.at[index, "Entry"] = entry_string
-        except KeyError as ke:
-            print(f"KeyError is {ke}")
-            pass
-
-
 def duplicate_values_companies(df):
     """
     Duplicate rows in an Excel file based on the values in the 'Entry' column.
@@ -261,23 +267,23 @@ def duplicate_values_companies(df):
     # Create an empty list to store the duplicated rows
     duplicated_rows = []
     # df = pd.read_csv(merged_file, sep=";")
-
+    columnns = ["Entry"] + list(df.columns)
     # Iterate over each row in the DataFrame
     for _, row in df.iterrows():
-        entries = str(row["Entry"]).split(", ")  # Split the entries by comma and space
-        print(entries)
+        entries = str(row["Own ID"]).split(", ")  # Split the entries by comma and space
         for entry in entries:
             # Create a new row with the duplicated entry and company name
             duplicated_row = row.copy()
-            duplicated_row["Entry"] = entry
+            # drop entry value delete [ ] characters
+            duplicated_row["Entry"] = entry.replace("[", "").replace("]", "")
             duplicated_rows.append(duplicated_row)
 
         # Remove the processed entry from the Entry column
         row["Entry"] = ""
 
     # Create a new DataFrame from the duplicated rows
-    duplicated_df = pd.DataFrame(duplicated_rows, columns=df.columns)
-
+    duplicated_df = pd.DataFrame(duplicated_rows, columns=columnns)
+    duplicated_df["Entry"] = duplicated_df["Entry"].astype(str)
     return duplicated_df
 
 
