@@ -118,7 +118,7 @@ class Crawler:
             f"{CASH_EQUIVALENTS_PERIOD_INCREASE_DECREASE} Reporting date",
         ]
 
-        self.not_financial_columns = ["cik_number", "companyName", "agreementDate", "endDate", "diffInDays"]
+        self.not_financial_columns = ["entry", "cik_number", "companyName", "agreementDate", "endDate", "diffInDays"]
 
     def provide_complete_cik_number(self, incomplete_cik_number):
         """
@@ -299,17 +299,20 @@ class Crawler:
         ]
         number_of_licensee_columns = len(licensee_columns)
         number_of_licensor_columns = len(licensor_columns)
+        ENTRY = "Entry"
         if is_licensee:
             for i in range(0, number_of_licensee_columns):
                 LICENSEE_CLEANED_NAME = f"Licensee {i+1}_cleaned"
                 LICENSEE_CIK_CLEANED_NAME = f"Licensee CIK {i+1}_cleaned"
                 AGREEMENT_DATE_NAME = "Agreement Date"
+
                 # drop nan and invalid CIK Number from complete_df
                 complete_df = complete_df.dropna(subset=[LICENSEE_CIK_CLEANED_NAME])
                 # drop not valid CIK Number
-                complete_df = complete_df[complete_df[LICENSEE_CIK_CLEANED_NAME].apply(self.check_cik_number_format)]
+                # complete_df = complete_df[complete_df[LICENSEE_CIK_CLEANED_NAME].apply(self.check_cik_number_format)]
                 # change the type of the column to str
-                df = complete_df[[LICENSEE_CLEANED_NAME, LICENSEE_CIK_CLEANED_NAME, AGREEMENT_DATE_NAME]]
+                # exit()
+                df = complete_df[[ENTRY, LICENSEE_CLEANED_NAME, LICENSEE_CIK_CLEANED_NAME, AGREEMENT_DATE_NAME]]
                 df[AGREEMENT_DATE_NAME] = pd.to_datetime(df[AGREEMENT_DATE_NAME])
                 # df["Agreement Date"] = df["Agreement Date"].dt.year - 1
                 df = df.rename(
@@ -327,11 +330,11 @@ class Crawler:
                 AGREEMENT_DATE_NAME = "Agreement Date"
                 # drop nan and invalid CIK Number from complete_df
                 complete_df = complete_df.dropna(subset=[LICENSOR_CIK_CLEANED_NAME])
-                complete_df = complete_df[complete_df[LICENSEE_CIK_CLEANED_NAME].apply(self.check_cik_number_format)]
+                # complete_df = complete_df[complete_df[LICENSOR_CIK_CLEANED_NAME].apply(self.check_cik_number_format)]
 
                 # change the type of the column to string
                 # complete_df[LICENSOR_CIK_CLEANED_NAME] = complete_df[LICENSOR_CIK_CLEANED_NAME].astype(str)
-                df = complete_df[[LICENSOR_CLEANED_NAME, LICENSOR_CIK_CLEANED_NAME, AGREEMENT_DATE_NAME]]
+                df = complete_df[[ENTRY, LICENSOR_CLEANED_NAME, LICENSOR_CIK_CLEANED_NAME, AGREEMENT_DATE_NAME]]
                 # apply complete check cik number format to the CIK Number
                 df[AGREEMENT_DATE_NAME] = pd.to_datetime(df[AGREEMENT_DATE_NAME])
                 df = df.rename(
@@ -359,28 +362,32 @@ class Crawler:
         #     json.dump(json_data, f, indent=4)
 
         for k, v in json_data.items():
-            for kpi_var in self.kpi_variables:
-                if kpi_var in json_data[k]:
-                    try:
-                        unit = list(json_data[k][kpi_var][0]["units"].keys())[0]
-                    except Exception as e:
-                        print(f"Error on parsing(unit): {e}")
-                        print(f"CIK number (value): {k}")
-                        continue
+            entry_ids_raw = json_data[k].keys()
+            entry_ids = [i for i in entry_ids_raw if self.is_str_convertible_to_int(i)]
+            #
+            for entry_id in entry_ids:
+                for kpi_var in self.kpi_variables:
+                    if kpi_var in json_data[k]:
+                        try:
+                            unit = list(json_data[k][kpi_var][0]["units"].keys())[0]
+                        except Exception as e:
+                            print(f"Error on parsing(unit): {e}")
+                            print(f"CIK number (value): {k}")
+                            continue
 
-                    try:
-                        value = json_data[k][kpi_var][0]["units"][unit]
-                    except Exception as e:
-                        print(f"Error on parsing (value): {e}")
-                        print(f"CIK number (value): {k}")
-                        continue
+                        try:
+                            value = json_data[k][kpi_var][0]["units"][unit]
+                        except Exception as e:
+                            print(f"Error on parsing (value): {e}")
+                            print(f"CIK number (value): {k}")
+                            continue
                     # value : will contain information about instances of the file
                     # first: sort all instances inside the array object
                     # then check from beginning to
                     sorted_values = sorted(value, key=lambda x: datetime.strptime(x["end"], "%Y-%m-%d"))
                     for i in sorted_values:
                         if i["form"] == "10-K":
-                            agreement_date = json_data[k]["agreementDate"]
+                            agreement_date = json_data[k][entry_id]["agreementDate"]
 
                             # convert agreement date to datetime object
                             agreement_date = datetime.strptime(agreement_date, "%Y-%m-%d")
@@ -398,14 +405,14 @@ class Crawler:
                             else:
                                 diff = agreement_date - end_date
 
-                            if "diffInDays" not in json_data[k]:
-                                json_data[k]["diffInDays"] = abs(diff.days)
-                            elif "diffInDays" in json_data[k]:
-                                if abs(diff.days) < json_data[k]["diffInDays"]:
+                            if "diffInDays" not in json_data[k][entry_id]:
+                                json_data[k][entry_id]["diffInDays"] = abs(diff.days)
+                            elif "diffInDays" in json_data[k][entry_id]:
+                                if abs(diff.days) < json_data[k][entry_id]["diffInDays"]:
                                     json_data[k]["diffInDays"] = abs(diff.days)
 
-                            if abs(diff.days) <= json_data[k]["diffInDays"]:
-                                json_data[k]["diffInDays"] = abs(diff.days)
+                            if abs(diff.days) <= json_data[k][entry_id]["diffInDays"]:
+                                json_data[k][entry_id]["diffInDays"] = abs(diff.days)
                                 val = i["val"]
                                 company_name = json_data[k]["entityName"]
                                 form_type = i["form"]
@@ -416,22 +423,79 @@ class Crawler:
                                 if company_name not in parsed_data[k]:
                                     parsed_data[k]["companyName"] = company_name
 
-                                if kpi_var not in parsed_data[k]:
-                                    parsed_data[k][kpi_var] = {}
+                                if entry_id not in parsed_data[k]:
+                                    parsed_data[k][entry_id] = {}
 
-                                parsed_data[k][kpi_var]["value"] = val
-                                parsed_data[k][kpi_var]["filedDate"] = i["filed"]
-                                parsed_data[k][kpi_var]["endDate"] = i["end"]
-                                parsed_data[k][kpi_var]["unit"] = unit
-                                parsed_data[k][kpi_var]["form"] = form_type
-                                parsed_data[k]["diffInDays"] = diff.days
-                                parsed_data[k]["agreementDate"] = json_data[k]["agreementDate"]
-                                parsed_data[k]["endDate"] = i["end"]
+                                if kpi_var not in parsed_data[k][entry_id]:
+                                    parsed_data[k][entry_id][kpi_var] = {}
 
-        # with open("parsed_data.json", "w") as f:
-        #     json.dump(parsed_data, f, indent=4)
+                                parsed_data[k][entry_id][kpi_var]["value"] = val
+                                parsed_data[k][entry_id][kpi_var]["filedDate"] = i["filed"]
+                                parsed_data[k][entry_id][kpi_var]["endDate"] = i["end"]
+                                parsed_data[k][entry_id][kpi_var]["unit"] = unit
+                                parsed_data[k][entry_id][kpi_var]["form"] = form_type
+                                parsed_data[k][entry_id]["diffInDays"] = diff.days
+                                parsed_data[k][entry_id]["agreementDate"] = str(agreement_date)
+                                parsed_data[k][entry_id]["endDate"] = i["end"]
 
         self.export_to_csv_file(parsed_data, file_path)
+
+    def create_entry_cik_number_mapping(file_path, is_licensee=True):
+        """
+        Create a dictionary from an Excel file with company names as keys and corresponding entry values as dictionary values.
+
+        Args:
+            file_path (str): The path to the Excel file.
+
+        Returns:
+            dict: A dictionary where company names are keys and the values are lists of corresponding entry values.
+        """
+
+        # If path is not exists raise an exception
+        if not os.path.exists(file_path):
+            raise Exception(f"File does not exist at {file_path}")
+
+        # Read the Excel file
+        df = pd.read_excel(file_path)
+        if is_licensee:
+            company_cik_numbers = [
+                col for col in df.columns if col.startswith("Licensee") and col.endswith("cleaned") and "CIK" in col
+            ]
+        else:
+            company_cik_numbers = [
+                col for col in df.columns if col.startswith("Licensor") and col.endswith("cleaned") and "CIK" in col
+            ]
+        # Create an empty dictionary
+        company_dict = {}
+
+        # Iterate over each row in the DataFrame
+        for index, row in df.iterrows():
+            entry = row["Entry"]
+
+            # Iterate over each company name column
+            for column in company_cik_numbers:
+                if not pd.isnull(row[column]):
+                    company_name = row[column]
+                    if company_name in company_dict:
+                        # Append the entry value to the existing list of values for the company
+                        company_dict[company_name].append(entry)
+                    else:
+                        # Create a new entry in the dictionary with the company name as the key
+                        company_dict[company_name] = [entry]
+
+        return company_dict
+
+    def is_str_convertible_to_int(self, value: str):
+        """
+        Check if a string is convertible to int
+        :param value: string value
+        :return: True if the string is convertible to int, False otherwise
+        """
+        try:
+            int(value)
+            return True
+        except ValueError:
+            return False
 
     def export_to_csv_file(self, parsed_data: dict, output_file: str):
         """
@@ -451,37 +515,55 @@ class Crawler:
             writer.writerow(all_header_info)
             cleaned_kpi_variables = [i for i in self.kpi_variables if not i.endswith("Reporting date")]
             for k, v in parsed_data.items():
-                data += str(k) + delimeter
-                for i in self.not_financial_columns[1:]:
-                    if i in parsed_data[k]:
-                        data += str(parsed_data[k][i]) + delimeter
-                    else:
-                        data += "NAN" + delimeter
-                for i in cleaned_kpi_variables:
-                    if i in parsed_data[k]:
-                        data += str(parsed_data[k][i]["value"]) + delimeter
-                        reporting_date = parsed_data[k][i]["endDate"]
-                        data += reporting_date + delimeter
-                    else:
-                        if i == GROSS_PROFIT:
-                            if REVENUES in parsed_data[k] and COST_OF_GOODS_AND_SERVICES_SOLD in parsed_data[k]:
-                                revenues = parsed_data[k][REVENUES]["value"]
-                                cost_of_goods_and_services = parsed_data[k][COST_OF_GOODS_AND_SERVICES_SOLD]["value"]
-                                cn = parsed_data[k]["companyName"]
-                                print(
-                                    f"{cn} GrossProfit is generated from Revenues and Cost of goods and services sold"
-                                )
-                                gross_profit = float(revenues) - float(cost_of_goods_and_services)
-                                data += str(gross_profit) + delimeter
-                                # todo: check here
-                                reporting_date = parsed_data[k][REVENUES]["filedDate"]
-                                data += reporting_date + delimeter
+                # get current company entry id
+                entry_ids = list(parsed_data[k].keys())
+                entry_ids.remove("companyName")
+
+                for entry_id in entry_ids:
+                    entry_id = str(entry_id)
+                    data += entry_id + delimeter
+
+                    data += str(k) + delimeter
+                    company_name = parsed_data[k]["companyName"]
+                    agreement_date = parsed_data[k][entry_id]["agreementDate"]
+                    end_date = parsed_data[k][entry_id]["endDate"]
+                    diff_in_days = parsed_data[k][entry_id]["diffInDays"]
+
+                    data += str(company_name) + delimeter
+                    data += str(agreement_date) + delimeter
+                    data += str(end_date) + delimeter
+                    data += str(diff_in_days) + delimeter
+
+                    for i in cleaned_kpi_variables:
+                        if i in parsed_data[k][entry_id]:
+                            data += str(parsed_data[k][entry_id][i]["value"]) + delimeter
+                            reporting_date = parsed_data[k][entry_id][i]["endDate"]
+                            data += reporting_date + delimeter
                         else:
-                            data += "NAN" + delimeter
-                            reporting_date = "NAN" + delimeter
-                            data += reporting_date
-                f.write(data + "\n")
-                data = ""
+                            if i == GROSS_PROFIT:
+                                if (
+                                    REVENUES in parsed_data[k][entry_id]
+                                    and COST_OF_GOODS_AND_SERVICES_SOLD in parsed_data[k][entry_id]
+                                ):
+                                    revenues = parsed_data[k][entry_id][REVENUES]["value"]
+                                    cost_of_goods_and_services = parsed_data[k][entry_id][
+                                        COST_OF_GOODS_AND_SERVICES_SOLD
+                                    ]["value"]
+                                    cn = parsed_data[k]["companyName"]
+                                    print(
+                                        f"{cn} GrossProfit is generated from Revenues and Cost of goods and services sold"
+                                    )
+                                    gross_profit = float(revenues) - float(cost_of_goods_and_services)
+                                    data += str(gross_profit) + delimeter
+                                    # todo: check here
+                                    reporting_date = parsed_data[k][entry_id][REVENUES]["filedDate"]
+                                    data += reporting_date + delimeter
+                            else:
+                                data += "NAN" + delimeter
+                                reporting_date = "NAN" + delimeter
+                                data += reporting_date
+                    f.write(data + "\n")
+                    data = ""
         print(f"Exported to {output_file}")
 
     async def get_company_raw_data(self, company_name, cik_number):
@@ -520,10 +602,14 @@ class Crawler:
         tasks = []
         results = {}
         for index, row in df.iterrows():
+            entry_id = row["Entry"]
             cik_number = row["CIK Number"]
             company_name = row["Company Name"]
             agreement_date = row["Agreement Date"]
-            tasks.append(asyncio.ensure_future(self.process_company(cik_number, company_name, agreement_date)))
+
+            tasks.append(
+                asyncio.ensure_future(self.process_company(entry_id, cik_number, company_name, agreement_date))
+            )
             if len(tasks) == 10:
                 results.update(await self.run_parallel_requests(tasks))
                 tasks = []
@@ -534,7 +620,7 @@ class Crawler:
         print(f"Total number of companies: {len(results)}")
         return results
 
-    async def process_company(self, cik_number, company_name, agreement_date):
+    async def process_company(self, entry_id, cik_number, company_name, agreement_date):
         """
         Process the company data and retrieve the KPI data asynchronously
         :param cik_number: CIK number of the company
@@ -568,7 +654,7 @@ class Crawler:
                     #     file_name=os.path.join(os.path.abspath("data"), f"missing_kpi_vars_{timestamp}.txt"),
                     #     info=f"{company_name} | {cik_number} | {kpi_var}",
                     # )
-            return (cik_number, agreement_date, company_facts_data["entityName"], kpi_data)
+            return (entry_id, cik_number, agreement_date, company_facts_data["entityName"], kpi_data)
 
     async def run_parallel_requests(self, tasks):
         """
@@ -579,11 +665,17 @@ class Crawler:
         async with aiohttp.ClientSession(headers=self.headers) as session:
             for result in await asyncio.gather(*tasks):
                 if result is not None:
-                    cik_number, agreement_date, entity_name, kpi_data = result
+                    entry_id, cik_number, agreement_date, entity_name, kpi_data = result
                     if cik_number not in results:
                         results[cik_number] = {}
-                    results[cik_number]["agreementDate"] = str(agreement_date.date())
+
                     results[cik_number]["entityName"] = entity_name
+                    results[cik_number]["entryId"] = entry_id
+
+                    if str(agreement_date.date()) not in results[cik_number]:
+                        results[cik_number][entry_id] = {}
+                        results[cik_number][entry_id]["agreementDate"] = str(agreement_date.date())
+
                     results[cik_number].update(kpi_data)
                 await asyncio.sleep(0.1)  # 10 requests per second max
         return results
