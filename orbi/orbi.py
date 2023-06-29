@@ -2014,7 +2014,9 @@ def create_company_dictionary(file_path, is_licensee=True):
 
         # Iterate over the licensee columns
         for column in company_name_columns:
-            company_name = str(row[column])  # Remove leading/trailing whitespace and convert to uppercase
+            company_name = unidecode.unidecode(
+                str(row[column])
+            )  # Remove leading/trailing whitespace and convert to uppercase
             if company_name != "NAN" or company_name != "":
                 if company_name in company_dict:
                     # Append the entry ID to the existing list of values for the company
