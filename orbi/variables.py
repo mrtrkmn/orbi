@@ -117,6 +117,7 @@ WARNING_MESSAGE_HEADER = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]"
 NOT_MATCHED_COMPANIES_FILE_NAME = "not_matched_companies.txt"
 
 SEC_DATA_HEADERS = [
+    "entry",
     "cik_number",
     "companyName",
     "agreementDate",
