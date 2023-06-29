@@ -149,6 +149,18 @@ class Crawler:
             for item in data:
                 yield from self.recursive_lookup(item, key)
 
+    def get_dict_value(self, data, cik_number, key):
+        company_data = data[cik_number]
+        if isinstance(company_data, dict):
+            for k, v in company_data.items():
+                if k == key:
+                    return v
+                else:
+                    return self.get_dict_value(v, key)
+        elif isinstance(company_data, list):
+            for item in company_data:
+                return self.get_dict_value(item, key)
+
     # crawl the IPO website for the patent-related data
 
     def find_publication(
@@ -354,89 +366,85 @@ class Crawler:
         :param json_data: json data to be parsed
         :param file_path: path to the csv file
         """
-        # read json file
+
         parsed_data = {}
 
-        # # dump json_data to a file
-        # with open("raw_company_data.json", "w") as f:
-        #     json.dump(json_data, f, indent=4)
-
         for k, v in json_data.items():
-            entry_ids_raw = json_data[k].keys()
+            entry_ids_raw = v.keys()
             entry_ids = [i for i in entry_ids_raw if self.is_str_convertible_to_int(i)]
-            #
             for entry_id in entry_ids:
                 for kpi_var in self.kpi_variables:
-                    if kpi_var in json_data[k]:
+                    if kpi_var in v[entry_id]:
                         try:
-                            unit = list(json_data[k][kpi_var][0]["units"].keys())[0]
+                            unit = list(v[entry_id][kpi_var][0]["units"].keys())[0]
                         except Exception as e:
                             print(f"Error on parsing(unit): {e}")
                             print(f"CIK number (value): {k}")
                             continue
 
                         try:
-                            value = json_data[k][kpi_var][0]["units"][unit]
+                            value = v[entry_id][kpi_var][0]["units"][unit]
+                            sorted_values = sorted(value, key=lambda x: datetime.strptime(x["end"], "%Y-%m-%d"))
                         except Exception as e:
                             print(f"Error on parsing (value): {e}")
                             print(f"CIK number (value): {k}")
                             continue
-                    # value : will contain information about instances of the file
-                    # first: sort all instances inside the array object
-                    # then check from beginning to
-                    sorted_values = sorted(value, key=lambda x: datetime.strptime(x["end"], "%Y-%m-%d"))
-                    for i in sorted_values:
-                        if i["form"] == "10-K":
-                            agreement_date = json_data[k][entry_id]["agreementDate"]
+                        # value : will contain information about instances of the file
+                        # first: sort all instances inside the array object
+                        # then check from beginning to
 
-                            # convert agreement date to datetime object
-                            agreement_date = datetime.strptime(agreement_date, "%Y-%m-%d")
-                            end_date = datetime.strptime(i["end"], "%Y-%m-%d")
+                        for i in sorted_values:
+                            if i["form"] == "10-K":
+                                agreement_date = v[entry_id]["agreementDate"]
 
-                            # subtract the two dates
+                                # convert agreement date to datetime object
+                                agreement_date = datetime.strptime(agreement_date, "%Y-%m-%d")
+                                end_date = datetime.strptime(i["end"], "%Y-%m-%d")
 
-                            # "agreementDate": "2019-08-31",
-                            # "endDate": "2011-01-02"
+                                # subtract the two dates
 
-                            # if end date is greater than agreement date, then the difference is negative
+                                # "agreementDate": "2019-08-31",
+                                # "endDate": "2011-01-02"
 
-                            if end_date > agreement_date:
-                                diff = end_date - agreement_date
-                            else:
-                                diff = agreement_date - end_date
+                                # if end date is greater than agreement date, then the difference is negative
 
-                            if "diffInDays" not in json_data[k][entry_id]:
-                                json_data[k][entry_id]["diffInDays"] = abs(diff.days)
-                            elif "diffInDays" in json_data[k][entry_id]:
-                                if abs(diff.days) < json_data[k][entry_id]["diffInDays"]:
-                                    json_data[k]["diffInDays"] = abs(diff.days)
+                                if end_date > agreement_date:
+                                    diff = end_date - agreement_date
+                                else:
+                                    diff = agreement_date - end_date
 
-                            if abs(diff.days) <= json_data[k][entry_id]["diffInDays"]:
-                                json_data[k][entry_id]["diffInDays"] = abs(diff.days)
-                                val = i["val"]
-                                company_name = json_data[k]["entityName"]
-                                form_type = i["form"]
+                                if "diffInDays" not in v[entry_id]:
+                                    v[entry_id]["diffInDays"] = abs(diff.days)
+                                elif "diffInDays" in v[entry_id]:
+                                    if abs(diff.days) < v[entry_id]["diffInDays"]:
+                                        v["diffInDays"] = abs(diff.days)
 
-                                if k not in parsed_data:
-                                    parsed_data[k] = {}
+                                if abs(diff.days) <= v[entry_id]["diffInDays"]:
+                                    v[entry_id]["diffInDays"] = abs(diff.days)
+                                    val = i["val"]
+                                    company_name = v["entityName"]
+                                    form_type = i["form"]
 
-                                if company_name not in parsed_data[k]:
-                                    parsed_data[k]["companyName"] = company_name
+                                    if k not in parsed_data:
+                                        parsed_data[k] = {}
 
-                                if entry_id not in parsed_data[k]:
-                                    parsed_data[k][entry_id] = {}
+                                    if company_name not in parsed_data[k]:
+                                        parsed_data[k]["companyName"] = company_name
 
-                                if kpi_var not in parsed_data[k][entry_id]:
-                                    parsed_data[k][entry_id][kpi_var] = {}
+                                    if entry_id not in parsed_data[k]:
+                                        parsed_data[k][entry_id] = {}
 
-                                parsed_data[k][entry_id][kpi_var]["value"] = val
-                                parsed_data[k][entry_id][kpi_var]["filedDate"] = i["filed"]
-                                parsed_data[k][entry_id][kpi_var]["endDate"] = i["end"]
-                                parsed_data[k][entry_id][kpi_var]["unit"] = unit
-                                parsed_data[k][entry_id][kpi_var]["form"] = form_type
-                                parsed_data[k][entry_id]["diffInDays"] = diff.days
-                                parsed_data[k][entry_id]["agreementDate"] = str(agreement_date)
-                                parsed_data[k][entry_id]["endDate"] = i["end"]
+                                    if kpi_var not in parsed_data[k][entry_id]:
+                                        parsed_data[k][entry_id][kpi_var] = {}
+
+                                    parsed_data[k][entry_id][kpi_var]["value"] = val
+                                    parsed_data[k][entry_id][kpi_var]["filedDate"] = i["filed"]
+                                    parsed_data[k][entry_id][kpi_var]["endDate"] = i["end"]
+                                    parsed_data[k][entry_id][kpi_var]["unit"] = unit
+                                    parsed_data[k][entry_id][kpi_var]["form"] = form_type
+                                    parsed_data[k][entry_id]["diffInDays"] = diff.days
+                                    parsed_data[k][entry_id]["agreementDate"] = str(agreement_date)
+                                    parsed_data[k][entry_id]["endDate"] = i["end"]
 
         self.export_to_csv_file(parsed_data, file_path)
 
@@ -670,13 +678,10 @@ class Crawler:
                         results[cik_number] = {}
 
                     results[cik_number]["entityName"] = entity_name
-                    results[cik_number]["entryId"] = entry_id
-
                     if str(agreement_date.date()) not in results[cik_number]:
                         results[cik_number][entry_id] = {}
                         results[cik_number][entry_id]["agreementDate"] = str(agreement_date.date())
-
-                    results[cik_number].update(kpi_data)
+                    results[cik_number][entry_id].update(kpi_data)
                 await asyncio.sleep(0.1)  # 10 requests per second max
         return results
 
@@ -1215,6 +1220,9 @@ async def main():
     print(f"is licensee information {is_licensee}")
     fy_cik_df = crawler.get_cik_number_fy_columns(source_file, is_licensee=is_licensee)
     company_info = await crawler.get_company_facts_data(fy_cik_df)
+
+    with open(f"company_info_{timestamp}.json", "w") as f:
+        json.dump(company_info, f, indent=4)
 
     if is_licensee:
         not_found_file_name = f"no_response_licensee_{timestamp}.json"
