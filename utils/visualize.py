@@ -10,8 +10,9 @@
 #       La Societe Pulsalys
 #       BBD Enterprises W.L.L.
 
-import matplotlib.pyplot as plt
 import os
+
+import matplotlib.pyplot as plt
 
 
 # Read file
