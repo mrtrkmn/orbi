@@ -121,7 +121,7 @@ class Orbis:
             "Operating revenue (Turnover)": OP_REVENUE_SETTINGS,
             "Sales": SALES_SETTINGS,
             "Gross profit": GROSS_PROFIT,
-            "Operating P/L [=EBIT]": OPERATING_PL_SETTINS,
+            # "Operating P/L [=EBIT]": OPERATING_PL_SETTINS,
             "P/L before tax": PL_BEFORE_TAX_SETTINGS,
             "P/L for period [=Net income]": PL_FOR_PERIOD_SETTINGS,
             "Cash flow": CASH_FLOW_SETTINGS,
@@ -723,6 +723,7 @@ class Orbis:
         self.wait_until_clickable(EXPORT_MAPPED_DATA_WITH_OWN_ID)
         export_mapped_data_with_own_id = self.driver.find_element(By.XPATH, EXPORT_MAPPED_DATA_WITH_OWN_ID)
         export_mapped_data_with_own_id.send_keys(Keys.RETURN)
+        # do not open another windows while exporting
         time.sleep(5)
         print(f"Mapped data with own id is exported as Excel_{file_name}.xlsx")
 
@@ -1496,6 +1497,7 @@ class Orbis:
 
         if not self.count_total_search():
             self.iterate_over_pages(file_name=input_file)
+            self.view_search_results(excel_output_file_name)
 
         try:
             if self.slack_channel is not None and self.slack_channel != "":
@@ -1508,18 +1510,6 @@ class Orbis:
             print("Exception on sending file to slack: ", e)
 
         # when search is finished, click on the search results button
-
-        if not self.count_total_search():
-            self.view_search_results(excel_output_file_name)
-        else:
-            self.check_search_progress_bar()
-
-        # todo:
-        try:
-            self.driver.find_element(By.XPATH, VIEW_RESULTS_BUTTON)
-            self.view_search_results(excel_output_file_name)
-        except Exception as e:
-            print("View results button is not displayed, continuing with next step")
 
         self.add_remove_additional_columns(process_name)
 
@@ -2019,11 +2009,6 @@ def create_company_dictionary(file_path, is_licensee=True):
             company_name = company_name.strip().upper()
             # remove \n from company name
             company_name = company_name.replace("\n", "")
-            # remove \r from company name
-            company_name = company_name.replace("\r", "")
-            # remove \t from company name
-            company_name = company_name.replace("\t", " ")
-
             if company_name != "NAN" or company_name != "":
                 if company_name in company_dict:
                     # Append the entry ID to the existing list of values for the company
@@ -2076,6 +2061,9 @@ def extract_company_data_from_raw_excel(excel_file, output_csv_file, is_licensee
 
     # apply unidecode to remove special characters to the language
     df_result = df_result["Company name"].apply(unidecode.unidecode)
+    df_result = df_result.str.upper()
+    # remove \n from company name
+    df_result = df_result.str.replace("\n", "")
     # remove Unkown company names
     df_result = df_result[~df_result.str.contains("Unknown", flags=re.IGNORECASE, regex=True)]
     # remove Inventor company names
@@ -2117,7 +2105,7 @@ def get_data_dir_from_config():
 if __name__ == "__main__":
     # initial checks
     if environ.get("LOCAL_DEV") == "True":
-        environ["DATA_SOURCE"] = "latest_big_data.xlsx"
+        environ["DATA_SOURCE"] = "updated_company_data_20230620.xlsx"
         environ["DATA_DIR"] = get_data_dir_from_config()["data"]["path"]
         if not path.exists(environ.get("CONFIG_PATH")):
             # exit with an error message
