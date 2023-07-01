@@ -14,11 +14,12 @@ import time
 from ast import dump
 from datetime import datetime
 from threading import Thread
-import unidecode
+
 import aiohttp
 import pandas as pd
 import pytz
 import requests
+import unidecode
 import yaml
 from bs4 import BeautifulSoup
 
