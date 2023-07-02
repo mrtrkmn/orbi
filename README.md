@@ -68,31 +68,28 @@ $ LOCAL_DEV=True CONFIG_PATH=./config/config.yaml CHECK_ON_SEC=False python orbi
 - To run the crawler, you can run the following command:
 
 ```bash
-python orbi/crawl.py --help
-usage: crawl.py [-h] --source_file SOURCE_FILE [--output_file OUTPUT_FILE] --is_licensee IS_LICENSEE
+$ python orbi/crawl.py 
 
-Get the company facts from the SEC.gov website
+  Example usage:
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --source_file SOURCE_FILE
-                        path to the input file
-  --output_file OUTPUT_FILE
-                        path to the output file
-  --is_licensee IS_LICENSEE
-                        boolean value to indicate if the source file is for licensee or licensor
+    python orbi/crawl.py --source_file sample_data.xlsx --output_file company_facts.csv --licensee  # searching over licensee information 
+    python orbi/crawl.py --source_file sample_data.xlsx --output_file company_facts.csv --no-licensee # searching over licensor information 
+            
 ```
 
 - `--source_file`: (**required**)  is the path to the input file. The same file which is used as input file ( XLSX) for Orbis batch search.
 
 - `--output_file`: (**optional**) is the path to the output file. If not provided, it will be saved to `./data/` folder with the name `company_facts_{timestamp}_licensee.csv` or `"company_facts_{timestamp}_licensor.csv`.
 
-- `--is_licensee`: (**required**) is the boolean value to indicate if the source file is for licensee or licensor.
+- `--licensee`: (**required**) is the boolean value to indicate if the source file is for licensee.
 
-Example call: 
+- `--no-licensee` (**required**) is the boolean value to indicate if the source file is for licensor.
+
+
+Example call for licensee field: 
 
 ```bash 
-python orbi/crawl.py --source_file data/latest_big_data.xlsx --is_licensee True
+python orbi/crawl.py --source_file sample_data.xlsx --output_file company_facts.csv --licensee 
 ```
 
 ### On Remote

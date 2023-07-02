@@ -21,12 +21,11 @@ FIELD_SEPERATOR = "/html/body/section[2]/div[3]/div/form/div[1]/table/tbody/tr[2
 APPLY_BUTTON = "/html/body/section[2]/div[3]/div/form/div[3]/div[2]/input"
 SEARCH_PROGRESS_BAR = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[1]"
 # PROGRESS_TEXT_XPATH = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]/div[1]/div[2]/p"
-PROGRESS_TEXT_XPATH='//*[@id="CountDown"]'
-
+PROGRESS_TEXT_XPATH = '//*[@id="CountDown"]'
 
 
 VIEW_RESULTS_BUTTON = "/html/body/section[2]/div[1]/div[2]/ul/li[1]/a"
-ADD_REMOVE_COLUMNS_VIEW = '//*[@id="main-content"]/div/div[2]/a'
+ADD_REMOVE_COLUMNS_VIEW = '//*[@id="main-content"]/div/div[2]/div[1]/a'
 ACCOUNT_XPATH = "/html/body/section[1]/ul/li"
 LOGOUT_XPATH = '//*[@id="header-user-menu"]/section[1]/div[1]/div[2]/a'
 CONTINUE_SEARCH_BUTTON = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]/div[2]"
@@ -57,6 +56,10 @@ MILLION_UNITS = '//*[@id="id-currency-menu-popup"]/ul[1]/li[4]'
 USD_UNIT = '//*[@id="id-currency-menu-popup"]/ul[2]/li[13]'
 OP_REVENUE_OK_BUTTON = "/html/body/section[2]/div[6]/div[3]/a[2]"
 CURRENY_DROPDOWN = "/html/body/section[2]/div[1]/div[2]/div/div[2]/div[2]/ul/li[4]/a"
+# following button needs to be clicked to download mapped data before view results
+EXPORT_MAPPED_DATA_WITH_OWN_ID = "/html/body/section[2]/div[1]/div[2]/ul/li[2]/a"
+
+
 DROPDOWN_APPLY = '//*[@id="id-currency-menu-popup"]/div/a[2]'
 EXCEL_EXPORT_NAME_FIELD = '//*[@id="component_FileName"]'
 
@@ -112,3 +115,40 @@ SEARCHING_POP_UP = "/html/body/section[2]/div[3]/div/form/div[1]/div[2]"
 WARNING_MESSAGE_HEADER = "/html/body/section[2]/div[3]/div/form/div[1]/div[1]"
 
 NOT_MATCHED_COMPANIES_FILE_NAME = "not_matched_companies.txt"
+
+SEC_DATA_HEADERS = [
+    "entry",
+    "cik_number",
+    "companyName",
+    "agreementDate",
+    "endDate",
+    "diffInDays",
+    "EntityNumberOfEmployees",
+    "EntityNumberOfEmployees Reporting date",
+    "OperatingIncomeLoss",
+    "OperatingIncomeLoss Reporting date",
+    "NetIncomeLoss",
+    "NetIncomeLoss Reporting date",
+    "NetCashProvidedByUsedInOperatingActivities",
+    "NetCashProvidedByUsedInOperatingActivities Reporting date",
+    "NetCashProvidedByUsedInInvestingActivities",
+    "NetCashProvidedByUsedInInvestingActivities Reporting date",
+    "NetCashProvidedByUsedInFinancingActivities",
+    "NetCashProvidedByUsedInFinancingActivities Reporting date",
+    "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect",
+    "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect Reporting date",
+    "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+    "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest Reporting date",
+    "GrossProfit",
+    "GrossProfit Reporting date",
+    "Revenues",
+    "Revenues Reporting date",
+    "CostOfGoodsAndServicesSold",
+    "CostOfGoodsAndServicesSold Reporting date",
+    "Assets",
+    "Assets Reporting date",
+    "ComprehensiveIncomeNetOfTax",
+    "ComprehensiveIncomeNetOfTax Reporting date",
+    "CashAndCashEquivalentsPeriodIncreaseDecrease",
+    "CashAndCashEquivalentsPeriodIncreaseDecrease Reporting date",
+]

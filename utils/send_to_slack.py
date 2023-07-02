@@ -22,12 +22,13 @@ def send_file_to_slack(file_path, channel, message):
     :return:
     None
     """
-    slack_client = WebClient(token=environ.get("SLACK_TOKEN"))
-    slack_client.files_upload_v2(
-        channels=channel,
-        file=file_path,
-        initial_comment=message,
-    )
+    if channel != "" and channel is not None:
+        slack_client = WebClient(token=environ.get("SLACK_TOKEN"))
+        slack_client.files_upload_v2(
+            channels=channel,
+            file=file_path,
+            initial_comment=message,
+        )
 
 
 def send_message_to_slack(message, channel):
@@ -40,11 +41,13 @@ def send_message_to_slack(message, channel):
     :return:
     None
     """
-    slack_client = WebClient(token=environ.get("SLACK_TOKEN"))
-    slack_client.chat_postMessage(
-        channel=channel,
-        text=message,
-    )
+
+    if channel != "" and channel is not None:
+        slack_client = WebClient(token=environ.get("SLACK_TOKEN"))
+        slack_client.chat_postMessage(
+            channel=channel,
+            text=message,
+        )
 
 
 if __name__ == "__main__":
@@ -54,5 +57,7 @@ if __name__ == "__main__":
     slack_channel = parser.add_argument("--slack_channel", type=str, help="The Slack channel to send the file to.")
     message = parser.add_argument("--message", type=str, help="The message to send with the file.")
     args = parser.parse_args()
-
-    send_file_to_slack(args.file_path, args.slack_channel, args.message)
+    if args.file_path is None or args.file_path == "":
+        send_message_to_slack(args.message, args.slack_channel)
+    else:
+        send_file_to_slack(args.file_path, args.slack_channel, args.message)
