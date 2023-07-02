@@ -441,11 +441,20 @@ jobs:
           unzip  ${{ env.DATA_DIR }}/sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip -d ${{ env.DATA_DIR }}
         continue-on-error: true
 
+      - name: Get event input file name
+        id: input-data-file-name
+        run: 
+        # if it is a url take last part of the url
+          if [[ "${{ github.event.inputs.input_file }}" == *"https"* ]]; then
+            echo "file_name=$(basename ${{ github.event.inputs.input_file }})" >> $GITHUB_OUTPUT
+          else
+            echo "file_name=${{ github.event.inputs.input_file }}" >> $GITHUB_OUTPUT
+          fi
+        
       - name: Aggregate data
         run: |
-          
-          python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}orbis_data_licensee_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensee.csv" --merged_output_file "${{ env.DATA_DIR }}merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx"
-          python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}orbis_data_licensor_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensor.csv" --merged_output_file "${{ env.DATA_DIR }}merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx"
+          python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}orbis_data_licensee_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensee.csv" --merged_output_file "${{ env.DATA_DIR }}merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensee.xlsx" --searched_raw_input_file "${{ env.DATA_DIR }}${{ steps.input-data-file-name.outputs.file_name }}"
+          python utils/merge.py --orbis_output_file "${{ env.DATA_DIR }}orbis_data_licensor_${{ steps.get-timestamp.outputs.timestamp }}.xlsx" --sec_output_file "${{ env.DATA_DIR }}company_facts_${{ steps.get-timestamp.outputs.timestamp }}_licensor.csv" --merged_output_file "${{ env.DATA_DIR }}merged_data_${{ steps.get-timestamp.outputs.timestamp }}_licensor.xlsx" --searched_raw_input_file "${{ env.DATA_DIR }}${{ steps.input-data-file-name.outputs.file_name }}"
 
       - name: Zip merged files 
         run: |
