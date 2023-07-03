@@ -451,10 +451,10 @@ jobs:
         id: input-data-file-name
         run: 
         # if it is a url take last part of the url
-          if [[ "${{ github.event.inputs.input_file }}" == *"https"* ]]; then
-            echo "file_name=$(basename ${{ github.event.inputs.input_file }})" >> $GITHUB_OUTPUT
+          if [[ ${{ github.event.inputs.data }} == http* ]]; then
+            echo "file_name=$(basename ${{ github.event.inputs.data }})" >> $GITHUB_OUTPUT
           else
-            echo "file_name=${{ github.event.inputs.input_file }}" >> $GITHUB_OUTPUT
+            echo "file_name=${{ github.event.inputs.data }}" >> $GITHUB_OUTPUT
           fi
         
       - name: Aggregate data
