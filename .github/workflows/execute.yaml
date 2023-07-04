@@ -443,8 +443,7 @@ jobs:
 
       - name: Get event input file name
         id: input-data-file-name
-        run: 
-        # if it is a url take last part of the url
+        run: |
           if [[ "${{ github.event.inputs.input_file }}" == *"https"* ]]; then
             echo "file_name=$(basename ${{ github.event.inputs.input_file }})" >> $GITHUB_OUTPUT
           else
