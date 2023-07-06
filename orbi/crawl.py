@@ -14,11 +14,12 @@ import time
 from ast import dump
 from datetime import datetime
 from threading import Thread
-import unidecode
+
 import aiohttp
 import pandas as pd
 import pytz
 import requests
+import unidecode
 import yaml
 from bs4 import BeautifulSoup
 
@@ -333,7 +334,11 @@ class Crawler:
                         LICENSEE_CLEANED_NAME: "Company Name",
                     }
                 )
+                # convert to str
+                # df = df.astype(str)
                 # df = df.reset_index(drop=True)
+                df = df.sort_values(by=["Company Name"], ascending=True)
+
                 final_df = pd.concat([final_df, df])
         else:
             for i in range(0, number_of_licensor_columns):
@@ -355,8 +360,9 @@ class Crawler:
                         LICENSOR_CLEANED_NAME: "Company Name",
                     }
                 )
+                # sort the dataframe by Company Name
+                df = df.sort_values(by=["Company Name"], ascending=True)
                 final_df = pd.concat([final_df, df])
-
         return final_df
 
     def parse_export_data_to_csv(self, json_data: dict, file_path: str):
@@ -1235,11 +1241,11 @@ async def main():
         if not args.output_file:
             output_file = f"company_facts_{timestamp}_licensor.csv"
 
-    for k, v in MISSING_KPI_VARS.items():
-        MISSING_KPI_VARS[k]["number_of_missing_kpi_vars"] = len(v["kpi_vars"])
+    # for k, v in MISSING_KPI_VARS.items():
+    # MISSING_KPI_VARS[k]["number_of_missing_kpi_vars"] = len(v["kpi_vars"])
 
-    dump_to_json_file(data=NOT_FOUND_COMPANIES, file_name=not_found_file_name)
-    dump_to_json_file(data=MISSING_KPI_VARS, file_name=missing_kpi_var_file_name)
+    # dump_to_json_file(data=NOT_FOUND_COMPANIES, file_name=not_found_file_name)
+    # dump_to_json_file(data=MISSING_KPI_VARS, file_name=missing_kpi_var_file_name)
 
     # save company facts
     crawler.parse_export_data_to_csv(company_info, output_file)
