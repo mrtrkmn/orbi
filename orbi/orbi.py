@@ -34,11 +34,11 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from slack_sdk import WebClient
-from webdriver_manager.chrome import ChromeDriverManager
 
 # from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
 from variables import *
+from webdriver_manager.chrome import ChromeDriverManager
 
 import send_to_slack  # isort:skip
 from send_to_slack import send_file_to_slack  # isort:skip

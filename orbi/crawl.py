@@ -1227,9 +1227,6 @@ async def main():
     fy_cik_df = crawler.get_cik_number_fy_columns(source_file, is_licensee=is_licensee)
     company_info = await crawler.get_company_facts_data(fy_cik_df)
 
-    with open(f"company_info_{timestamp}.json", "w") as f:
-        json.dump(company_info, f, indent=4)
-
     if is_licensee:
         not_found_file_name = f"no_response_licensee_{timestamp}.json"
         missing_kpi_var_file_name = f"missing_kpi_vars_licensee_{timestamp}.json"
@@ -1241,11 +1238,11 @@ async def main():
         if not args.output_file:
             output_file = f"company_facts_{timestamp}_licensor.csv"
 
-    # for k, v in MISSING_KPI_VARS.items():
-    # MISSING_KPI_VARS[k]["number_of_missing_kpi_vars"] = len(v["kpi_vars"])
+    for k, v in MISSING_KPI_VARS.items():
+        MISSING_KPI_VARS[k]["number_of_missing_kpi_vars"] = len(v["kpi_vars"])
 
-    # dump_to_json_file(data=NOT_FOUND_COMPANIES, file_name=not_found_file_name)
-    # dump_to_json_file(data=MISSING_KPI_VARS, file_name=missing_kpi_var_file_name)
+    dump_to_json_file(data=NOT_FOUND_COMPANIES, file_name=not_found_file_name)
+    dump_to_json_file(data=MISSING_KPI_VARS, file_name=missing_kpi_var_file_name)
 
     # save company facts
     crawler.parse_export_data_to_csv(company_info, output_file)

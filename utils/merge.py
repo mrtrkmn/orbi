@@ -9,7 +9,6 @@ from argparse import ArgumentParser
 import pandas as pd
 from fuzzywuzzy import fuzz
 
-
 root_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(root_path)
 sys.path.append("orbi")
@@ -307,3 +306,4 @@ if __name__ == "__main__":
     searched_raw_input_file = args.searched_raw_input_file
 
     aggregate_orbis_sec_data(orbis_output_file, sec_output_file)
+    print(f"Successfully merged data to {merged_output_file}")
