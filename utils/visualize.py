@@ -10,8 +10,12 @@
 #       La Societe Pulsalys
 #       BBD Enterprises W.L.L.
 
-import matplotlib.pyplot as plt
+import json
 import os
+import sys
+from argparse import ArgumentParser
+
+import matplotlib.pyplot as plt
 
 
 # Read file
@@ -72,9 +76,63 @@ def plot_distribution_mapping(mapping, is_licensee):
     plt.show()
 
 
+def create_distribution_mapping_from_json(json_file_path, top_n=10):
+    """Creates bar plot of distribution of missing kpi vars"""
+    with open(json_file_path, "r") as f:
+        data = json.load(f)
+
+    companies = list(data.keys())
+    missing_kpi_counts = [data[company]["number_of_missing_kpi_vars"] for company in companies]
+
+    # Sort the companies based on the number of missing KPI variables in descending order
+    sorted_indices = sorted(range(len(missing_kpi_counts)), key=lambda k: missing_kpi_counts[k], reverse=True)
+    # top_10_companies = [companies[i] for i in sorted_indices[:10]]
+    # top_10_missing_kpi_counts = [missing_kpi_counts[i] for i in sorted_indices[:10]]
+    top_n_companies = [companies[i] for i in sorted_indices[:top_n]]
+    top_n_missing_kpi_counts = [missing_kpi_counts[i] for i in sorted_indices[:top_n]]
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.bar(range(len(top_n_companies)), top_n_missing_kpi_counts)
+    ax.set_xlabel("Company")
+    ax.set_ylabel("Number of Missing KPI Variables")
+    if "licensee" in json_file_path:
+        ax.set_title(f"Top {top_n} Companies with Highest Number of Missing KPI Variables [Licensee]")
+    else:
+        ax.set_title("Top 10 Companies with Highest Number of Missing KPI Variables [Licensor]")
+    ax.set_xticks(range(len(top_n_companies)))
+    ax.set_xticklabels(top_n_companies, rotation=45, ha="right")
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == "__main__":
-    file_path = "./data/not_matched_companies.txt"
-    lines = read_file(file_path)
-    mapping = create_distribution_mapping(lines)
-    print(mapping)
-    plot_distribution_mapping(mapping, is_licensee=False)
+    """
+    Example usage:
+    python3 visualize.py --not_found_companies  ./data/not_matched_companies.txt
+    python3 visualize.py --missing_kpi_vars ./data/missing_kpi_vars_licensee.json --top_n 10
+    """
+    parser = ArgumentParser(
+        description="""
+        This tool contains several helper functions to visualize data from a given not_matched_companies.txt file and missing_kpi_vars.json file
+        """,
+        add_help=True,
+    )
+    parser.add_argument(
+        "--not_found_companies",
+        type=str,
+        help="Path to not found companies file [TXT] *(should only contain a list of companies)",
+    )
+    parser.add_argument("--missing_kpi_vars", type=str, help="Path to missing KPI vars file [JSON]")
+    parser.add_argument("--top_n", type=int, help="Number of top companies to show in the bar plot")
+    args = parser.parse_args()
+    if len(sys.argv) == 1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+    if args.not_found_companies:
+        file_path = args.not_found_companies
+        lines = read_file(file_path)
+        mapping = create_distribution_mapping(lines)
+        print(mapping)
+        plot_distribution_mapping(mapping, is_licensee=False)
+    else:
+        json_file_path = args.missing_kpi_vars
+        create_distribution_mapping_from_json(json_file_path, args.top_n)
