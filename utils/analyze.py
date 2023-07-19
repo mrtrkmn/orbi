@@ -1,6 +1,7 @@
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 from pandas.core.internals.blocks import F
+
 # example run on Google colab
 # https://colab.research.google.com/drive/17Zn2y9QnjWchwNdBpJ4brjj7IPzH5I_5?usp=sharing
 
