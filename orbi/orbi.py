@@ -23,7 +23,6 @@ import pandas as pd
 import unidecode
 import yaml
 from retrying import retry
-
 # from crawl import create_input_file_for_orbis_batch_search
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
@@ -34,7 +33,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from slack_sdk import WebClient
-
 # from slack_sdk import WebClient
 # from slack_sdk.errors import SlackApiError
 from variables import *
