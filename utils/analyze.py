@@ -1,5 +1,5 @@
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 from pandas.core.internals.blocks import F
 
 # example run on Google colab
