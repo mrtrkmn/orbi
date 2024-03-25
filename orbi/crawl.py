@@ -61,7 +61,6 @@ COST_OF_GOODS_AND_SERVICES_SOLD = "CostOfGoodsAndServicesSold"
 
 # class to crawl the IPO website for the patent-related data
 class Crawler:
-
     """
     Crawler class to crawl the IPO website for the patent-related data
     CIK numbers are fetched from SEC.gov.
