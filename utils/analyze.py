@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from pandas.core.internals.blocks import F
+
 # example run on Google colab
 # https://colab.research.google.com/drive/17Zn2y9QnjWchwNdBpJ4brjj7IPzH5I_5?usp=sharing
 
@@ -62,26 +63,30 @@ def create_missing_kpi_var_map(data: dict, is_licensee: bool = True):
     # Plotting the bar chart
     plt.figure(figsize=(12, 6))
     bars = plt.bar(range(len(sorted_companies)), sorted_missing_kpis)
-    plt.xlabel('Company')
-    plt.ylabel('Number of Missing KPIs')
+    plt.xlabel("Company")
+    plt.ylabel("Number of Missing KPIs")
     if is_licensee:
-        plt.title('Companies with Missing KPIs on merged data (Licensee)')
+        plt.title("Companies with Missing KPIs on merged data (Licensee)")
     else:
-        plt.title('Companies with Missing KPIs on merged data (Licensor)')
+        plt.title("Companies with Missing KPIs on merged data (Licensor)")
     plt.xticks(range(len(sorted_companies)), sorted_companies, rotation=90)
 
     # Adding values inside the bars
     for bar, value in zip(bars, sorted_missing_kpis):
-        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() - 1, str(value), ha='center', va='center', fontsize=10, color='white')
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() - 1,
+            str(value),
+            ha="center",
+            va="center",
+            fontsize=10,
+            color="white",
+        )
 
     # Adding total number of missing KPI variables as text in the right upper corner
     total_missing_kpi_vars = sum(len(missing_vars.split(", ")) for missing_vars in missing_kpi_vars)
     table_total_text = f"Total Missing KPI Variables: {total_missing_kpi_vars}"
-    plt.text(0.65, 0.90, table_total_text, transform=plt.gca().transAxes, fontsize=12, fontweight='bold')
+    plt.text(0.65, 0.90, table_total_text, transform=plt.gca().transAxes, fontsize=12, fontweight="bold")
 
     plt.tight_layout()
     plt.show()
-
-
-
-
