@@ -9,7 +9,8 @@ import sys
 from datetime import datetime, timedelta
 
 # import public_access
-from azure.storage.blob import AccessPolicy, BlobServiceClient, ContainerSasPermissions, PublicAccess
+from azure.storage.blob import (AccessPolicy, BlobServiceClient,
+                                ContainerSasPermissions, PublicAccess)
 from send_to_slack import send_message_to_slack
 
 root_path = os.path.dirname(os.path.abspath(__file__))
