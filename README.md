@@ -225,11 +225,3 @@ The following flow chart shows the process of batch search done by Orbi.
 <img src="https://user-images.githubusercontent.com/13614433/227824562-0610cf9f-cd36-45df-b999-966e7d0a5cdd.png">
 </pre>
 </details>
-
-
-
-
-
-
-
-
