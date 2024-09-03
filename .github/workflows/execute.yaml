@@ -421,14 +421,14 @@ jobs:
           echo "timestamp=$(date +'%d_%m_%Y')" >> $GITHUB_OUTPUT
 
       - name: Download orbis data from artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: orbis-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
           path: ${{ env.DATA_DIR }}
         continue-on-error: true
 
       - name: Download SEC API data from artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: sec-gov-data-${{ steps.get-timestamp.outputs.timestamp }}.zip
           path: ${{ env.DATA_DIR }}
